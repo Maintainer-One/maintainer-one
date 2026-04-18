@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase';
 	// Note: supabase client is initialized but will need ENV keys in .env
 </script>
@@ -26,7 +27,7 @@
 			</p>
 
 			<div class="flex justify-center gap-4">
-				<button class="btn-primary"> Enter Film Room </button>
+				<a href="{base}/film-room" class="btn-primary flex items-center"> Enter Film Room </a>
 				<button
 					class="rounded-lg border border-white/10 bg-white/10 px-6 py-2 font-bold transition-all hover:bg-white/20"
 				>
