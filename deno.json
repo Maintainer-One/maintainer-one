@@ -1,0 +1,21 @@
+{
+	"tasks": {
+		"dev": "deno run -A npm:vite dev",
+		"build": "deno run -A npm:vite build",
+		"preview": "deno run -A npm:vite preview",
+		"test": "deno test -A --parallel",
+		"check": "deno check src/**/*.ts packages/**/*.ts",
+		"lint": "deno lint",
+		"fmt": "deno fmt && deno run -A npm:prettier --write .",
+		"e2e": "npx playwright test",
+		"sim": "deno run -A packages/engine/match.ts"
+	},
+	"compilerOptions": {
+		"allowJs": true,
+		"lib": ["esnext", "dom", "deno.ns"]
+	},
+	"nodeModulesDir": "auto",
+	"fmt": {
+		"exclude": [".svelte-kit", "build", "dist", "node_modules"]
+	}
+}
