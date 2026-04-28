@@ -23,6 +23,7 @@ export type PointZone = {
 
 export type GameState = {
 	tick: number;
+	protocolVersion: string;
 	teams: Record<TeamID, { name: string; score: number }>;
 	players: Player[];
 	pointZone: PointZone | null;
