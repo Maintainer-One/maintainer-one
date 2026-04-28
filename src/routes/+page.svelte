@@ -1,64 +1,80 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { supabase } from '$lib/supabase';
-	// Note: supabase client is initialized but will need ENV keys in .env
+	import LeagueTicker from '$lib/components/dashboard/LeagueTicker.svelte';
+	import StandingsBoard from '$lib/components/dashboard/StandingsBoard.svelte';
+	import MatchFeed from '$lib/components/dashboard/MatchFeed.svelte';
 </script>
 
 <svelte:head>
-	<title>Maintainer One | The Screeps for Sports Platform</title>
+	<title>Maintainer One | Command Center</title>
 </svelte:head>
 
-<main
-	data-component="landing-page"
-	class="flex min-h-[90vh] flex-col items-center justify-center px-4 text-center"
->
-	<div class="group relative">
-		<div
-			class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#4facfe] to-[#00f2fe] opacity-25 blur transition duration-1000 group-hover:opacity-50 group-hover:duration-200"
-		></div>
-		<div class="relative rounded-2xl border-white/5 bg-glass px-12 py-10 shadow-2xl">
-			<h1
-				class="mb-4 bg-gradient-to-br from-white to-white/60 bg-clip-text text-6xl font-black tracking-tighter text-transparent"
-			>
-				MAINTAINER<br /><span class="text-[#00f2fe]">ONE</span>
-			</h1>
-			<p class="mx-auto mb-8 max-w-md text-xl text-white/60">
-				Your logic is your team. The Protocol is your limit. Are you ready to win the league?
-			</p>
+<!-- Global League Ticker at the very top -->
+<LeagueTicker />
 
-			<div class="flex justify-center gap-4">
-				<a href="{base}/film-room" class="btn-primary flex items-center"> Enter Film Room </a>
-				<button
-					class="rounded-lg border border-white/10 bg-white/10 px-6 py-2 font-bold transition-all hover:bg-white/20"
-				>
-					Docs
-				</button>
+<main
+	data-component="dashboard"
+	class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 md:px-8"
+>
+	<!-- Header Section -->
+	<header class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+		<div>
+			<h1 class="bg-gradient-to-br from-white to-white/60 bg-clip-text text-4xl font-black tracking-tighter text-transparent">
+				COMMAND <span class="text-[#00f2fe]">CENTER</span>
+			</h1>
+			<p class="text-white/60">Live league dashboard and match feeds.</p>
+		</div>
+
+		<div class="flex items-center gap-3">
+			<a href="{base}/film-room" class="btn-primary flex items-center shadow-lg">
+				Enter Film Room
+			</a>
+			<button class="rounded-lg border border-white/10 bg-glass px-4 py-2 text-sm font-bold transition-all hover:bg-white/20">
+				My Team
+			</button>
+		</div>
+	</header>
+
+	<!-- Main Grid Layout -->
+	<div class="grid grid-cols-1 gap-8 lg:grid-cols-12">
+		
+		<!-- Left Column: Big Board / Standings (Takes 4 cols on large screens) -->
+		<div class="lg:col-span-4 xl:col-span-3">
+			<div class="sticky top-8">
+				<StandingsBoard />
 			</div>
 		</div>
-	</div>
 
-	<div class="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3">
-		<div class="rounded-xl border-l-4 border-[#4facfe] bg-glass p-6 text-left">
-			<h3 class="mb-2 text-lg font-bold">Protocol V1</h3>
-			<p class="text-sm text-white/50">
-				3v3. 10x10 Grid. Capture the Zone. The foundational test of strategy.
-			</p>
-		</div>
-		<div class="rounded-xl border-l-4 border-[#00f2fe] bg-glass p-6 text-left">
-			<h3 class="mb-2 text-lg font-bold">Deterministic Sim</h3>
-			<p class="text-sm text-white/50">
-				Deno-powered logic execution ensures 100% reproducibility in every replay.
-			</p>
-		</div>
-		<div class="rounded-xl border-l-4 border-white/20 bg-glass p-6 text-left">
-			<h3 class="mb-2 text-lg font-bold">Film Room</h3>
-			<p class="text-sm text-white/50">
-				Pause, tweak, and branch. Analyze the numbers to optimize your code.
-			</p>
+		<!-- Right Column: Match Feeds and Activity (Takes 8 cols) -->
+		<div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
+			
+			<!-- Featured Live Action or Hero Section -->
+			<div class="group relative overflow-hidden rounded-2xl border border-white/10 bg-glass p-8 shadow-2xl">
+				<div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#4facfe]/20 to-[#00f2fe]/20 opacity-50 blur-xl transition duration-1000 group-hover:opacity-100"></div>
+				
+				<div class="relative z-10 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+					<div>
+						<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-400">
+							<span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
+							MATCH OF THE WEEK
+						</div>
+						<h2 class="text-3xl font-black text-white">Crimson <span class="text-white/30">vs</span> Denim</h2>
+						<p class="mt-1 max-w-md text-sm text-white/60">Watch as the top contenders battle for zone control in a high-stakes match.</p>
+					</div>
+					
+					<a href="{base}/film-room" class="mt-4 flex items-center justify-center rounded-xl bg-white/10 px-6 py-3 font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-105 md:mt-0">
+						Spectate Now
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+					</a>
+				</div>
+			</div>
+
+			<!-- Match Feed List -->
+			<MatchFeed />
 		</div>
 	</div>
 </main>
 
 <style>
-	/* Local component micro-animations if needed */
+	/* Any page-specific styles can go here */
 </style>
