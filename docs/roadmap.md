@@ -18,20 +18,21 @@ The platform is driven by a unified permission system where roles are additive. 
 **Foundational Architecture Established:**
 - **Simulation Engine**: Core deterministic Deno simulation engine (`packages/engine`).
 - **Phase 1 (DX Focus)**: Hybrid IDE architecture (Monaco/CodeMirror), browser-side simulation, and advanced playback controls.
-- **Phase 2 (League Dashboard)**: Foundational UI for "The Big Board", team identity, and live event ticking. This UI forms the base for our upcoming permission-driven interfaces.
+- **Phase 2 (League Dashboard)**: Foundational UI for "The Big Board", team identity, and live event ticking.
+- **Phase 3 (Inaugural Season)**: Full season simulation infrastructure complete.
+    - **Protocol Versioning Engine**: Decoupled engine from rule-sets with a registry pattern.
+    - **Automated Season Runner**: `Deno.cron` ready runner for scheduled matches.
+    - **Code-Locked Determinism**: Database-backed version control for team logic ensuring perfect replays.
+    - **Inaugural Bootstrap**: 6 varied team logic variations seeded with a full round-robin schedule.
+
+**The Testing Mandate (Core Pillar):**
+- **Regression Safety**: All core simulation and protocol logic is covered by a "Headache-Free" testing suite using `deno test`.
+- **Continuous Integration**: Automated CI via GitHub Actions ensures no push breaks the engine or protocol determinism.
+- **TDD Requirement**: All future protocol changes and engine features *must* be accompanied by relevant test cases to maintain the project's long-term health.
 
 ---
 
 ## Upcoming Phases
-
-### Phase 3: The Inaugural Season (Scheduling & Simulation MVP)
-*The primary goal is to see a full season play out automatically, providing the baseline for future development.*
-
-- [ ] **Protocol Versioning Engine**: Establish the foundational architecture where a League runs under a specific Protocol Version that dictates rules, schedule constraints, and player structure.
-- [ ] **Automated Season Runner (Cron Job)**: Implement a backend simulation runner deployed on Deno Deploy. 
-    - Games are simulated in batch (e.g., in the morning) but are locked on the frontend until their scheduled "premiere" time.
-    - Viewers watch the premiere "live", with skip-ahead disabled to preserve the suspense of the match.
-- [ ] **Inaugural Bootstrap**: Provide the necessary tooling for a single user to act as League Maintainer and Team Maintainer for all 6 inaugural teams to test the season loop.
 
 ### Phase 4: GitHub Auth & The Contributor Ecosystem
 *The goal is to seamlessly integrate the community and establish the formal RBAC foundation.*
