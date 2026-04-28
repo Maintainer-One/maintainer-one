@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { EditorView, basicSetup } from 'codemirror';
+	import { basicSetup } from 'codemirror';
+	import { EditorView } from '@codemirror/view';
 	import { javascript } from '@codemirror/lang-javascript';
 	import { oneDark } from '@codemirror/theme-one-dark';
 	import { EditorState } from '@codemirror/state';
@@ -22,6 +23,7 @@
 				basicSetup,
 				javascript({ typescript: true }),
 				oneDark,
+				EditorView.lineWrapping,
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged && onCodeChange) {
 						onCodeChange(update.state.doc.toString());
@@ -40,7 +42,7 @@
 		};
 	});
 
-	// React to code changes from parent (e.g. loading a new file)
+	// React to code changes from parent
 	$effect(() => {
 		if (view && code !== view.state.doc.toString()) {
 			view.dispatch({

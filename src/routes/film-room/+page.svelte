@@ -4,6 +4,8 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { GameState } from '../../../packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
+	import StateInspector from '$lib/components/StateInspector.svelte';
+	import SimWorker from '$lib/workers/sim.worker?worker';
 
 	let replays = [
 		'match_2026-04-18T02-25-57-337Z.json',
@@ -16,8 +18,17 @@
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
 	
-	// Dynamically loaded Editor component
+	// Simulation Worker state
 	let Editor: any = $state();
+	let simWorker: Worker | null = null;
+	let isSimulating = $state(false);
+	let errorMessage = $state<string | null>(null);
+	let branchTick = $state<number | null>(null);
+	let simulationDebounceTimer: number | null = null;
+
+	// Layout State
+	let asideWidth = $state(450);
+	let isResizing = $state(false);
 
 	// Logic Editing State
 	let activeTeam = $state<'A' | 'B'>('A');
@@ -75,39 +86,123 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		const target = e.target as HTMLSelectElement;
 		selectedReplay = target.value;
 		loadReplay(selectedReplay);
+		branchTick = null; // Reset branch point
+	}
+
+	function stepForward() {
+		stopPlayback();
+		if (currentTick < states.length - 1) currentTick++;
+	}
+
+	function stepBackward() {
+		stopPlayback();
+		if (currentTick > 0) currentTick--;
+	}
+
+	function startResizing(e: MouseEvent) {
+		isResizing = true;
+	}
+
+	function handleMouseMove(e: MouseEvent) {
+		if (!isResizing) return;
+		asideWidth = Math.max(300, Math.min(800, e.clientX));
+	}
+
+	function stopResizing() {
+		isResizing = false;
 	}
 
 	function handleCodeChange(newCode: string) {
 		teamCodes[activeTeam] = newCode;
-		// TODO: In Phase 1.1, trigger the Web Worker to re-simulate from currentTick
+		requestSimulation();
+	}
+
+	function requestSimulation() {
+		if (simulationDebounceTimer) clearTimeout(simulationDebounceTimer);
+		
+		simulationDebounceTimer = window.setTimeout(() => {
+			if (!simWorker || states.length === 0) return;
+			isSimulating = true;
+			branchTick = currentTick; // Mark the fork point
+			
+			simWorker.postMessage({
+				type: 'SIMULATE_BRANCH',
+				startState: $state.snapshot(states[currentTick]),
+				alphaCode: teamCodes.A,
+				bravoCode: teamCodes.B,
+				maxTicks: 500 - currentTick
+			});
+		}, 500);
 	}
 
 	onMount(async () => {
 		loadReplay(selectedReplay);
-		// Load Editor only on client
+
 		if (browser) {
-			Editor = (await import('$lib/components/Editor.svelte')).default;
+			// Initialize Worker
+			simWorker = new SimWorker();
+			simWorker.onmessage = (e) => {
+				if (e.data.type === 'SIMULATION_COMPLETE') {
+					const newBranch = e.data.states;
+					states = [...states.slice(0, currentTick), ...newBranch];
+					isSimulating = false;
+					errorMessage = null;
+				} else if (e.data.type === 'SIMULATION_ERROR') {
+					console.error('Simulation Error:', e.data.error);
+					errorMessage = e.data.error;
+					isSimulating = false;
+					branchTick = null; // Clear branch point on error
+				}
+			};
+
+			// Initialize Smart Editor
+			Editor = (await import('$lib/components/SmartEditor.svelte')).default;
 		}
 	});
 	
 	// Client-side cleanup only
 	$effect(() => {
-		return () => stopPlayback();
+		return () => {
+			stopPlayback();
+			if (simWorker) simWorker.terminate();
+		};
 	});
 
 	let currentState = $derived(states[currentTick]);
 </script>
 
-<div class="flex h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 font-sans">
+<div 
+	class="flex h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 font-sans"
+	onmousemove={handleMouseMove}
+	onmouseup={stopResizing}
+	onmouseleave={stopResizing}
+>
 	<!-- Left Side: Editor (New) -->
-	<aside class="flex w-[450px] flex-col border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl">
+	<aside 
+		class="flex flex-col border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl"
+		style="width: {asideWidth}px"
+	>
 		<header class="flex h-16 flex-col border-b border-white/5 px-6 pt-3">
 			<div class="mb-2 flex items-center justify-between">
 				<h2 class="text-xs font-black uppercase tracking-widest text-emerald-500">Logic Editor</h2>
-				<button class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20">
-					Save
-				</button>
+				<div class="flex items-center gap-3">
+					{#if isSimulating}
+						<span class="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500/70 uppercase">
+							<span class="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500"></span>
+							Calculating...
+						</span>
+					{:else}
+						<button class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20">
+							Save
+						</button>
+					{/if}
+				</div>
 			</div>
+			{#if errorMessage}
+				<div class="mb-2 rounded border border-rose-500/20 bg-rose-500/10 px-3 py-1.5 text-[9px] font-medium text-rose-400">
+					Error: {errorMessage}
+				</div>
+			{/if}
 			<!-- Team Tabs -->
 			<div class="flex gap-4">
 				<button 
@@ -126,13 +221,20 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		</header>
 		<div class="flex-1 p-4">
 			{#if browser && Editor}
-				<svelte:component this={Editor} code={currentLogicCode} onCodeChange={handleCodeChange} />
+				<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
 			{/if}
 		</div>
 		<footer class="border-t border-white/5 p-4 text-[9px] text-zinc-500">
-			* Editing code will branch the simulation from the current tick (Coming Soon).
+			* Editing code will branch the simulation from the current tick.
 		</footer>
 	</aside>
+
+	<!-- Resize Handle -->
+	<div 
+		onmousedown={startResizing}
+		class="w-1 cursor-col-resize bg-zinc-800/50 transition-colors hover:bg-emerald-500/50 active:bg-emerald-500"
+		role="separator"
+	></div>
 
 	<!-- Middle: Field + Controls -->
 	<main class="flex flex-1 flex-col p-6 lg:p-10 bg-zinc-950">
@@ -160,19 +262,35 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				<!-- Playback Hub -->
 				<div class="w-full max-w-2xl space-y-4 rounded-2xl border border-white/10 bg-zinc-900/80 p-5 shadow-2xl backdrop-blur-xl">
 					<div class="flex items-center gap-5">
-						<button
-							onclick={togglePlayback}
-							aria-label={isPlaying ? 'Pause' : 'Play'}
-							class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-black transition-all hover:scale-110 active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
-						>
-							{#if isPlaying}
-								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-							{:else}
-								<svg class="h-5 w-5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-							{/if}
-						</button>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={stepBackward}
+								aria-label="Previous Tick"
+								class="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-zinc-700 active:scale-90"
+							>
+								<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+							</button>
+							<button
+								onclick={togglePlayback}
+								aria-label={isPlaying ? 'Pause' : 'Play'}
+								class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-black transition-all hover:scale-110 active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+							>
+								{#if isPlaying}
+									<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+								{:else}
+									<svg class="h-5 w-5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+								{/if}
+							</button>
+							<button
+								onclick={stepForward}
+								aria-label="Next Tick"
+								class="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-zinc-700 active:scale-90"
+							>
+								<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+							</button>
+						</div>
 
-						<div class="flex-1">
+						<div class="relative flex-1 group">
 							<input
 								type="range"
 								min="0"
@@ -180,6 +298,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 								bind:value={currentTick}
 								class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-emerald-500"
 							/>
+							{#if branchTick !== null}
+								<div 
+									class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] pointer-events-none"
+									style="left: {(branchTick / (states.length - 1)) * 100}%"
+									title="Simulation Branch Point"
+								></div>
+							{/if}
 						</div>
 
 						<div class="flex items-center gap-2">
@@ -244,11 +369,60 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 						<div class="text-2xl font-black text-rose-400">{currentState?.teams.B.score ?? 0}</div>
 					</div>
 				</div>
+
+				<!-- Live State Inspector -->
+				<div class="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+					<div class="mb-3 flex items-center justify-between">
+						<h4 class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Live Data</h4>
+						<span class="text-[8px] font-bold text-emerald-500/50 uppercase">Tick {currentTick}</span>
+					</div>
+					<div class="max-h-64 overflow-y-auto no-scrollbar">
+						{#if currentState}
+							<StateInspector data={currentState} />
+						{/if}
+					</div>
+				</div>
+			</section>
+
+			<!-- Protocol Reference -->
+			<section class="space-y-4">
+				<h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Protocol Reference</h3>
+				
+				<div class="space-y-2">
+					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
+						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">SensedState</div>
+						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
+  tick: number,
+  players: Player[],
+  pointZone: PointZone,
+  teams: { A, B }
+}`}</code></pre>
+					</div>
+
+					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
+						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">Player</div>
+						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
+  id: string,
+  team: 'A' | 'B',
+  position: { x, y },
+  status: 'active' | ...
+}`}</code></pre>
+					</div>
+
+					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
+						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">Action</div>
+						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
+  playerId: string,
+  type: 'MOVE' | 'STAY',
+  direction?: 'UP' | 'DOWN' | ...
+}`}</code></pre>
+					</div>
+				</div>
 			</section>
 
 			<!-- Protocol Info -->
 			<section class="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
-				<h3 class="mb-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">Active Protocol</h3>
+				<h3 class="mb-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">About V1</h3>
 				<p class="text-xs leading-relaxed text-zinc-400">
 					V1: 10x10 Grid. Point zone at (4,5). Teams start at opposite ends. First to capture wins.
 				</p>
