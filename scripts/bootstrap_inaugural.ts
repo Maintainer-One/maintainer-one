@@ -30,12 +30,12 @@ async function bootstrap() {
 
     // 2. Load and create teams with variations
     const variations = [
-        { name: 'Alpha Seekers', file: 'greedy_v1.ts' },
-        { name: 'Beta Blockers', file: 'defensive_v1.ts' },
-        { name: 'Gamma Striker', file: 'aggressive_v1.ts' },
-        { name: 'Delta Drifters', file: 'random_v1.ts' },
-        { name: 'Epsilon Pausers', file: 'patient_v1.ts' },
-        { name: 'Zeta Soloists', file: 'staggered_v1.ts' }
+        { name: 'Amber Seekers', file: 'greedy_v1.ts', color: '#FFBF00' },
+        { name: 'Beige Blockers', file: 'defensive_v1.ts', color: '#F5F5DC' },
+        { name: 'Crimson Strikers', file: 'aggressive_v1.ts', color: '#DC143C' },
+        { name: 'Denim Drifters', file: 'random_v1.ts', color: '#1560BD' },
+        { name: 'Emerald Pausers', file: 'patient_v1.ts', color: '#50C878' },
+        { name: 'Fuchsia Soloists', file: 'staggered_v1.ts', color: '#FF00FF' }
     ];
 
     const teamIds: string[] = [];
@@ -79,7 +79,7 @@ async function bootstrap() {
             // Create Team
             const { data: team, error: teamError } = await supabase
                 .from('teams')
-                .insert({ name: v.name, league_id: league.id })
+                .insert({ name: v.name, league_id: league.id, color: v.color })
                 .select()
                 .single();
 
@@ -126,7 +126,7 @@ async function bootstrap() {
     const teams = [...teamIds];
     for (let r = 0; r < rounds; r++) {
         const scheduledTime = new Date();
-        scheduledTime.setDate(scheduledTime.getDate() + r); // One round per day
+        scheduledTime.setDate(scheduledTime.getDate() + r - 1); // Start with yesterday for first round
         scheduledTime.setHours(10, 0, 0, 0);
 
         for (let m = 0; m < matchesPerRound; m++) {

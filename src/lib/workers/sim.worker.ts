@@ -6,12 +6,12 @@ import type { GameState, PlayerAction } from '../../../packages/engine/types';
  */
 
 self.onmessage = async (e: MessageEvent) => {
-	const { type, startState, alphaCode, bravoCode, maxTicks = 500 } = e.data;
+	const { type, startState, alphaCode, bravoCode, alphaCompiled, bravoCompiled, maxTicks = 500 } = e.data;
 
 	if (type === 'SIMULATE_BRANCH') {
 		try {
-			const alphaLogic = createLogic(alphaCode);
-			const bravoLogic = createLogic(bravoCode);
+			const alphaLogic = alphaCompiled ? loadCompiled(alphaCompiled) : createLogic(alphaCode);
+			const bravoLogic = bravoCompiled ? loadCompiled(bravoCompiled) : createLogic(bravoCode);
 
 			const states: GameState[] = [startState];
 			let currentState = startState;
@@ -46,6 +46,15 @@ self.onmessage = async (e: MessageEvent) => {
 		}
 	}
 };
+
+function loadCompiled(code: string) {
+	try {
+		return new Function('sense', code);
+	} catch (err) {
+		console.error('Failed to load compiled logic:', err);
+		throw err;
+	}
+}
 
 function createLogic(code: string) {
 	try {

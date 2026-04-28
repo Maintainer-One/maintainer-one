@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { browser } from '$app/environment';
+	import { page } from '$app/state';
 	import { onMount, onDestroy } from 'svelte';
+	import { supabase } from '$lib/supabase';
+	import { createInitialState } from '../../../packages/engine/core';
 	import type { GameState } from '../../../packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
 	import StateInspector from '$lib/components/StateInspector.svelte';
 	import SimWorker from '$lib/workers/sim.worker?worker';
+	import { scratchpad } from '$lib/stores/scratchpad';
 
 	let replays = [
 		'match_2026-04-18T02-25-57-337Z.json',
@@ -32,23 +36,16 @@
 
 	// Logic Editing State
 	let activeTeam = $state<'A' | 'B'>('A');
-	let teamCodes = $state({
-		A: `// Team Alpha Logic
-import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+	let teamCodes = $state({ A: '', B: '' });
 
-export const teamLogic = (sense: SensedState): PlayerAction[] => {
-	const actions: PlayerAction[] = [];
-	// Move toward the center
-	return actions;
-};`,
-		B: `// Team Bravo Logic
-import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
-
-export const teamLogic = (sense: SensedState): PlayerAction[] => {
-	const actions: PlayerAction[] = [];
-	// Counter Alpha strategy
-	return actions;
-};`
+	// Sync scratchpad with state
+	$effect(() => {
+		const unsubscribe = scratchpad.subscribe(values => {
+			// Only update if current state is empty (first load)
+			if (!teamCodes.A && values.A) teamCodes.A = values.A;
+			if (!teamCodes.B && values.B) teamCodes.B = values.B;
+		});
+		return unsubscribe;
 	});
 
 	let currentLogicCode = $derived(teamCodes[activeTeam]);
@@ -58,6 +55,68 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		const response = await fetch(`/replays/${filename}`);
 		states = await response.json();
 		currentTick = 0;
+	}
+
+	async function loadMatchReplay(matchId: string) {
+		stopPlayback();
+		isSimulating = true;
+		
+		const { data: match, error } = await supabase
+			.from('matches')
+			.select(`
+				seed,
+				league_id,
+				leagues (protocol_version),
+				home_team:teams!home_team_id (id, active_version_id),
+				away_team:teams!away_team_id (id, active_version_id)
+			`)
+			.eq('id', matchId)
+			.single();
+
+		if (error || !match) {
+			console.error('Error fetching match:', error);
+			isSimulating = false;
+			return;
+		}
+
+		// @ts-ignore
+		const homeVersionId = match.home_team.active_version_id;
+		// @ts-ignore
+		const awayVersionId = match.away_team.active_version_id;
+
+		const { data: versions, error: versionError } = await supabase
+			.from('team_code_versions')
+			.select('id, source_code, compiled_code')
+			.in('id', [homeVersionId, awayVersionId]);
+
+		if (versionError || !versions || versions.length < 2) {
+			console.error('Error fetching versions:', versionError);
+			isSimulating = false;
+			return;
+		}
+
+		const homeV = versions.find(v => v.id === homeVersionId)!;
+		const awayV = versions.find(v => v.id === awayVersionId)!;
+
+		teamCodes.A = homeV.source_code;
+		teamCodes.B = awayV.source_code;
+
+		// Initialize from tick 0
+		// @ts-ignore
+		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version);
+		states = [initialState];
+		currentTick = 0;
+
+		// Request simulation from worker using the COMPILED code for perfect determinism
+		if (simWorker) {
+			simWorker.postMessage({
+				type: 'SIMULATE_BRANCH',
+				startState: initialState,
+				alphaCompiled: homeV.compiled_code,
+				bravoCompiled: awayV.compiled_code,
+				maxTicks: 500
+			});
+		}
 	}
 
 	function togglePlayback() {
@@ -114,7 +173,98 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	function handleCodeChange(newCode: string) {
 		teamCodes[activeTeam] = newCode;
+		scratchpad.updateCode(activeTeam, newCode);
 		requestSimulation();
+	}
+
+	async function publishLogic() {
+		const matchId = page.url.searchParams.get('match');
+		if (!matchId) {
+			alert('You must be viewing a specific match to publish logic for a team.');
+			return;
+		}
+
+		const confirmPublish = confirm(`Are you sure you want to publish this logic for Team ${activeTeam === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`);
+		if (!confirmPublish) return;
+
+		isSimulating = true;
+		
+		try {
+			// 1. Get the team ID from the match
+			const { data: match, error: matchError } = await supabase
+				.from('matches')
+				.select(`
+					home_team_id,
+					away_team_id
+				`)
+				.eq('id', matchId)
+				.single();
+
+			if (matchError || !match) throw new Error('Could not find match team data');
+
+			const teamId = activeTeam === 'A' ? match.home_team_id : match.away_team_id;
+			const code = teamCodes[activeTeam];
+
+			// 2. Transpile (Mocked for now - we would use esbuild in a real backend, 
+			// but for browser-side we'll just use the source code as compiled for now 
+			// if it's already JS-compatible, or we'd need a worker-side esbuild)
+			// For this MVP, we'll store the "cleaned" code from createLogic
+			
+			// Let's use a simple regex-based "transpiler" like in the worker
+			const cleanedCode = code
+				.replace(/import\s+[\s\S]*?;/g, '')
+				.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '')
+				.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ')
+				.trim();
+			
+			const compiledCode = `
+				const module = { exports: {} };
+				const exports = module.exports;
+				${cleanedCode};
+				const logic = typeof teamLogic !== 'undefined' ? teamLogic : (module.exports.teamLogic || module.exports.default || exports.teamLogic);
+				if (!logic) throw new Error("No logic function found.");
+				return logic(sense);
+			`;
+
+			// 3. Get next version number
+			const { data: versions, error: vError } = await supabase
+				.from('team_code_versions')
+				.select('version_number')
+				.eq('team_id', teamId)
+				.order('version_number', { ascending: false })
+				.limit(1);
+
+			const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
+
+			// 4. Insert new version
+			const { data: newV, error: insError } = await supabase
+				.from('team_code_versions')
+				.insert({
+					team_id: teamId,
+					version_number: nextVersion,
+					source_code: code,
+					compiled_code: compiledCode
+				})
+				.select()
+				.single();
+
+			if (insError) throw insError;
+
+			// 5. Update team's active version
+			const { error: updError } = await supabase
+				.from('teams')
+				.update({ active_version_id: newV.id })
+				.eq('id', teamId);
+
+			if (updError) throw updError;
+
+			alert(`Success! Team ${activeTeam === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
+		} catch (err: any) {
+			console.error('Publish Error:', err);
+			alert(`Failed to publish: ${err.message}`);
+		} finally {
+			isSimulating = false;
+		}
 	}
 
 	function requestSimulation() {
@@ -136,8 +286,6 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	}
 
 	onMount(async () => {
-		loadReplay(selectedReplay);
-
 		if (browser) {
 			// Initialize Worker
 			simWorker = new SimWorker();
@@ -147,13 +295,23 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					states = [...states.slice(0, currentTick), ...newBranch];
 					isSimulating = false;
 					errorMessage = null;
+					
+					// Auto-play if it's a fresh match load
+					if (currentTick === 0) startPlayback();
 				} else if (e.data.type === 'SIMULATION_ERROR') {
 					console.error('Simulation Error:', e.data.error);
 					errorMessage = e.data.error;
 					isSimulating = false;
-					branchTick = null; // Clear branch point on error
+					branchTick = null;
 				}
 			};
+
+			const matchId = page.url.searchParams.get('match');
+			if (matchId) {
+				await loadMatchReplay(matchId);
+			} else {
+				loadReplay(selectedReplay);
+			}
 
 			// Initialize Smart Editor
 			Editor = (await import('$lib/components/SmartEditor.svelte')).default;
@@ -192,8 +350,11 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 							Calculating...
 						</span>
 					{:else}
-						<button class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20">
-							Save
+						<button 
+							onclick={publishLogic}
+							class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20"
+						>
+							Publish
 						</button>
 					{/if}
 				</div>

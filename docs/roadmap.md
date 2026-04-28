@@ -23,7 +23,12 @@ The platform is driven by a unified permission system where roles are additive. 
     - **Protocol Versioning Engine**: Decoupled engine from rule-sets with a registry pattern.
     - **Automated Season Runner**: `Deno.cron` ready runner for scheduled matches.
     - **Code-Locked Determinism**: Database-backed version control for team logic ensuring perfect replays.
-    - **Inaugural Bootstrap**: 6 varied team logic variations seeded with a full round-robin schedule.
+    - **Inaugural Bootstrap**: 6 varied team logic variations (Azure, Beige, Cobalt, etc.) seeded with a full round-robin schedule.
+- **Phase 4 (Inaugural Dashboard)**: Live Command Center and deterministic match viewer complete.
+    - **Live Standings & Feed**: Real-time integration with Supabase matches and teams.
+    - **Diverse Identity**: Implementation of the Amber, Beige, Crimson, Denim, Emerald, Fuchsia (ABCDEF) color palette.
+    - **Replay Determinism**: Browser-side re-simulation using database seeds and code versions.
+    - **Publishing Workflow**: Integrated scratchpad with versioned database persistence.
 
 **The Testing Mandate (Core Pillar):**
 - **Regression Safety**: All core simulation and protocol logic is covered by a "Headache-Free" testing suite using `deno test`.
@@ -34,7 +39,7 @@ The platform is driven by a unified permission system where roles are additive. 
 
 ## Upcoming Phases
 
-### Phase 4: GitHub Auth & The Contributor Ecosystem
+### Phase 5: GitHub Auth & The Contributor Ecosystem
 *The goal is to seamlessly integrate the community and establish the formal RBAC foundation.*
 
 - [ ] **GitHub Authentication**: Utilize GitHub OAuth as the primary authentication method. This natively links Contributors' identities to their code repositories and PRs.
@@ -43,7 +48,7 @@ The platform is driven by a unified permission system where roles are additive. 
     - Initially powered by user submissions.
     - Implementing targeted scraping for highly trusted profiles (e.g., reliable Twitter feeds or YouTube channels).
 
-### Phase 5: The Protocol RFC Process & Reputation
+### Phase 6: The Protocol RFC Process & Reputation
 *The goal is to formalize how the game evolves and how trust is built.*
 
 - [ ] **TC39-Style Protocol RFCs**: Formalize the lifecycle for protocol and rule changes, modeled robustly on the TC39 process (Stage 0: Strawperson → Stage 4: Finished).
