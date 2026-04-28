@@ -30,6 +30,11 @@ The platform is driven by a unified permission system where roles are additive. 
     - **Replay Determinism**: Browser-side re-simulation using database seeds and code versions.
     - **Publishing Workflow**: Integrated scratchpad with versioned database persistence.
 
+### Phase 4.5: UX Polish & Performance
+*The goal is to refine the "vibe" and performance of the platform before locking down the architecture with Auth.*
+
+- [ ] **Establish the Deep Polish Punchlist**: Compile and prioritize the specific UI/UX tweaks, micro-animations, and performance optimizations required for a production-ready feel.
+
 **The Testing Mandate (Core Pillar):**
 - **Regression Safety**: All core simulation and protocol logic is covered by a "Headache-Free" testing suite using `deno test`.
 - **Continuous Integration**: Automated CI via GitHub Actions ensures no push breaks the engine or protocol determinism.
