@@ -4,7 +4,6 @@
 	import { onMount, onDestroy } from 'svelte';
 	import type { GameState } from '../../../packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
-	import Editor from '$lib/components/Editor.svelte';
 
 	let replays = [
 		'match_2026-04-18T02-25-57-337Z.json',
@@ -16,6 +15,9 @@
 	let isPlaying = $state(false);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
+	
+	// Dynamically loaded Editor component
+	let Editor: any = $state();
 
 	// Logic Editing State
 	let activeTeam = $state<'A' | 'B'>('A');
@@ -80,7 +82,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		// TODO: In Phase 1.1, trigger the Web Worker to re-simulate from currentTick
 	}
 
-	onMount(() => loadReplay(selectedReplay));
+	onMount(async () => {
+		loadReplay(selectedReplay);
+		// Load Editor only on client
+		if (browser) {
+			Editor = (await import('$lib/components/Editor.svelte')).default;
+		}
+	});
 	
 	// Client-side cleanup only
 	$effect(() => {
@@ -117,8 +125,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			</div>
 		</header>
 		<div class="flex-1 p-4">
-			{#if browser}
-				<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+			{#if browser && Editor}
+				<svelte:component this={Editor} code={currentLogicCode} onCodeChange={handleCodeChange} />
 			{/if}
 		</div>
 		<footer class="border-t border-white/5 p-4 text-[9px] text-zinc-500">
