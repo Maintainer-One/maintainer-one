@@ -1,8 +1,10 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { browser } from '$app/environment';
 	import { onMount, onDestroy } from 'svelte';
 	import type { GameState } from '../../../packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
+	import Editor from '$lib/components/Editor.svelte';
 
 	let replays = [
 		'match_2026-04-18T02-25-57-337Z.json',
@@ -14,6 +16,29 @@
 	let isPlaying = $state(false);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
+
+	// Logic Editing State
+	let activeTeam = $state<'A' | 'B'>('A');
+	let teamCodes = $state({
+		A: `// Team Alpha Logic
+import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+
+export const teamLogic = (sense: SensedState): PlayerAction[] => {
+	const actions: PlayerAction[] = [];
+	// Move toward the center
+	return actions;
+};`,
+		B: `// Team Bravo Logic
+import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+
+export const teamLogic = (sense: SensedState): PlayerAction[] => {
+	const actions: PlayerAction[] = [];
+	// Counter Alpha strategy
+	return actions;
+};`
+	});
+
+	let currentLogicCode = $derived(teamCodes[activeTeam]);
 
 	async function loadReplay(filename: string) {
 		stopPlayback();
@@ -50,15 +75,59 @@
 		loadReplay(selectedReplay);
 	}
 
+	function handleCodeChange(newCode: string) {
+		teamCodes[activeTeam] = newCode;
+		// TODO: In Phase 1.1, trigger the Web Worker to re-simulate from currentTick
+	}
+
 	onMount(() => loadReplay(selectedReplay));
-	onDestroy(() => stopPlayback());
+	
+	// Client-side cleanup only
+	$effect(() => {
+		return () => stopPlayback();
+	});
 
 	let currentState = $derived(states[currentTick]);
 </script>
 
 <div class="flex h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 font-sans">
-	<!-- Main Stage: Field + Controls -->
-	<main class="flex flex-1 flex-col p-6 lg:p-10">
+	<!-- Left Side: Editor (New) -->
+	<aside class="flex w-[450px] flex-col border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl">
+		<header class="flex h-16 flex-col border-b border-white/5 px-6 pt-3">
+			<div class="mb-2 flex items-center justify-between">
+				<h2 class="text-xs font-black uppercase tracking-widest text-emerald-500">Logic Editor</h2>
+				<button class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20">
+					Save
+				</button>
+			</div>
+			<!-- Team Tabs -->
+			<div class="flex gap-4">
+				<button 
+					onclick={() => activeTeam = 'A'}
+					class="pb-2 text-[10px] font-bold uppercase tracking-widest transition-all {activeTeam === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-zinc-500 hover:text-zinc-300'}"
+				>
+					Alpha
+				</button>
+				<button 
+					onclick={() => activeTeam = 'B'}
+					class="pb-2 text-[10px] font-bold uppercase tracking-widest transition-all {activeTeam === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-zinc-500 hover:text-zinc-300'}"
+				>
+					Bravo
+				</button>
+			</div>
+		</header>
+		<div class="flex-1 p-4">
+			{#if browser}
+				<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+			{/if}
+		</div>
+		<footer class="border-t border-white/5 p-4 text-[9px] text-zinc-500">
+			* Editing code will branch the simulation from the current tick (Coming Soon).
+		</footer>
+	</aside>
+
+	<!-- Middle: Field + Controls -->
+	<main class="flex flex-1 flex-col p-6 lg:p-10 bg-zinc-950">
 		<header class="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
 			<div class="flex items-center gap-4">
 				<a href="{base}/" class="text-zinc-500 transition-colors hover:text-emerald-500" aria-label="Go Back">
@@ -75,12 +144,12 @@
 
 		{#if currentState}
 			<div class="flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden min-h-0">
-				<!-- Pitch: Flex-1 with min-h-0 ensures it takes remaining height without overflowing -->
+				<!-- Pitch -->
 				<div class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden p-4">
 					<ReplayGrid state={currentState} />
 				</div>
 
-				<!-- Playback Hub (Under Field) -->
+				<!-- Playback Hub -->
 				<div class="w-full max-w-2xl space-y-4 rounded-2xl border border-white/10 bg-zinc-900/80 p-5 shadow-2xl backdrop-blur-xl">
 					<div class="flex items-center gap-5">
 						<button
@@ -127,8 +196,8 @@
 		{/if}
 	</main>
 
-	<!-- Analysis Sidebar -->
-	<aside class="flex w-80 flex-col border-l border-white/5 bg-zinc-900/30 p-6 backdrop-blur-3xl lg:p-8">
+	<!-- Analysis Sidebar (Right) -->
+	<aside class="flex w-72 flex-col border-l border-white/5 bg-zinc-900/30 p-6 backdrop-blur-3xl lg:p-8">
 		<div class="mb-8">
 			<label for="replay-select" class="mb-2 block text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
 				Match Library
@@ -167,13 +236,6 @@
 						<div class="text-2xl font-black text-rose-400">{currentState?.teams.B.score ?? 0}</div>
 					</div>
 				</div>
-
-				<div class="rounded-xl border border-white/5 bg-zinc-800/20 p-4">
-					<div class="mb-1 text-[9px] font-black text-zinc-500 uppercase">Current Winner</div>
-					<div class="text-lg font-black italic tracking-tighter text-white uppercase">
-						{currentState?.winner ? `Team ${currentState.winner}` : 'IN PROGRESS'}
-					</div>
-				</div>
 			</section>
 
 			<!-- Protocol Info -->
@@ -184,11 +246,6 @@
 				</p>
 			</section>
 		</div>
-
-		<!-- Footer -->
-		<footer class="mt-8 border-t border-white/5 pt-6 text-[10px] font-semibold text-zinc-600 uppercase tracking-widest">
-			Maintainer One v0.0.1
-		</footer>
 	</aside>
 </div>
 

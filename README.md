@@ -97,6 +97,7 @@ Maintainer One is built with a modern, high-performance web stack:
   Human).
 - [**Architecture**](docs/ARCHITECTURE.md): Deep dive into the Engine, State,
   and Protocols.
+- [**Roadmap**](docs/roadmap.md): Upcoming phases and long-term vision.
 - [**Protocol Index**](packages/protocols/README.md): Details on the current and
   historical game rules.
 
