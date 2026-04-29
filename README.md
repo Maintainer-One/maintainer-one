@@ -39,6 +39,10 @@ Maintainer One embraces the "Open Source" nature of sports strategy. Team logic
 is public knowledge, encouraging a collaborative yet hyper-competitive ecosystem
 where every strategy can be analyzed, countered, and evolved by the community.
 
+### 4. Thematic Identity
+
+Every team is a brand. Maintainer One features a fully themeable UI that adapts to team colors and context, providing a unique "Command Center" experience for every maintainer and high-stakes matchup.
+
 ---
 
 ## 🛠 Tech Stack

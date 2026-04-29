@@ -38,7 +38,7 @@
 </script>
 
 <div class="relative flex overflow-x-hidden border-b border-white/10 bg-black/40 py-2 text-sm">
-	<div class="animate-marquee whitespace-nowrap text-white/70">
+	<div class="animate-marquee whitespace-nowrap text-[var(--color-brand-secondary)]/70">
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
 				<BrandLogo size="size-4" />
@@ -48,7 +48,7 @@
 	</div>
 	
 	<!-- Duplicate for seamless looping -->
-	<div class="absolute top-2 animate-marquee2 whitespace-nowrap text-white/70">
+	<div class="absolute top-2 animate-marquee2 whitespace-nowrap text-[var(--color-brand-secondary)]/70">
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
 				<BrandLogo size="size-4" />

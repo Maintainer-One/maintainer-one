@@ -53,7 +53,7 @@
 
 <div class="flex flex-col gap-4">
 	<div class="flex items-center justify-between border-b border-white/10 pb-2">
-		<h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+		<h2 class="text-xl font-bold tracking-tight text-[var(--color-brand-secondary)] flex items-center gap-2">
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
 			High-Impact Matches
 		</h2>
@@ -89,15 +89,15 @@
 							<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.home_team.color}44; border: 2px solid {match.home_team.color}88; color: {match.home_team.color}">
 								{match.home_team.name.charAt(0)}
 							</div>
-							<span class="text-xs font-bold text-white/80 line-clamp-1">{match.home_team.name}</span>
+							<span class="text-xs font-bold text-[var(--color-brand-secondary)]/80 line-clamp-1">{match.home_team.name}</span>
 						</div>
 
 						<!-- Score -->
 						<div class="flex flex-col items-center justify-center px-4">
 							<div class="text-2xl font-black tracking-tighter text-white">
-								{match.home_score ?? 0} <span class="text-white/30">-</span> {match.away_score ?? 0}
+								{match.home_score ?? 0} <span class="text-[var(--color-brand-secondary)]/20">-</span> {match.away_score ?? 0}
 							</div>
-							<span class="text-[10px] uppercase text-white/40">{formatTime(match.scheduled_time)}</span>
+							<span class="text-[10px] uppercase text-[var(--color-brand-secondary)]/40 font-bold tracking-wider">{formatTime(match.scheduled_time)}</span>
 						</div>
 
 						<!-- Team B -->
@@ -105,7 +105,7 @@
 							<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.away_team.color}44; border: 2px solid {match.away_team.color}88; color: {match.away_team.color}">
 								{match.away_team.name.charAt(0)}
 							</div>
-							<span class="text-xs font-bold text-white/80 line-clamp-1">{match.away_team.name}</span>
+							<span class="text-xs font-bold text-[var(--color-brand-secondary)]/80 line-clamp-1">{match.away_team.name}</span>
 						</div>
 					</div>
 

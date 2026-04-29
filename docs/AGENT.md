@@ -31,7 +31,16 @@ We ensure stability through a "Headache-Free" testing strategy.
 - **Pragmatic Scope**: Focus on behavior and contracts, not styling or
   implementation details.
 
-### 3. Deno & SvelteKit Boundary
+### 3. Thematic UI & Brand Variables
+
+We maintain a strictly themeable interface to support team-specific branding and future lighting modes.
+
+- **Variable-First Styling**: Never use hardcoded hex codes for brand colors or backgrounds. Always use the CSS variables defined in `@theme` (e.g., `var(--color-brand-primary)`).
+- **Branded Neutrals**: Avoid pure white (`#FFFFFF`) or generic grays for text. Use opacities of the brand secondary color (e.g., `text-[var(--color-brand-secondary)]/80`) to ensure text "breathes" the same air as the theme.
+- **Dynamic Assets**: Brand assets (Logo, Favicon) must be dynamic. The `BrandLogo` component uses inline SVGs for theme awareness, and the root layout handles dynamic favicon generation via Data URIs.
+- **Contrast Guard**: When using team-specific colors for interactive text, use `color-mix` to ensure legibility against the dark background.
+
+### 4. Deno & SvelteKit Boundary
 
 - **Engine Logic**: Must be written in Deno-compatible TypeScript (standard
   modules, no Node built-ins) to ensure it can run on both the server and the

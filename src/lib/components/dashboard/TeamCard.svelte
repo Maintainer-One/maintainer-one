@@ -37,7 +37,7 @@
 		</div>
 
 		<div class="flex items-center justify-between text-sm">
-			<div class="text-white/60">Record: <span class="text-white font-medium">{record}</span></div>
+			<div class="text-[var(--color-brand-secondary)]/60">Record: <span class="text-[var(--color-brand-secondary)] font-medium">{record}</span></div>
 			<button
 				class="text-xs font-bold transition-all hover:translate-x-1"
 				style="color: color-mix(in srgb, {color}, white 60%)"
