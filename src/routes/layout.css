@@ -27,6 +27,10 @@ body {
 		@apply border border-white/10 bg-white/5 backdrop-blur-md;
 	}
 
+	.glass-panel {
+		@apply border border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl;
+	}
+
 	.bg-glass-heavy {
 		@apply border border-white/20 bg-white/10 backdrop-blur-lg;
 	}

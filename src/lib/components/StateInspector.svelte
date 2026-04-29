@@ -12,12 +12,12 @@
 <div class="font-mono text-[10px]">
 	<button 
 		onclick={() => isOpen = !isOpen}
-		class="flex items-center gap-1.5 py-1 text-emerald-500/80 hover:text-emerald-400 transition-colors"
+		class="flex items-center gap-1.5 py-1 text-[var(--color-brand-primary)] hover:text-[var(--color-brand-secondary)] transition-colors"
 	>
 		<span class="text-[8px] transition-transform {isOpen ? 'rotate-90' : ''}">▶</span>
 		<span class="font-black uppercase tracking-tighter">{label}</span>
 		{#if !isOpen}
-			<span class="text-zinc-600">{Array.isArray(data) ? `[${data.length}]` : '{...}'}</span>
+			<span class="text-white/20">{Array.isArray(data) ? `[${data.length}]` : '{...}'}</span>
 		{/if}
 	</button>
 
@@ -29,15 +29,15 @@
 						<StateInspector data={value} label={key} />
 					{:else}
 						<div class="flex items-baseline gap-2 py-0.5">
-							<span class="text-zinc-500">{key}:</span>
-							<span class="text-blue-400">
+							<span class="text-white/30">{key}:</span>
+							<span class="text-[var(--color-brand-secondary)] font-bold">
 								{typeof value === 'string' ? `"${value}"` : value}
 							</span>
 						</div>
 					{/if}
 				{/each}
 			{:else}
-				<div class="text-blue-400">{data}</div>
+				<div class="text-[var(--color-brand-secondary)] font-bold">{data}</div>
 			{/if}
 		</div>
 	{/if}

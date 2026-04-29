@@ -330,29 +330,29 @@
 </script>
 
 <div 
-	class="flex h-screen w-full overflow-hidden bg-zinc-950 text-zinc-100 selection:bg-emerald-500/30 font-sans"
+	class="flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 selection:bg-[var(--color-brand-primary)]/30 font-sans"
 	onmousemove={handleMouseMove}
 	onmouseup={stopResizing}
 	onmouseleave={stopResizing}
 >
-	<!-- Left Side: Editor (New) -->
+	<!-- Left Side: Editor -->
 	<aside 
-		class="flex flex-col border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl"
+		class="flex flex-col border-r border-white/5 bg-black/20 backdrop-blur-xl"
 		style="width: {asideWidth}px"
 	>
-		<header class="flex h-16 flex-col border-b border-white/5 px-6 pt-3">
+		<header class="flex h-20 flex-col border-b border-white/5 px-6 pt-4">
 			<div class="mb-2 flex items-center justify-between">
-				<h2 class="text-xs font-black uppercase tracking-widest text-emerald-500">Logic Editor</h2>
+				<h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">Logic Editor</h2>
 				<div class="flex items-center gap-3">
 					{#if isSimulating}
-						<span class="flex items-center gap-1.5 text-[9px] font-bold text-emerald-500/70 uppercase">
-							<span class="h-1.5 w-1.5 animate-ping rounded-full bg-emerald-500"></span>
+						<span class="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-brand-primary)]/70 uppercase">
+							<span class="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--color-brand-primary)]"></span>
 							Calculating...
 						</span>
 					{:else}
 						<button 
 							onclick={publishLogic}
-							class="rounded bg-emerald-500/10 px-3 py-1 text-[10px] font-bold text-emerald-500 hover:bg-emerald-500/20"
+							class="rounded-lg bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-colors uppercase tracking-wider"
 						>
 							Publish
 						</button>
@@ -365,16 +365,16 @@
 				</div>
 			{/if}
 			<!-- Team Tabs -->
-			<div class="flex gap-4">
+			<div class="flex gap-6">
 				<button 
 					onclick={() => activeTeam = 'A'}
-					class="pb-2 text-[10px] font-bold uppercase tracking-widest transition-all {activeTeam === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-zinc-500 hover:text-zinc-300'}"
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTeam === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-white/20 hover:text-white/40'}"
 				>
 					Alpha
 				</button>
 				<button 
 					onclick={() => activeTeam = 'B'}
-					class="pb-2 text-[10px] font-bold uppercase tracking-widest transition-all {activeTeam === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-zinc-500 hover:text-zinc-300'}"
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTeam === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-white/20 hover:text-white/40'}"
 				>
 					Bravo
 				</button>
@@ -385,7 +385,7 @@
 				<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
 			{/if}
 		</div>
-		<footer class="border-t border-white/5 p-4 text-[9px] text-zinc-500">
+		<footer class="border-t border-white/5 p-4 text-[10px] text-white/20 font-medium italic">
 			* Editing code will branch the simulation from the current tick.
 		</footer>
 	</aside>
@@ -398,56 +398,59 @@
 	></div>
 
 	<!-- Middle: Field + Controls -->
-	<main class="flex flex-1 flex-col p-6 lg:p-10 bg-zinc-950">
-		<header class="mb-6 flex items-center justify-between border-b border-white/5 pb-4">
-			<div class="flex items-center gap-4">
-				<a href="{base}/" class="text-zinc-500 transition-colors hover:text-emerald-500" aria-label="Go Back">
-					<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+	<main class="flex flex-1 flex-col p-6 lg:p-10 bg-[var(--color-background-dark)]">
+		<header class="mb-10 flex items-center justify-between border-b border-white/5 pb-6">
+			<div class="flex items-center gap-6">
+				<a href="{base}/" class="text-white/20 transition-all hover:text-[var(--color-brand-primary)] hover:scale-110" aria-label="Go Back">
+					<svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
 				</a>
-				<h1 class="text-2xl font-black italic tracking-tighter text-white uppercase leading-none">
-					Film Room
-				</h1>
+				<div class="flex flex-col">
+					<h1 class="text-3xl font-black tracking-tighter text-white uppercase leading-none">
+						Film <span class="text-[var(--color-brand-primary)]">Room</span>
+					</h1>
+					<p class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1">Deterministic Replay & Branching</p>
+				</div>
 			</div>
-			<div class="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-widest">
-				<span class="h-2 w-2 rounded-full animate-pulse bg-emerald-500"></span> Live Perspective
+			<div class="flex items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[10px] font-black text-white/40 uppercase tracking-[0.15em] border border-white/5">
+				<span class="h-2 w-2 rounded-full animate-pulse bg-[var(--color-brand-primary)]"></span> Live Analysis
 			</div>
 		</header>
 
 		{#if currentState}
-			<div class="flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden min-h-0">
+			<div class="flex flex-1 flex-col items-center justify-center gap-10 overflow-hidden min-h-0">
 				<!-- Pitch -->
 				<div class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden p-4">
 					<ReplayGrid state={currentState} />
 				</div>
 
-				<!-- Playback Hub -->
-				<div class="w-full max-w-2xl space-y-4 rounded-2xl border border-white/10 bg-zinc-900/80 p-5 shadow-2xl backdrop-blur-xl">
-					<div class="flex items-center gap-5">
-						<div class="flex items-center gap-2">
+				<!-- Playback Hub (Floating Glass) -->
+				<div class="w-full max-w-3xl space-y-5 rounded-3xl border border-white/10 bg-black/40 p-6 shadow-2xl backdrop-blur-2xl">
+					<div class="flex items-center gap-6">
+						<div class="flex items-center gap-3">
 							<button
 								onclick={stepBackward}
 								aria-label="Previous Tick"
-								class="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-zinc-700 active:scale-90"
+								class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/40 transition-all hover:bg-white/10 hover:text-white active:scale-90 border border-white/5"
 							>
-								<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
 							</button>
 							<button
 								onclick={togglePlayback}
 								aria-label={isPlaying ? 'Pause' : 'Play'}
-								class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-black transition-all hover:scale-110 active:scale-95 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+								class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-background-dark)] transition-all hover:scale-110 active:scale-95 shadow-lg shadow-[var(--color-brand-primary)]/20"
 							>
 								{#if isPlaying}
-									<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+									<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
 								{:else}
-									<svg class="h-5 w-5 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+									<svg class="h-6 w-6 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
 								{/if}
 							</button>
 							<button
 								onclick={stepForward}
 								aria-label="Next Tick"
-								class="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-all hover:bg-zinc-700 active:scale-90"
+								class="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-white/40 transition-all hover:bg-white/10 hover:text-white active:scale-90 border border-white/5"
 							>
-								<svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
 							</button>
 						</div>
 
@@ -457,11 +460,11 @@
 								min="0"
 								max={states.length - 1}
 								bind:value={currentTick}
-								class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-zinc-800 accent-emerald-500"
+								class="h-2 w-full cursor-pointer appearance-none rounded-full bg-white/5 accent-[var(--color-brand-primary)]"
 							/>
 							{#if branchTick !== null}
 								<div 
-									class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] pointer-events-none"
+									class="absolute top-0 bottom-0 w-0.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,1)] pointer-events-none"
 									style="left: {(branchTick / (states.length - 1)) * 100}%"
 									title="Simulation Branch Point"
 								></div>
@@ -472,7 +475,7 @@
 							<select
 								bind:value={playSpeed}
 								onchange={stopPlayback}
-								class="rounded-md border border-white/5 bg-zinc-800 px-3 py-1.5 text-[10px] font-black uppercase text-white outline-none hover:bg-zinc-700 focus:ring-1 focus:ring-emerald-500"
+								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 focus:ring-1 focus:ring-[var(--color-brand-primary)]"
 							>
 								<option value={1500}>0.5x</option>
 								<option value={750}>1.0x</option>
@@ -484,22 +487,22 @@
 				</div>
 			</div>
 		{:else}
-			<div class="flex flex-1 items-center justify-center italic text-zinc-600">
-				Decoding replay buffer...
+			<div class="flex flex-1 items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm">
+				<span class="animate-pulse">Decoding replay buffer...</span>
 			</div>
 		{/if}
 	</main>
 
 	<!-- Analysis Sidebar (Right) -->
-	<aside class="flex w-72 flex-col border-l border-white/5 bg-zinc-900/30 p-6 backdrop-blur-3xl lg:p-8">
-		<div class="mb-8">
-			<label for="replay-select" class="mb-2 block text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
+	<aside class="flex w-80 flex-col border-l border-white/5 bg-black/20 p-6 backdrop-blur-3xl lg:p-8">
+		<div class="mb-10">
+			<label for="replay-select" class="mb-3 block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
 				Match Library
 			</label>
 			<select
 				id="replay-select"
 				value={selectedReplay}
-				class="w-full rounded-lg border border-white/10 bg-zinc-950 px-4 py-3 text-xs font-bold text-white outline-none focus:ring-2 focus:ring-emerald-500/50"
+				class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-black text-[var(--color-brand-secondary)] outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]/50 transition-all"
 				onchange={handleSelection}
 			>
 				{#each replays as replay}
@@ -508,36 +511,36 @@
 			</select>
 		</div>
 
-		<div class="flex-1 space-y-6 overflow-y-auto no-scrollbar">
+		<div class="flex-1 space-y-8 overflow-y-auto no-scrollbar">
 			<!-- Live Stats -->
 			<section class="space-y-4">
-				<h3 class="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Match Analysis</h3>
+				<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Match Analysis</h3>
 				
-				<div class="rounded-xl border border-white/5 bg-white/5 p-4 shadow-sm">
-					<div class="mb-1 text-[9px] font-black text-zinc-500 uppercase">Elapsed Ticks</div>
-					<div class="text-3xl font-black tracking-tight text-white">
-						{currentTick} <span class="text-zinc-600">/ {states.length - 1}</span>
+				<div class="rounded-2xl border border-white/5 bg-white/5 p-5 shadow-inner">
+					<div class="mb-1 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">Elapsed Ticks</div>
+					<div class="text-3xl font-black tracking-tighter text-white">
+						{currentTick} <span class="text-white/10">/ {states.length - 1}</span>
 					</div>
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
-					<div class="rounded-xl border border-white/5 bg-blue-500/5 p-4">
-						<div class="mb-1 text-[9px] font-black text-blue-500 uppercase">Alpha</div>
+					<div class="rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
+						<div class="mb-1 text-[9px] font-black text-blue-500 uppercase tracking-wider">Alpha</div>
 						<div class="text-2xl font-black text-blue-400">{currentState?.teams.A.score ?? 0}</div>
 					</div>
-					<div class="rounded-xl border border-white/5 bg-rose-500/5 p-4">
-						<div class="mb-1 text-[9px] font-black text-rose-500 uppercase">Bravo</div>
+					<div class="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
+						<div class="mb-1 text-[9px] font-black text-rose-500 uppercase tracking-wider">Bravo</div>
 						<div class="text-2xl font-black text-rose-400">{currentState?.teams.B.score ?? 0}</div>
 					</div>
 				</div>
 
 				<!-- Live State Inspector -->
-				<div class="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
-					<div class="mb-3 flex items-center justify-between">
-						<h4 class="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Live Data</h4>
-						<span class="text-[8px] font-bold text-emerald-500/50 uppercase">Tick {currentTick}</span>
+				<div class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
+					<div class="mb-4 flex items-center justify-between">
+						<h4 class="text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">Live Data</h4>
+						<span class="text-[8px] font-bold text-[var(--color-brand-primary)]/40 uppercase tracking-widest">Tick {currentTick}</span>
 					</div>
-					<div class="max-h-64 overflow-y-auto no-scrollbar">
+					<div class="max-h-72 overflow-y-auto no-scrollbar">
 						{#if currentState}
 							<StateInspector data={currentState} />
 						{/if}
@@ -547,12 +550,12 @@
 
 			<!-- Protocol Reference -->
 			<section class="space-y-4">
-				<h3 class="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Protocol Reference</h3>
+				<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Protocol Reference</h3>
 				
-				<div class="space-y-2">
-					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
-						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">SensedState</div>
-						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
+				<div class="space-y-3">
+					<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
+						<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">SensedState</div>
+						<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
   tick: number,
   players: Player[],
   pointZone: PointZone,
@@ -560,31 +563,22 @@
 }`}</code></pre>
 					</div>
 
-					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
-						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">Player</div>
-						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
+					<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
+						<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">Player</div>
+						<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
   id: string,
   team: 'A' | 'B',
   position: { x, y },
   status: 'active' | ...
 }`}</code></pre>
 					</div>
-
-					<div class="rounded-xl border border-white/5 bg-zinc-900/50 p-4">
-						<div class="mb-2 text-[9px] font-black text-emerald-500 uppercase">Action</div>
-						<pre class="text-[10px] leading-relaxed text-zinc-400"><code>{`{
-  playerId: string,
-  type: 'MOVE' | 'STAY',
-  direction?: 'UP' | 'DOWN' | ...
-}`}</code></pre>
-					</div>
 				</div>
 			</section>
 
 			<!-- Protocol Info -->
-			<section class="rounded-xl border border-emerald-500/10 bg-emerald-500/5 p-4">
-				<h3 class="mb-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest">About V1</h3>
-				<p class="text-xs leading-relaxed text-zinc-400">
+			<section class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
+				<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">About V1</h3>
+				<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium">
 					V1: 10x10 Grid. Point zone at (4,5). Teams start at opposite ends. First to capture wins.
 				</p>
 			</section>
