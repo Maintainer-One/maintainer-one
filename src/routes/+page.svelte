@@ -58,22 +58,27 @@
 		<div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
 			
 			<!-- Featured Live Action or Hero Section -->
-			<div class="group relative overflow-hidden rounded-2xl border border-white/10 bg-glass p-8 shadow-2xl">
-				<div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#4facfe]/20 to-[#00f2fe]/20 opacity-50 blur-xl transition duration-1000 group-hover:opacity-100"></div>
+			<div class="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl p-8 shadow-2xl">
+				<div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-brand-secondary)]/10 opacity-50 blur-xl transition duration-1000 group-hover:opacity-100"></div>
 				
-				<div class="relative z-10 flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
+				<div class="relative z-10 flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
 					<div>
-						<div class="mb-2 inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-bold text-red-400">
-							<span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
-							MATCH OF THE WEEK
+						<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
+							<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
+							Match of the Week
 						</div>
-						<h2 class="text-3xl font-black text-white">Crimson <span class="text-white/30">vs</span> Denim</h2>
-						<p class="mt-1 max-w-md text-sm text-white/60">Watch as the top contenders battle for zone control in a high-stakes match.</p>
+						<h2 class="text-4xl font-black text-white tracking-tighter">
+							Crimson <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span> Denim
+						</h2>
+						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">Watch as the top contenders battle for zone control in a high-stakes match.</p>
 					</div>
 					
-					<a href="{base}/film-room" class="mt-4 flex items-center justify-center rounded-xl bg-white/10 px-6 py-3 font-bold text-white backdrop-blur-md transition-all hover:bg-white/20 hover:scale-105 md:mt-0">
+					<a 
+						href="/film-room" 
+						class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
+					>
 						Spectate Now
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 					</a>
 				</div>
 			</div>
