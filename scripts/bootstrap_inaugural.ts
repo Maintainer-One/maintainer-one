@@ -1,5 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js';
 import "jsr:@std/dotenv/load";
+import { getProtocol } from '../packages/protocols/registry.ts';
 
 const supabaseUrl = Deno.env.get("PUBLIC_SUPABASE_URL");
 const supabaseKey = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY");
@@ -118,46 +119,32 @@ async function bootstrap() {
         }
     }
 
-    // 3. Generate Round-Robin Schedule (5 rounds for 6 teams)
+    // 3. Generate Schedule using Protocol
     console.log("📅 Generating Schedule...");
-    const rounds = 5;
-    const matchesPerRound = 3;
-    
-    const teams = [...teamIds];
-    for (let r = 0; r < rounds; r++) {
-        const scheduledTime = new Date();
-        scheduledTime.setDate(scheduledTime.getDate() + r - 1); // Start with yesterday for first round
-        scheduledTime.setHours(10, 0, 0, 0);
+    const protocol = getProtocol('v1');
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 1); // Start with yesterday
+    startDate.setHours(10, 0, 0, 0);
 
-        for (let m = 0; m < matchesPerRound; m++) {
-            const home = teams[m];
-            const away = teams[teams.length - 1 - m];
+    const matchesToCreate = protocol.generateSchedule(
+        protocol.defaultConfig,
+        teamIds.map(id => ({ id })),
+        startDate
+    );
 
-            const { error: matchError } = await supabase
-                .from('matches')
-                .insert({
-                    league_id: league.id,
-                    home_team_id: home,
-                    away_team_id: away,
-                    scheduled_time: scheduledTime.toISOString(),
-                    seed: Math.floor(Math.random() * 1000000)
-                });
-            
-            if (matchError) {
-                console.error(`Error creating match for round ${r}:`, matchError);
-            }
-        }
-
-        // Rotate teams (keep first team fixed)
-        if (teams.length > 2) {
-            const fixed = teams[0];
-            const rotating = teams.slice(1);
-            const last = rotating.pop()!;
-            rotating.unshift(last);
-            teams[0] = fixed;
-            for (let i = 0; i < rotating.length; i++) {
-                teams[i + 1] = rotating[i];
-            }
+    for (const match of matchesToCreate) {
+        const { error: matchError } = await supabase
+            .from('matches')
+            .insert({
+                league_id: league.id,
+                home_team_id: match.home_team_id,
+                away_team_id: match.away_team_id,
+                scheduled_time: match.scheduled_time,
+                seed: Math.floor(Math.random() * 1000000)
+            });
+        
+        if (matchError) {
+            console.error(`Error creating match:`, matchError);
         }
     }
 

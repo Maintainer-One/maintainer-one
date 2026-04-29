@@ -5,6 +5,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { supabase } from '$lib/supabase';
 	import { createInitialState } from '../../../packages/engine/core';
+	import { getProtocol } from '../../../packages/protocols/registry';
 	import type { GameState } from '../../../packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
 	import StateInspector from '$lib/components/StateInspector.svelte';
@@ -47,11 +48,13 @@
 
 export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	const actions: PlayerAction[] = [];
-	const pointZone = sense.pointZone;
+	const pointZone = sense.pointZones[0];
 
 	if (!pointZone) return [];
 
 	for (const player of sense.players) {
+		if (player.status !== 'active') continue;
+
 		const targetX = pointZone.position.x;
 		const targetY = pointZone.position.y;
 		const currentX = player.position.x;
@@ -102,7 +105,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			.select(`
 				seed,
 				league_id,
-				leagues (protocol_version),
+				leagues (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, active_version_id),
 				away_team:teams!away_team_id (id, active_version_id)
 			`)
@@ -139,7 +142,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		// Initialize from tick 0
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version);
+		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config);
 		states = [initialState];
 		currentTick = 0;
 
@@ -367,6 +370,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		};
 	});
 	let currentState = $derived(states[currentTick]);
+	let currentProtocol = $derived(currentState ? getProtocol(currentState.protocolVersion) : null);
 </script>
 
 <div 
@@ -450,7 +454,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
   id: string,
   team: 'A' | 'B',
   position: { x, y },
-  status: 'active' | ...
+  status: 'active' | 'stunned' | 'knocked_out',
+  stunTicks?: number
 }`}</code></pre>
 							</div>
 
@@ -466,10 +471,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					</section>
 
 					<section class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
-						<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">About V1</h3>
-						<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium">
-							V1: 10x10 Grid. Point zone at (4,5). Teams start at opposite ends. First to capture wins.
-						</p>
+						{#if currentProtocol}
+							<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">{currentProtocol.name}</h3>
+							<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium whitespace-pre-wrap">{currentProtocol.description}</p>
+						{:else}
+							<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">About Protocol</h3>
+							<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium animate-pulse">Loading protocol data...</p>
+						{/if}
 					</section>
 				</div>
 			{:else}

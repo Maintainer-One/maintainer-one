@@ -10,7 +10,7 @@ Deno.test("Phase 3: Protocol Registry", () => {
     
     const v1 = getProtocol("v1");
     assertEquals(v1.version, "v1");
-    assertEquals(v1.boardSize, 10);
+    assertEquals(v1.name, "Protocol V1: Capture the Core");
     
     assertThrows(() => {
         getProtocol("non_existent_protocol");
@@ -28,7 +28,15 @@ Deno.test("Phase 3: Dynamic Logic Loading", () => {
     
     const logic = loadLogicFromString(logicCode);
     const state = createInitialState(123, "v1");
-    const actions = logic(state);
+    // Simulate what match_runner does: strip hidden vars
+    const sense = {
+        ...state,
+        pointZones: state.pointZones.map(pz => {
+            const { _despawnAge, ...visible } = pz;
+            return visible;
+        })
+    };
+    const actions = logic(sense);
     
     assertEquals(actions.length, 1);
     assertEquals(actions[0].playerId, "a1");
@@ -75,7 +83,14 @@ Deno.test("Phase 3: Logic Loader Error Handling", () => {
     const logic = loadLogicFromString(invalidCode);
     
     const state = createInitialState(123, "v1");
-    const actions = logic(state);
+    const sense = {
+        ...state,
+        pointZones: state.pointZones.map(pz => {
+            const { _despawnAge, ...visible } = pz;
+            return visible;
+        })
+    };
+    const actions = logic(sense);
     
     // Should return an empty array instead of crashing
     assertEquals(Array.isArray(actions), true);

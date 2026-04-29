@@ -23,9 +23,11 @@
 			return;
 		}
 
-		events = data.map(m => 
-			`${m.home_team.name} ${m.home_score} - ${m.away_score} ${m.away_team.name}`
-		);
+		events = data.map(m => {
+			const home = m.home_team as unknown as { name: string };
+			const away = m.away_team as unknown as { name: string };
+			return `${home?.name || 'Unknown'} ${m.home_score} - ${m.away_score} ${away?.name || 'Unknown'}`;
+		});
 
 		if (events.length === 0) {
 			events = ["Inaugural Season is live!", "Teams are preparing for their first matches.", "Spectators welcome in the Film Room."];

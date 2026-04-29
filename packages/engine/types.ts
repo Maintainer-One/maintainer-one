@@ -13,12 +13,14 @@ export type Player = {
 	id: string;
 	team: TeamID;
 	position: Position;
-	status: 'active' | 'knocked_out';
+	status: 'active' | 'stunned' | 'knocked_out';
+	stunTicks?: number;
 };
 
 export type PointZone = {
 	position: Position;
-	points: number;
+	age: number;
+	_despawnAge: number; // Hidden from logic, despawns when age >= _despawnAge
 };
 
 export type GameState = {
@@ -26,7 +28,8 @@ export type GameState = {
 	protocolVersion: string;
 	teams: Record<TeamID, { name: string; score: number }>;
 	players: Player[];
-	pointZone: PointZone | null;
+	pointZones: PointZone[];
+	nextZoneSpawnTick: number | null;
 	rngState: number; // The seed/state for the next random call
 	isFinished: boolean;
 	winner: TeamID | null;

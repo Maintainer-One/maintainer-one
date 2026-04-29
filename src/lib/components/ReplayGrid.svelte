@@ -24,22 +24,25 @@
 		{/each}
 	</div>
 
-	<!-- Point Zone -->
-	{#if state.pointZone}
+	<!-- Point Zones -->
+	{#each state.pointZones as pz}
 		<div
 			class="absolute flex items-center justify-center transition-all duration-500"
 			style="
-                left: {getPos(state.pointZone.position).left}; 
-                top: {getPos(state.pointZone.position).top}; 
-                width: {getPos(state.pointZone.position).width}; 
-                height: {getPos(state.pointZone.position).height};
+                left: {getPos(pz.position).left}; 
+                top: {getPos(pz.position).top}; 
+                width: {getPos(pz.position).width}; 
+                height: {getPos(pz.position).height};
             "
 		>
-			<div class="h-4/5 w-4/5 animate-pulse rounded-xl bg-[var(--color-brand-primary)]/10 shadow-[0_0_25px_rgba(5,150,105,0.4)] border border-[var(--color-brand-primary)]/40 flex items-center justify-center">
+			<div class="h-4/5 w-4/5 animate-pulse rounded-xl bg-[var(--color-brand-primary)]/10 shadow-[0_0_25px_rgba(5,150,105,0.4)] border border-[var(--color-brand-primary)]/40 flex flex-col items-center justify-center relative">
 				<span class="text-[10px] font-black text-[var(--color-brand-secondary)] tracking-widest uppercase">Zone</span>
+				{#if pz.age !== undefined}
+					<span class="absolute -top-2 -right-2 text-[8px] font-black bg-[var(--color-brand-primary)] text-black rounded-full w-4 h-4 flex items-center justify-center shadow-lg">{pz.age}</span>
+				{/if}
 			</div>
 		</div>
-	{/if}
+	{/each}
 
 	<!-- Players -->
 	{#each state.players as player (player.id)}
@@ -57,6 +60,10 @@
                 {player.team === 'A' ? 'border-blue-500 bg-blue-500/20 text-blue-300 shadow-blue-500/20' : 'border-rose-500 bg-rose-500/20 text-rose-300 shadow-rose-500/20'}"
 			>
 				<span class="text-[10px] font-black uppercase">{player.id}</span>
+				
+				{#if player.status === 'stunned'}
+					<span class="absolute -top-2 -right-2 text-[8px] font-black bg-rose-500 text-white rounded-full w-4 h-4 flex items-center justify-center animate-bounce shadow-lg">⚡</span>
+				{/if}
 				
 				<!-- Team Indicator Glow -->
 				<div class="absolute -inset-1.5 -z-10 animate-pulse rounded-full opacity-20 

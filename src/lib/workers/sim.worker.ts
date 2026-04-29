@@ -1,5 +1,5 @@
 import { tick } from '../../../packages/engine/core';
-import type { GameState, PlayerAction } from '../../../packages/engine/types';
+import type { GameState, PlayerAction, PointZone, Player } from '../../../packages/engine/types';
 
 /**
  * Web Worker for running the simulation engine in the background.
@@ -20,17 +20,24 @@ self.onmessage = async (e: MessageEvent) => {
 				if (currentState.isFinished) break;
 
 				// 1. Get actions from both teams
-				const sense = currentState; // V1 has perfect info
+				// V1 has perfect info EXCEPT for hidden despawn ages
+				const sense = {
+					...currentState,
+					pointZones: currentState.pointZones.map((pz: PointZone) => {
+						const { _despawnAge, ...visible } = pz;
+						return visible;
+					})
+				};
 				
 				const alphaActions: PlayerAction[] = alphaLogic(sense) || [];
 				const bravoActions: PlayerAction[] = bravoLogic(sense) || [];
 
 				// Filter actions to ensure players only control their own team
 				const teamAActions = alphaActions.filter(a => 
-					currentState.players.find(p => p.id === a.playerId)?.team === 'A'
+					currentState.players.find((p: Player) => p.id === a.playerId)?.team === 'A'
 				);
 				const teamBActions = bravoActions.filter(a => 
-					currentState.players.find(p => p.id === a.playerId)?.team === 'B'
+					currentState.players.find((p: Player) => p.id === a.playerId)?.team === 'B'
 				);
 
 				const combinedActions = [...teamAActions, ...teamBActions];

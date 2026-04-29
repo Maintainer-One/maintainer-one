@@ -1,0 +1,32 @@
+export interface V1Config {
+    // League
+    seasonLengthDays: number;
+    teamCount: number;
+    gamesPerSeason: number;
+    
+    // Match
+    pointZoneSpawnRate: number; // Ticks between point zone spawns
+    maxPointZones: number;      // Maximum active point zones allowed
+    pointZoneValue: number;     // 0 means score = age at capture
+    pointZoneForesight: number; // 0 for now
+    pointZoneMinAge: number;    // Minimum ticks before despawn
+    pointZoneMaxAge: number;    // Maximum ticks before despawn
+    stunPenaltyTicks: number;   // How long players are stunned upon collision
+    maxGameTicks: number;       // The total duration of the match
+    overtimeAllowed: boolean;   // If true, game continues past maxGameTicks until all zones despawn or are captured
+}
+
+export const defaultV1Config: V1Config = {
+    seasonLengthDays: 7,
+    teamCount: 6,
+    gamesPerSeason: 10,
+    pointZoneSpawnRate: 10,
+    maxPointZones: 1,
+    pointZoneValue: 0, // Age-based scoring
+    pointZoneForesight: 0,
+    pointZoneMinAge: 5,
+    pointZoneMaxAge: 15,
+    stunPenaltyTicks: 3,
+    maxGameTicks: 100,
+    overtimeAllowed: true
+};

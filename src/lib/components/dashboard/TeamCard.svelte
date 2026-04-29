@@ -12,7 +12,7 @@
 	}>();
 
 	// Derive a gradient using the primary color
-	const gradientStyle = `background: linear-gradient(135deg, ${color}22 0%, transparent 100%); border-left-color: ${color};`;
+	let gradientStyle = $derived(`background: linear-gradient(135deg, ${color}22 0%, transparent 100%); border-left-color: ${color};`);
 </script>
 
 <div

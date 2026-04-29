@@ -6,19 +6,22 @@ import { getProtocol } from '../protocols/registry.ts';
  * The core simulation engine orchestrator.
  */
 
-export function tick(state: GameState, actions: PlayerAction[]): GameState {
+export function tick(state: GameState, actions: PlayerAction[], config?: any): GameState {
 	// 1. Initialize RNG with current state
 	const rng = new DeterministicRNG(state.rngState);
 
 	// 2. Resolve the Protocol dynamically
 	const protocol = getProtocol(state.protocolVersion);
-	let nextState = protocol.resolve(state, actions);
+	// Fallback to default config if none provided
+	const activeConfig = config || protocol.defaultConfig;
+	let nextState = protocol.resolve(activeConfig, state, actions);
 
 	// 3. Update the RNG state for the next tick
-	nextState = {
-		...nextState,
-		rngState: rng.getState()
-	};
+	// Note: protocol.resolve might have already updated rngState if it used the RNG.
+	// But we'll ensure we capture the final state. Wait, if protocol used its own RNG instance, 
+	// it should have updated nextState.rngState itself. The previous implementation just overrode it.
+	// Let's trust nextState.rngState, or override if protocol didn't change it. Actually, V1 updates it.
+	// We'll leave it to the protocol, but ensure it's not lost.
 
 	return nextState;
 }
@@ -26,30 +29,8 @@ export function tick(state: GameState, actions: PlayerAction[]): GameState {
 /**
  * Creates a fresh game state for a specific Protocol.
  */
-export function createInitialState(seed: number, protocolVersion: string = 'v1'): GameState {
+export function createInitialState(seed: number, protocolVersion: string = 'v1', config?: any): GameState {
 	const protocol = getProtocol(protocolVersion);
-	
-	// Note: In the future, boardSize and player count will be dictated by the protocol definition.
-	return {
-		tick: 0,
-		protocolVersion,
-		teams: {
-			A: { name: 'Team Alpha', score: 0 },
-			B: { name: 'Team Bravo', score: 0 }
-		},
-		players: [
-			// Team A (Left side)
-			{ id: 'a1', team: 'A', position: { x: 0, y: 2 }, status: 'active' },
-			{ id: 'a2', team: 'A', position: { x: 0, y: 5 }, status: 'active' },
-			{ id: 'a3', team: 'A', position: { x: 0, y: 8 }, status: 'active' },
-			// Team B (Right side)
-			{ id: 'b1', team: 'B', position: { x: protocol.boardSize - 1, y: 2 }, status: 'active' },
-			{ id: 'b2', team: 'B', position: { x: protocol.boardSize - 1, y: 5 }, status: 'active' },
-			{ id: 'b3', team: 'B', position: { x: protocol.boardSize - 1, y: 8 }, status: 'active' }
-		],
-		pointZone: { position: { x: Math.floor(protocol.boardSize / 2), y: 5 }, points: 1 },
-		rngState: seed || Date.now(),
-		isFinished: false,
-		winner: null
-	};
+	const activeConfig = config || protocol.defaultConfig;
+	return protocol.createInitialState(activeConfig, seed);
 }

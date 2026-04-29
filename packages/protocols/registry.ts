@@ -1,20 +1,23 @@
-import { resolveProtocolV1 } from './v1/rules.ts';
+import { ProtocolV1 } from './v1/index.ts';
 import type { GameState, PlayerAction } from '../engine/types.ts';
 
-export type ProtocolResolver = (state: GameState, actions: PlayerAction[]) => GameState;
-
-export interface ProtocolDefinition {
+export interface ProtocolDefinition<ConfigType = any> {
 	version: string;
-	resolve: ProtocolResolver;
-	boardSize: number;
+	name: string;
+	description: string;
+	defaultConfig: ConfigType;
+	
+	// --- LEAGUE MECHANICS ---
+	generateSchedule: (config: ConfigType, teams: any[], startDate: Date) => any[];
+	resolveStandings: (config: ConfigType, matches: any[]) => any;
+
+	// --- MATCH MECHANICS ---
+	createInitialState: (config: ConfigType, seed: number) => GameState;
+	resolve: (config: ConfigType, state: GameState, actions: PlayerAction[]) => GameState;
 }
 
 const registry: Record<string, ProtocolDefinition> = {
-	v1: {
-		version: 'v1',
-		resolve: resolveProtocolV1,
-		boardSize: 10
-	}
+	v1: ProtocolV1
 };
 
 export function getProtocol(version: string): ProtocolDefinition {

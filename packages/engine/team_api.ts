@@ -1,13 +1,17 @@
-import type { GameState, PlayerAction, Position } from './types.ts';
-export type { GameState, PlayerAction, Position };
+import type { GameState, PlayerAction, Position, PointZone } from './types.ts';
+export type { GameState, PlayerAction, Position, PointZone };
 
 
+
+export type SensedPointZone = Omit<PointZone, '_despawnAge'>;
 
 /**
  * SensedState is the snapshot of the world that a Team Logic script receives.
- * For Protocol V1, this is equivalent to the GameState (Perfect Information).
+ * For Protocol V1, this is equivalent to the GameState EXCEPT hidden variables like _despawnAge are stripped.
  */
-export type SensedState = GameState;
+export type SensedState = Omit<GameState, 'pointZones'> & {
+	pointZones: SensedPointZone[];
+};
 
 /**
  * TeamLogic is the functional interface for a team's automated behaviors.

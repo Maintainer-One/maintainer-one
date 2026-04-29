@@ -29,6 +29,9 @@ Deno.test('Protocol V1: Simple Collision - Two players moving to same tile shoul
 
 	assertEquals(state.players[0].position, { x: 4, y: 4 });
 	assertEquals(state.players[3].position, { x: 6, y: 4 });
+	assertEquals(state.players[0].status, 'stunned');
+	assertEquals(state.players[3].status, 'stunned');
+	assertEquals(state.players[0].stunTicks, 3);
 });
 
 Deno.test('Protocol V1: Tile Swap - Players swapping places should revert', () => {
@@ -45,6 +48,8 @@ Deno.test('Protocol V1: Tile Swap - Players swapping places should revert', () =
 
 	assertEquals(state.players[0].position, { x: 4, y: 4 });
 	assertEquals(state.players[3].position, { x: 5, y: 4 });
+	assertEquals(state.players[0].status, 'stunned');
+	assertEquals(state.players[3].status, 'stunned');
 });
 
 Deno.test('Protocol V1: Cascading Collision - One collision halts a chain', () => {
@@ -70,6 +75,10 @@ Deno.test('Protocol V1: Cascading Collision - One collision halts a chain', () =
 	assertEquals(state.players.find(p => p.id === 'A')?.position, { x: 4, y: 4 });
 	assertEquals(state.players.find(p => p.id === 'B')?.position, { x: 5, y: 4 });
 	assertEquals(state.players.find(p => p.id === 'C')?.position, { x: 7, y: 4 });
+
+	assertEquals(state.players.find(p => p.id === 'A')?.status, 'stunned');
+	assertEquals(state.players.find(p => p.id === 'B')?.status, 'stunned');
+	assertEquals(state.players.find(p => p.id === 'C')?.status, 'stunned');
 });
 
 Deno.test('Protocol V1: Teammate Collision - Should revert just like opponents', () => {
@@ -86,4 +95,5 @@ Deno.test('Protocol V1: Teammate Collision - Should revert just like opponents',
 
 	assertEquals(state.players[0].position, { x: 4, y: 4 });
 	assertEquals(state.players[1].position, { x: 4, y: 6 });
+	assertEquals(state.players[0].status, 'stunned');
 });

@@ -21,7 +21,7 @@ async function runCron() {
         .from('matches')
         .select(`
             *,
-            leagues (protocol_version),
+            leagues (protocol_version, protocol_config),
             home_team:teams!home_team_id (id, active_version_id),
             away_team:teams!away_team_id (id, active_version_id)
         `)
@@ -77,7 +77,9 @@ async function runCron() {
                 // @ts-ignore
                 match.leagues.protocol_version,
                 homeLogic,
-                awayLogic
+                awayLogic,
+                // @ts-ignore
+                match.leagues.protocol_config
             );
 
             // 4. Update Match in DB
