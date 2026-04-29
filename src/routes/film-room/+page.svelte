@@ -9,6 +9,7 @@
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
 	import StateInspector from '$lib/components/StateInspector.svelte';
 	import SimWorker from '$lib/workers/sim.worker?worker';
+	import { fade } from 'svelte/transition';
 	import { scratchpad } from '$lib/stores/scratchpad';
 
 	let replays = [
@@ -21,6 +22,10 @@
 	let isPlaying = $state(false);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
+	
+	// UI State
+	let isLibraryOpen = $state(false);
+	let isSpeedOpen = $state(false);
 	
 	// Simulation Worker state
 	let Editor: any = $state();
@@ -35,20 +40,51 @@
 	let isResizing = $state(false);
 
 	// Logic Editing State
-	let activeTeam = $state<'A' | 'B'>('A');
+	let activeTab = $state<'A' | 'B' | 'REF'>('A');
 	let teamCodes = $state({ A: '', B: '' });
+
+	const STARTER_CODE = `import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+
+export const teamLogic = (sense: SensedState): PlayerAction[] => {
+	const actions: PlayerAction[] = [];
+	const pointZone = sense.pointZone;
+
+	if (!pointZone) return [];
+
+	for (const player of sense.players) {
+		const targetX = pointZone.position.x;
+		const targetY = pointZone.position.y;
+		const currentX = player.position.x;
+		const currentY = player.position.y;
+
+		let action: PlayerAction = { playerId: player.id, type: 'STAY' };
+
+		// Starter Strategy: Direct path to Point Zone
+		if (currentY < targetY) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'DOWN' };
+		} else if (currentY > targetY) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'UP' };
+		} else if (currentX < targetX) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'RIGHT' };
+		} else if (currentX > targetX) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'LEFT' };
+		}
+
+		actions.push(action);
+	}
+
+	return actions;
+};`;
 
 	// Sync scratchpad with state
 	$effect(() => {
 		const unsubscribe = scratchpad.subscribe(values => {
-			// Only update if current state is empty (first load)
-			if (!teamCodes.A && values.A) teamCodes.A = values.A;
-			if (!teamCodes.B && values.B) teamCodes.B = values.B;
+			// Priority: Existing state > Scratchpad > Starter Code
+			if (!teamCodes.A) teamCodes.A = values.A || STARTER_CODE;
+			if (!teamCodes.B) teamCodes.B = values.B || STARTER_CODE;
 		});
 		return unsubscribe;
 	});
-
-	let currentLogicCode = $derived(teamCodes[activeTeam]);
 
 	async function loadReplay(filename: string) {
 		stopPlayback();
@@ -172,19 +208,24 @@
 	}
 
 	function handleCodeChange(newCode: string) {
-		teamCodes[activeTeam] = newCode;
-		scratchpad.updateCode(activeTeam, newCode);
+		if (activeTab === 'REF') return;
+		teamCodes[activeTab] = newCode;
+		scratchpad.updateCode(activeTab, newCode);
 		requestSimulation();
 	}
 
+	let currentLogicCode = $derived(activeTab === 'REF' ? '' : teamCodes[activeTab as 'A' | 'B']);
+
 	async function publishLogic() {
+		if (activeTab === 'REF') return;
+		
 		const matchId = page.url.searchParams.get('match');
 		if (!matchId) {
 			alert('You must be viewing a specific match to publish logic for a team.');
 			return;
 		}
 
-		const confirmPublish = confirm(`Are you sure you want to publish this logic for Team ${activeTeam === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`);
+		const confirmPublish = confirm(`Are you sure you want to publish this logic for Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`);
 		if (!confirmPublish) return;
 
 		isSimulating = true;
@@ -202,8 +243,8 @@
 
 			if (matchError || !match) throw new Error('Could not find match team data');
 
-			const teamId = activeTeam === 'A' ? match.home_team_id : match.away_team_id;
-			const code = teamCodes[activeTeam];
+			const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
+			const code = teamCodes[activeTab];
 
 			// 2. Transpile (Mocked for now - we would use esbuild in a real backend, 
 			// but for browser-side we'll just use the source code as compiled for now 
@@ -258,7 +299,7 @@
 
 			if (updError) throw updError;
 
-			alert(`Success! Team ${activeTeam === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
+			alert(`Success! Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
 		} catch (err: any) {
 			console.error('Publish Error:', err);
 			alert(`Failed to publish: ${err.message}`);
@@ -364,25 +405,78 @@
 					Error: {errorMessage}
 				</div>
 			{/if}
-			<!-- Team Tabs -->
+			<!-- Tabs -->
 			<div class="flex gap-6">
 				<button 
-					onclick={() => activeTeam = 'A'}
-					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTeam === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-white/20 hover:text-white/40'}"
+					onclick={() => activeTab = 'A'}
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-white/20 hover:text-white/40'}"
 				>
 					Alpha
 				</button>
 				<button 
-					onclick={() => activeTeam = 'B'}
-					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTeam === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-white/20 hover:text-white/40'}"
+					onclick={() => activeTab = 'B'}
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-white/20 hover:text-white/40'}"
 				>
 					Bravo
 				</button>
+				<button 
+					onclick={() => activeTab = 'REF'}
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'REF' ? 'border-b-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)]' : 'text-white/20 hover:text-white/40'}"
+				>
+					Reference
+				</button>
 			</div>
 		</header>
-		<div class="flex-1 p-4">
-			{#if browser && Editor}
-				<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+		<div class="flex-1 overflow-y-auto no-scrollbar p-4">
+			{#if activeTab === 'REF'}
+				<!-- Protocol Reference Tab Content -->
+				<div class="space-y-8 p-2">
+					<section class="space-y-4">
+						<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Protocol Reference</h3>
+						
+						<div class="space-y-4">
+							<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
+								<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">SensedState</div>
+								<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
+  tick: number,
+  players: Player[],
+  pointZone: PointZone,
+  teams: { A, B }
+}`}</code></pre>
+							</div>
+
+							<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
+								<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">Player</div>
+								<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
+  id: string,
+  team: 'A' | 'B',
+  position: { x, y },
+  status: 'active' | ...
+}`}</code></pre>
+							</div>
+
+							<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
+								<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">Action</div>
+								<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
+  playerId: string,
+  type: 'MOVE' | 'STAY',
+  direction?: 'UP' | 'DOWN' | ...
+}`}</code></pre>
+							</div>
+						</div>
+					</section>
+
+					<section class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
+						<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">About V1</h3>
+						<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium">
+							V1: 10x10 Grid. Point zone at (4,5). Teams start at opposite ends. First to capture wins.
+						</p>
+					</section>
+				</div>
+			{:else}
+				{#if browser && Editor}
+					<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+				{/if}
 			{/if}
 		</div>
 		<footer class="border-t border-white/5 p-4 text-[10px] text-white/20 font-medium italic">
@@ -471,17 +565,34 @@
 							{/if}
 						</div>
 
-						<div class="flex items-center gap-2">
-							<select
-								bind:value={playSpeed}
-								onchange={stopPlayback}
-								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+						<div class="flex items-center gap-2 relative">
+							<button
+								onclick={() => isSpeedOpen = !isSpeedOpen}
+								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 focus:ring-1 focus:ring-[var(--color-brand-primary)] min-w-[75px] flex items-center justify-between gap-2"
 							>
-								<option value={1500}>0.5x</option>
-								<option value={750}>1.0x</option>
-								<option value={375}>2.0x</option>
-								<option value={100}>MAX</option>
-							</select>
+								<span>{playSpeed === 1500 ? '0.5x' : playSpeed === 750 ? '1.0x' : playSpeed === 375 ? '2.0x' : 'MAX'}</span>
+								<svg class="h-3 w-3 opacity-30 transition-transform {isSpeedOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+							</button>
+
+							{#if isSpeedOpen}
+								<div 
+									class="absolute bottom-full right-0 z-50 mb-2 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-3xl shadow-2xl overflow-hidden p-1 min-w-[85px]"
+									transition:fade={{ duration: 150 }}
+								>
+									{#each [{v: 1500, l: '0.5x'}, {v: 750, l: '1.0x'}, {v: 375, l: '2.0x'}, {v: 100, l: 'MAX'}] as speed}
+										<button 
+											onclick={() => {
+												playSpeed = speed.v;
+												stopPlayback();
+												isSpeedOpen = false;
+											}}
+											class="w-full px-3 py-2 text-left text-[10px] font-black transition-all rounded-lg {playSpeed === speed.v ? 'text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10' : 'text-white/40 hover:text-white hover:bg-white/5'}"
+										>
+											{speed.l}
+										</button>
+									{/each}
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -495,25 +606,47 @@
 
 	<!-- Analysis Sidebar (Right) -->
 	<aside class="flex w-80 flex-col border-l border-white/5 bg-black/20 p-6 backdrop-blur-3xl lg:p-8">
-		<div class="mb-10">
-			<label for="replay-select" class="mb-3 block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
+		<div class="mb-10 relative">
+			<label class="mb-3 block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
 				Match Library
 			</label>
-			<select
-				id="replay-select"
-				value={selectedReplay}
-				class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-black text-[var(--color-brand-secondary)] outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)]/50 transition-all"
-				onchange={handleSelection}
+			<button 
+				onclick={() => isLibraryOpen = !isLibraryOpen}
+				class="w-full flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-black text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 transition-all group"
 			>
-				{#each replays as replay}
-					<option value={replay}>{replay.split('_')[1].split('T')[0]}</option>
-				{/each}
-			</select>
+				<span>{selectedReplay.split('_')[1].split('T')[0]} <span class="ml-2 text-white/10 font-medium">({selectedReplay.split('-').pop()?.split('.')[0]})</span></span>
+				<svg class="h-4 w-4 transition-transform duration-300 {isLibraryOpen ? 'rotate-180' : ''} text-white/20 group-hover:text-[var(--color-brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+			</button>
+
+			{#if isLibraryOpen}
+				<div 
+					class="absolute top-full left-0 right-0 z-50 mt-2 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-3xl shadow-2xl overflow-hidden p-1"
+					transition:fade={{ duration: 150 }}
+				>
+					{#each replays as replay}
+						<button 
+							onclick={() => {
+								selectedReplay = replay;
+								loadReplay(replay);
+								isLibraryOpen = false;
+							}}
+							class="w-full px-4 py-3 text-left text-[11px] font-bold transition-all rounded-xl {selectedReplay === replay ? 'text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10' : 'text-white/40 hover:text-white hover:bg-white/5'}"
+						>
+							<div class="flex items-center justify-between">
+								<span>{replay.split('_')[1].split('T')[0]}</span>
+								{#if selectedReplay === replay}
+									<span class="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-primary)] shadow-[0_0_8px_rgba(5,150,105,1)]"></span>
+								{/if}
+							</div>
+						</button>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
-		<div class="flex-1 space-y-8 overflow-y-auto no-scrollbar">
+		<div class="flex-1 flex flex-col min-h-0 space-y-6">
 			<!-- Live Stats -->
-			<section class="space-y-4">
+			<section class="space-y-4 flex-shrink-0">
 				<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Match Analysis</h3>
 				
 				<div class="rounded-2xl border border-white/5 bg-white/5 p-5 shadow-inner">
@@ -524,63 +657,28 @@
 				</div>
 
 				<div class="grid grid-cols-2 gap-3">
-					<div class="rounded-2xl border border-blue-500/10 bg-blue-500/5 p-4">
-						<div class="mb-1 text-[9px] font-black text-blue-500 uppercase tracking-wider">Alpha</div>
-						<div class="text-2xl font-black text-blue-400">{currentState?.teams.A.score ?? 0}</div>
+					<div class="rounded-2xl border border-blue-500/10 bg-blue-500/10 p-4">
+						<div class="mb-1 text-[9px] font-black text-blue-400 uppercase tracking-wider">Alpha</div>
+						<div class="text-2xl font-black text-blue-300">{currentState?.teams.A.score ?? 0}</div>
 					</div>
-					<div class="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
-						<div class="mb-1 text-[9px] font-black text-rose-500 uppercase tracking-wider">Bravo</div>
-						<div class="text-2xl font-black text-rose-400">{currentState?.teams.B.score ?? 0}</div>
-					</div>
-				</div>
-
-				<!-- Live State Inspector -->
-				<div class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
-					<div class="mb-4 flex items-center justify-between">
-						<h4 class="text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">Live Data</h4>
-						<span class="text-[8px] font-bold text-[var(--color-brand-primary)]/40 uppercase tracking-widest">Tick {currentTick}</span>
-					</div>
-					<div class="max-h-72 overflow-y-auto no-scrollbar">
-						{#if currentState}
-							<StateInspector data={currentState} />
-						{/if}
+					<div class="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
+						<div class="mb-1 text-[9px] font-black text-rose-400 uppercase tracking-wider">Bravo</div>
+						<div class="text-2xl font-black text-rose-300">{currentState?.teams.B.score ?? 0}</div>
 					</div>
 				</div>
 			</section>
 
-			<!-- Protocol Reference -->
-			<section class="space-y-4">
-				<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em]">Protocol Reference</h3>
-				
-				<div class="space-y-3">
-					<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
-						<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">SensedState</div>
-						<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
-  tick: number,
-  players: Player[],
-  pointZone: PointZone,
-  teams: { A, B }
-}`}</code></pre>
-					</div>
-
-					<div class="rounded-2xl border border-white/5 bg-black/40 p-5">
-						<div class="mb-2 text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-wider">Player</div>
-						<pre class="text-[10px] leading-relaxed text-[var(--color-brand-secondary)]/40"><code>{`{
-  id: string,
-  team: 'A' | 'B',
-  position: { x, y },
-  status: 'active' | ...
-}`}</code></pre>
-					</div>
+			<!-- Live State Inspector -->
+			<section class="flex-1 min-h-0 flex flex-col rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
+				<div class="mb-4 flex items-center justify-between flex-shrink-0">
+					<h4 class="text-[9px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">Live Data</h4>
+					<span class="text-[8px] font-bold text-[var(--color-brand-primary)]/40 uppercase tracking-widest">Tick {currentTick}</span>
 				</div>
-			</section>
-
-			<!-- Protocol Info -->
-			<section class="rounded-2xl border border-[var(--color-brand-primary)]/10 bg-[var(--color-brand-primary)]/5 p-5">
-				<h3 class="mb-2 text-[10px] font-black text-[var(--color-brand-primary)] uppercase tracking-widest">About V1</h3>
-				<p class="text-xs leading-relaxed text-[var(--color-brand-secondary)]/50 font-medium">
-					V1: 10x10 Grid. Point zone at (4,5). Teams start at opposite ends. First to capture wins.
-				</p>
+				<div class="flex-1 overflow-y-auto no-scrollbar">
+					{#if currentState}
+						<StateInspector data={currentState} />
+					{/if}
+				</div>
 			</section>
 		</div>
 	</aside>

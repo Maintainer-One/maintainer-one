@@ -68,12 +68,18 @@
 
     <!-- Victory Overlay -->
     {#if state.isFinished}
-        <div class="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-md transition-opacity duration-1000 z-50">
-            <div class="rounded-3xl border border-white/20 bg-black/60 p-10 text-center shadow-2xl scale-110 animate-bounce backdrop-blur-2xl">
-                <h2 class="text-4xl font-black italic tracking-tighter text-white uppercase leading-none">
-                    Team <span class="{state.winner === 'A' ? 'text-blue-400' : 'text-rose-400'}">{state.winner}</span> Wins!
+        <div class="absolute inset-0 flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50">
+            <div class="rounded-[2rem] border border-[var(--color-brand-primary)]/30 bg-black/40 p-12 text-center shadow-[0_0_50px_rgba(5,150,105,0.2)] backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]">
+                <div class="mb-4 inline-block rounded-full bg-[var(--color-brand-primary)]/10 px-4 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">
+                    Match Concluded
+                </div>
+                <h2 class="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">
+                    Team <span class="{state.winner === 'A' ? 'text-blue-400' : 'text-rose-400'}">{state.winner}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
                 </h2>
-                <p class="mt-3 text-white/40 font-bold uppercase tracking-[0.2em] text-[10px]">Capture complete at Tick {state.tick}</p>
+                <div class="mt-6 flex flex-col items-center gap-1">
+                    <p class="text-white/40 font-bold uppercase tracking-[0.2em] text-[10px]">Capture complete</p>
+                    <p class="text-[var(--color-brand-secondary)] font-black text-xs uppercase">Tick {state.tick}</p>
+                </div>
             </div>
         </div>
     {/if}
