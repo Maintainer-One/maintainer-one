@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { supabase } from '$lib/supabase';
 	import { onMount } from 'svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
 	let events: string[] = $state([]);
 
@@ -40,7 +41,7 @@
 	<div class="animate-marquee whitespace-nowrap text-white/70">
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
-				<span class="h-2 w-2 rounded-full bg-[#00f2fe] shadow-[0_0_8px_rgba(0,242,254,0.8)]"></span>
+				<BrandLogo size="size-4" />
 				{event}
 			</span>
 		{/each}
@@ -50,7 +51,7 @@
 	<div class="absolute top-2 animate-marquee2 whitespace-nowrap text-white/70">
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
-				<span class="h-2 w-2 rounded-full bg-[#00f2fe] shadow-[0_0_8px_rgba(0,242,254,0.8)]"></span>
+				<BrandLogo size="size-4" />
 				{event}
 			</span>
 		{/each}

@@ -2,6 +2,8 @@
 	import { base } from '$app/paths';
 	import { supabase } from '$lib/supabase';
 	import { onMount } from 'svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
+	import BrandLoading from '$lib/components/BrandLoading.svelte';
 
 	let matches: any[] = $state([]);
 	let isLoading = $state(true);
@@ -52,7 +54,7 @@
 <div class="flex flex-col gap-4">
 	<div class="flex items-center justify-between border-b border-white/10 pb-2">
 		<h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#4facfe]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
 			High-Impact Matches
 		</h2>
 		<button class="text-sm text-white/50 hover:text-white transition-colors">Feed Settings</button>
@@ -60,12 +62,12 @@
 
 	<div class="grid gap-4 sm:grid-cols-2">
 		{#if isLoading}
-			{#each Array(4) as _}
-				<div class="h-32 animate-pulse rounded-xl border border-white/10 bg-white/5"></div>
-			{/each}
+			<div class="col-span-2">
+				<BrandLoading message="Synchronizing Match Feed..." />
+			</div>
 		{:else if matches.length === 0}
 			<div class="col-span-2 flex flex-col items-center justify-center py-12 text-white/40">
-				<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4 opacity-20"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+				<BrandLogo size="size-16" class="mb-4 opacity-20 grayscale" />
 				<p>No matches scheduled yet.</p>
 			</div>
 		{:else}
@@ -109,7 +111,7 @@
 
 					<!-- Actions -->
 					<div class="mt-2 flex border-t border-white/10 pt-3">
-						<a href="{base}/film-room?match={match.id}" class="flex-1 text-center text-xs font-medium text-[#00f2fe] transition-colors hover:text-white">
+						<a href="{base}/film-room?match={match.id}" class="flex-1 text-center text-xs font-medium text-[var(--color-brand-primary)] transition-colors hover:text-white">
 							{match.status === 'live' ? 'Spectate Live' : (match.status === 'simulated' ? 'Watch Replay' : 'View Details')} &rarr;
 						</a>
 					</div>

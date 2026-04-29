@@ -32,15 +32,15 @@
 			</div>
 			<div class="text-right">
 				<div class="text-xs text-white/50 uppercase tracking-wider">Rating</div>
-				<div class="font-mono font-bold text-[#00f2fe]">{rating}</div>
+				<div class="font-mono font-bold text-[var(--color-brand-primary)]">{rating}</div>
 			</div>
 		</div>
 
 		<div class="flex items-center justify-between text-sm">
 			<div class="text-white/60">Record: <span class="text-white font-medium">{record}</span></div>
 			<button
-				class="text-xs font-medium transition-colors hover:text-white"
-				style="color: {color}"
+				class="text-xs font-bold transition-all hover:translate-x-1"
+				style="color: color-mix(in srgb, {color}, white 60%)"
 			>
 				View Profile &rarr;
 			</button>

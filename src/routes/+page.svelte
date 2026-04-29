@@ -3,6 +3,7 @@
 	import LeagueTicker from '$lib/components/dashboard/LeagueTicker.svelte';
 	import StandingsBoard from '$lib/components/dashboard/StandingsBoard.svelte';
 	import MatchFeed from '$lib/components/dashboard/MatchFeed.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 </script>
 
 <svelte:head>
@@ -16,20 +17,25 @@
 	data-component="dashboard"
 	class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 md:px-8"
 >
-	<!-- Header Section -->
-	<header class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-		<div>
-			<h1 class="bg-gradient-to-br from-white to-white/60 bg-clip-text text-4xl font-black tracking-tighter text-transparent">
-				COMMAND <span class="text-[#00f2fe]">CENTER</span>
-			</h1>
-			<p class="text-white/60">Live league dashboard and match feeds.</p>
+	<header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+		<div class="flex items-center gap-6">
+			<BrandLogo size="size-16" />
+			<div>
+				<h1 class="text-white text-5xl font-black tracking-tighter leading-none">
+					COMMAND <span class="text-[var(--color-brand-secondary)]">CENTER</span>
+				</h1>
+				<p class="text-white/80 font-medium mt-1">Live league dashboard and match feeds.</p>
+			</div>
 		</div>
 
 		<div class="flex items-center gap-3">
-			<a href="{base}/film-room" class="btn-primary flex items-center shadow-lg">
+			<a 
+				href="/film-room" 
+				class="px-6 py-3 bg-[var(--color-brand-secondary)] text-[var(--color-background-dark)] font-black rounded-xl shadow-lg shadow-black/20 hover:scale-105 transition-all"
+			>
 				Enter Film Room
 			</a>
-			<button class="rounded-lg border border-white/10 bg-glass px-4 py-2 text-sm font-bold transition-all hover:bg-white/20">
+			<button class="px-6 py-3 bg-white/5 border border-white/10 text-white font-bold rounded-xl hover:bg-white/10 transition-colors">
 				My Team
 			</button>
 		</div>
