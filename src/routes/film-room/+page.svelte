@@ -366,7 +366,6 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			if (simWorker) simWorker.terminate();
 		};
 	});
-
 	let currentState = $derived(states[currentTick]);
 </script>
 
@@ -493,20 +492,27 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	<!-- Middle: Field + Controls -->
 	<main class="flex flex-1 flex-col p-6 lg:p-10 bg-[var(--color-background-dark)]">
-		<header class="mb-10 flex items-center justify-between border-b border-white/5 pb-6">
-			<div class="flex items-center gap-6">
-				<a href="{base}/" class="text-white/20 transition-all hover:text-[var(--color-brand-primary)] hover:scale-110" aria-label="Go Back">
-					<svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-				</a>
-				<div class="flex flex-col">
-					<h1 class="text-3xl font-black tracking-tighter text-white uppercase leading-none">
-						Film <span class="text-[var(--color-brand-primary)]">Room</span>
-					</h1>
-					<p class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1">Deterministic Replay & Branching</p>
+		<header class="mb-12 flex items-center justify-between">
+			<div class="flex items-center gap-8">
+				
+				<!-- Identity Block Card -->
+				<div class="inline-flex flex-col rounded-3xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
+					<div class="flex items-center gap-4">
+						<a href="{base}/" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:border-[var(--color-brand-primary)]/30 hover:bg-[var(--color-brand-primary)]/5 hover:text-[var(--color-brand-primary)] hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md" aria-label="Go Back">
+							<svg class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+						</a>
+						<div class="flex flex-col">
+							<h1 class="text-xl font-black tracking-tighter text-[var(--color-brand-secondary)] uppercase leading-none">
+								Film <span class="text-[var(--color-brand-primary)]">Room</span>
+							</h1>
+							<p class="text-[8px] font-black text-white/20 uppercase tracking-[0.4em] mt-1.5">Replay & Branching</p>
+						</div>
+					</div>
 				</div>
 			</div>
-			<div class="flex items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[10px] font-black text-white/40 uppercase tracking-[0.15em] border border-white/5">
-				<span class="h-2 w-2 rounded-full animate-pulse bg-[var(--color-brand-primary)]"></span> Live Analysis
+
+			<div class="flex items-center gap-2 rounded-full bg-black/30 px-4 py-2 text-[9px] font-black text-white/40 uppercase tracking-[0.2em] border border-white/5 shadow-xl backdrop-blur-md">
+				<span class="h-1.5 w-1.5 rounded-full animate-pulse bg-[var(--color-brand-primary)] shadow-[0_0_8px_var(--color-brand-primary)]"></span> Live Analysis
 			</div>
 		</header>
 
