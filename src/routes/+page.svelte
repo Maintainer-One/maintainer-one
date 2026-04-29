@@ -18,13 +18,16 @@
 	class="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-8 md:px-8"
 >
 	<header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-		<div class="flex items-center gap-6">
-			<BrandLogo size="size-16" />
-			<div>
-				<h1 class="text-white text-5xl font-black tracking-tighter leading-none">
-					COMMAND <span class="text-[var(--color-brand-secondary)]">CENTER</span>
+		<div class="flex items-center gap-5 px-5 py-3 rounded-2xl bg-black/20 backdrop-blur-xl border border-white/10 shadow-xl">
+			<BrandLogo size="size-12" />
+			<div class="flex flex-col">
+				<h1 class="text-white text-3xl font-black tracking-tighter leading-none flex items-center gap-2">
+					<span class="text-[var(--color-brand-secondary)]">COMMAND</span> 
+					<span class="text-[var(--color-brand-primary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
+						CENTER
+					</span>
 				</h1>
-				<p class="text-white/80 font-medium mt-1">Live league dashboard and match feeds.</p>
+				<p class="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] mt-1">Live Dashboard</p>
 			</div>
 		</div>
 
