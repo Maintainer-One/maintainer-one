@@ -258,16 +258,29 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 					// 2. Transpile
 					const cleanedCode = code
-						.replace(/import\s+[\s\S]*?;/g, '')
-						.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '')
-						.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ')
+						.replace(/import\s+[\s\S]*?;/g, '') // Remove imports
+						.replace(/export\s+type\s+[\s\S]*?;/g, '') // Remove export types
+						.replace(/export\s+interface\s+[\s\S]*?\{[\s\S]*?\}/g, '') // Remove export interfaces
+						.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '') // Naive TS type stripping
+						.replace(/export\s+const\s+([a-zA-Z0-9_]+)/g, 'const $1 = exports.$1') // Convert any export const
+						.replace(/export\s+function\s+([a-zA-Z0-9_]+)/g, 'exports.$1 = function $1') // Convert any export function
+						.replace(/export\s+default\s+/g, 'exports.default = ') // Remove export default
+						.replace(/\bexport\s+/g, '') // Final catch-all for any remaining exports
 						.trim();
 					
 					const compiledCode = `
 						const module = { exports: {} };
 						const exports = module.exports;
 						${cleanedCode};
-						const logic = typeof teamLogic !== 'undefined' ? teamLogic : (module.exports.teamLogic || module.exports.default || exports.teamLogic);
+						
+						let logic;
+						if (typeof teamLogic !== 'undefined') logic = teamLogic;
+						else if (typeof greedyLogic !== 'undefined') logic = greedyLogic;
+						else {
+							const keys = Object.keys(exports);
+							if (keys.length > 0) logic = exports[keys[0]];
+						}
+						
 						if (!logic) throw new Error("No logic function found.");
 						return logic(sense);
 					`;

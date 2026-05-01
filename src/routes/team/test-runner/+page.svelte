@@ -29,12 +29,47 @@
 	let asideWidth = $state(500);
 	let isResizing = $state(false);
 
+	const STARTER_CODE = `import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+
+export const teamLogic = (sense: SensedState): PlayerAction[] => {
+	const actions: PlayerAction[] = [];
+	const pointZone = sense.pointZones?.[0];
+
+	if (!pointZone) return [];
+
+	for (const player of sense.players) {
+		if (player.status !== 'active') continue;
+
+		const targetX = pointZone.position.x;
+		const targetY = pointZone.position.y;
+		const currentX = player.position.x;
+		const currentY = player.position.y;
+
+		let action: PlayerAction = { playerId: player.id, type: 'STAY' };
+
+		if (currentY < targetY) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'DOWN' };
+		} else if (currentY > targetY) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'UP' };
+		} else if (currentX < targetX) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'RIGHT' };
+		} else if (currentX > targetX) {
+			action = { playerId: player.id, type: 'MOVE', direction: 'LEFT' };
+		}
+
+		actions.push(action);
+	}
+
+	return actions;
+};`;
+
 	$effect(() => {
 		const unsubscribe = scratchpad.subscribe(v => {
-			if (!teamCode) teamCode = v.A;
+			if (!teamCode) teamCode = v.A || STARTER_CODE;
 		});
 		return unsubscribe;
 	});
+
 	async function loadTeams() {
 		const { data, error } = await supabase.from('teams').select('id, name, color');
 		if (!error && data) {
@@ -60,7 +95,10 @@
 	}
 
 	async function runTestSuite() {
-		if (!selectedVersionOpponent && !teamCode) return;
+		if (!selectedVersionOpponent || !teamCode) {
+			errorMessage = 'Cannot run test. Please select an opponent version and write team logic.';
+			return;
+		}
 		
 		isSimulating = true;
 		errorMessage = null;
@@ -74,7 +112,9 @@
 		const seeds = Array.from({ length: testIterations }, () => Math.floor(Math.random() * 1000000));
 
 		if (simWorker) {
-			simWorker.postMessage({
+			// We must use $state.snapshot() to ensure we're sending raw POJOs to the worker,
+			// as postMessage cannot clone Svelte 5 state proxies.
+			simWorker.postMessage($state.snapshot({
 				type: 'SIMULATE_BATCH',
 				iterations: testIterations,
 				seeds,
@@ -83,7 +123,7 @@
 				bravoCompiled: oppVersion?.compiled_code,
 				protocolVersion: 'v1',
 				teamData: { A: homeTeam, B: opponentTeam }
-			});
+			}));
 		}
 	}
 

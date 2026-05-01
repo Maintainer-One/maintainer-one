@@ -137,12 +137,28 @@ function createLogic(code: string) {
 		// Note: We also strip common TypeScript type annotations so the browser can execute it
 		const cleanedCode = code
 			.replace(/import\s+[\s\S]*?;/g, '') // Remove imports
+			.replace(/export\s+type\s+[\s\S]*?;/g, '') // Remove export types
+			.replace(/export\s+interface\s+[\s\S]*?\{[\s\S]*?\}/g, '') // Remove export interfaces
 			.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '') // Naive TS type stripping (e.g., : SensedState)
-			.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ') // Convert export to local const
+			.replace(/export\s+const\s+([a-zA-Z0-9_]+)/g, 'const $1 = exports.$1') // Convert any export const
+			.replace(/export\s+function\s+([a-zA-Z0-9_]+)/g, 'exports.$1 = function $1') // Convert any export function
+			.replace(/export\s+default\s+/g, 'exports.default = ') // Remove export default
+			.replace(/\bexport\s+/g, '') // Final catch-all for any remaining exports
 			.trim();
 		
-		// Wrap in a factory function that returns the teamLogic function
-		const factory = new Function(`${cleanedCode}; return teamLogic;`);
+		// Wrap in a factory function that returns the exported logic function
+		const factory = new Function(`
+			const exports = {};
+			${cleanedCode};
+			
+			if (typeof teamLogic !== 'undefined') return teamLogic;
+			if (typeof greedyLogic !== 'undefined') return greedyLogic;
+			
+			const keys = Object.keys(exports);
+			if (keys.length > 0) return exports[keys[0]];
+			
+			return () => [];
+		`);
 		return factory();
 	} catch (err) {
 		console.error('Failed to parse logic code:', err);
