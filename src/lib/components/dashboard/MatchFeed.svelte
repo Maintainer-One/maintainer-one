@@ -1,15 +1,24 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import { supabase } from '$lib/supabase';
+	import { supabase, getActiveSeason } from '$lib/supabase';
 	import { onMount } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
 
 	let matches: any[] = $state([]);
+	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 
 	async function fetchMatches() {
 		isLoading = true;
+		
+		activeSeason = await getActiveSeason();
+		if (!activeSeason) {
+			matches = [];
+			isLoading = false;
+			return;
+		}
+
 		const { data, error } = await supabase
 			.from('matches')
 			.select(`
@@ -21,6 +30,7 @@
 				home_team:teams!home_team_id (name, color),
 				away_team:teams!away_team_id (name, color)
 			`)
+			.eq('season_id', activeSeason.id)
 			.order('scheduled_time', { ascending: false })
 			.limit(6);
 
@@ -55,7 +65,11 @@
 	<div class="flex items-center justify-between border-b border-white/10 pb-2">
 		<h2 class="text-xl font-bold tracking-tight text-[var(--color-brand-secondary)] flex items-center gap-2">
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
-			High-Impact Matches
+			{#if activeSeason}
+				{new Date(activeSeason.start_date) <= new Date() ? 'Live Matches' : 'Upcoming Season'}
+			{:else}
+				Match Feed
+			{/if}
 		</h2>
 		<button class="text-sm text-white/50 hover:text-white transition-colors">Feed Settings</button>
 	</div>

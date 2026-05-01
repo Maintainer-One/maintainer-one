@@ -1,9 +1,40 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
+	import { supabase, getActiveSeason } from '$lib/supabase';
 	import LeagueTicker from '$lib/components/dashboard/LeagueTicker.svelte';
 	import StandingsBoard from '$lib/components/dashboard/StandingsBoard.svelte';
 	import MatchFeed from '$lib/components/dashboard/MatchFeed.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
+
+	let featuredMatch = $state<any>(null);
+	let activeSeason = $state<any>(null);
+
+	async function fetchDashboardData() {
+		activeSeason = await getActiveSeason();
+		if (!activeSeason) return;
+
+		// Fetch a featured match: prefer one that is simulated, otherwise next pending
+		const { data } = await supabase
+			.from('matches')
+			.select(`
+				id,
+				status,
+				home_team:teams!home_team_id (name, color),
+				away_team:teams!away_team_id (name, color)
+			`)
+			.eq('season_id', activeSeason.id)
+			.order('status', { ascending: false }) // simulated > pending
+			.order('scheduled_time', { ascending: true })
+			.limit(1)
+			.maybeSingle();
+		
+		featuredMatch = data;
+	}
+
+	onMount(() => {
+		fetchDashboardData();
+	});
 </script>
 
 <svelte:head>
@@ -81,21 +112,39 @@
 					<div>
 						<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
 							<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
-							Match of the Week
+							{featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
 						</div>
 						<h2 class="text-4xl font-black text-white tracking-tighter">
-							Crimson <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span> Denim
+							{#if featuredMatch}
+								<span style="color: {featuredMatch.home_team.color}">{featuredMatch.home_team.name}</span>
+								<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span>
+								<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
+							{:else}
+								League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span> Arena
+							{/if}
 						</h2>
-						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">Watch as the top contenders battle for zone control in a high-stakes match.</p>
+						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
+							{activeSeason ? `Currently following ${activeSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
+						</p>
 					</div>
 					
-					<a 
-						href="/film-room" 
-						class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
-					>
-						Spectate Now
-						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-					</a>
+					{#if featuredMatch}
+						<a 
+							href="{base}/match/{featuredMatch.id}" 
+							class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
+						>
+							{featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
+							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+						</a>
+					{:else}
+						<a 
+							href="{base}/admin/league" 
+							class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
+						>
+							Create Season
+							<svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+						</a>
+					{/if}
 				</div>
 			</div>
 

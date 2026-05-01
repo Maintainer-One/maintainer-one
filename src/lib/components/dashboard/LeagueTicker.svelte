@@ -1,11 +1,17 @@
 <script lang="ts">
-	import { supabase } from '$lib/supabase';
+	import { supabase, getActiveSeason } from '$lib/supabase';
 	import { onMount } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
 	let events: string[] = $state([]);
 
 	async function fetchRecentEvents() {
+		const activeSeason = await getActiveSeason();
+		if (!activeSeason) {
+			events = ["Inaugural Season is live!", "Teams are preparing for their first matches.", "Spectators welcome in the Film Room."];
+			return;
+		}
+
 		const { data, error } = await supabase
 			.from('matches')
 			.select(`
@@ -15,6 +21,7 @@
 				away_team:teams!away_team_id (name)
 			`)
 			.eq('status', 'simulated')
+			.eq('season_id', activeSeason.id)
 			.order('scheduled_time', { ascending: false })
 			.limit(10);
 
