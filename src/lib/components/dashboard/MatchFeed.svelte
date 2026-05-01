@@ -186,8 +186,8 @@
 	
 	<div class="group relative flex flex-col gap-3 rounded-xl border border-white/10 bg-glass p-4 transition-all hover:bg-white/10 hover:shadow-lg">
 		{#if status.type === 'live'}
-			<div class="absolute -right-2 -top-2 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-500 border border-red-500/50 shadow-lg backdrop-blur-md">
-				<span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
+			<div class="absolute -right-2 -top-2 flex items-center gap-1 rounded-full bg-red-600 px-3 py-1 text-[10px] font-black text-white shadow-xl">
+				<span class="h-2 w-2 animate-pulse rounded-full bg-white"></span>
 				LIVE
 			</div>
 		{/if}

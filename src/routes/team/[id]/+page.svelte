@@ -38,25 +38,44 @@
 		}
 		teamData = team;
 
-		// 2. Fetch all matches for this team in the active season
+		// 2. Fetch ALL teams to initialize standings map (required for ELO)
+		const { data: allTeams } = await supabase.from('teams').select('id, name, color');
+		if (!allTeams) {
+			isLoading = false;
+			return;
+		}
+
+		const standingsMap = new Map();
+		allTeams.forEach(t => {
+			standingsMap.set(t.id, {
+				id: t.id,
+				wins: 0,
+				losses: 0,
+				draws: 0,
+				pointsScored: 0,
+				pointsAgainst: 0,
+				rating: 1000,
+				form: []
+			});
+		});
+
+		// 3. Fetch ALL matches for the active season
 		const activeSeason = await getActiveSeason();
 		if (!activeSeason) {
 			isLoading = false;
 			return;
 		}
 
-		const { data: matches, error: matchesError } = await supabase
+		const { data: allMatches, error: matchesError } = await supabase
 			.from('matches')
 			.select(`
-				id, status, home_score, away_score, scheduled_time,
-				home_team:teams!home_team_id (id, name, color),
-				away_team:teams!away_team_id (id, name, color)
+				id, status, home_score, away_score, scheduled_time, home_team_id, away_team_id,
+				leagues (protocol_config)
 			`)
-			.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 			.eq('season_id', activeSeason.id)
 			.order('scheduled_time', { ascending: true });
 
-		if (matchesError) {
+		if (matchesError || !allMatches) {
 			console.error('Error fetching matches:', matchesError);
 			isLoading = false;
 			return;
@@ -64,50 +83,99 @@
 
 		const now = new Date().getTime();
 		const K_FACTOR = 32;
+		const DEFAULT_TICK_RATE = 750;
 
-		// 3. Process Stats and Split Matches
-		let currentRating = 1000;
 		const processedRecent: any[] = [];
 		const processedUpcoming: any[] = [];
-		const form: string[] = [];
 
-		matches.forEach(m => {
-			const isHome = m.home_team.id === teamId;
-			const opponent = isHome ? m.away_team : m.home_team;
-			const teamScore = isHome ? m.home_score : m.away_score;
-			const oppScore = isHome ? m.away_score : m.home_score;
+		// 4. Process all matches to calculate accurate ELO and stats
+		allMatches.forEach(m => {
+			const home = standingsMap.get(m.home_team_id);
+			const away = standingsMap.get(m.away_team_id);
+			if (!home || !away) return;
+
+			// Calculate dynamic broadcast window
+			const config = (m.leagues as any)?.protocol_config || {};
+			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			
 			const startTime = new Date(m.scheduled_time).getTime();
-			const endTime = startTime + (1000 * 1000); // 1000 ticks = 1000s
+			const endTime = startTime + (leagueMaxTicks * tickRate);
 
-			if (m.status === 'simulated' && now > endTime) {
-				// Statistics
-				if (teamScore > oppScore) {
-					stats.wins++;
-					form.push('W');
-				} else if (oppScore > teamScore) {
-					stats.losses++;
-					form.push('L');
+			const isPast = m.status === 'simulated' && now > endTime;
+
+			if (isPast) {
+				// Update Records
+				if (m.home_score > m.away_score) {
+					home.wins++;
+					home.form.push('W');
+					away.losses++;
+					away.form.push('L');
+				} else if (m.away_score > m.home_score) {
+					away.wins++;
+					away.form.push('W');
+					home.losses++;
+					home.form.push('L');
 				} else {
-					stats.draws++;
-					form.push('D');
+					home.draws++;
+					home.form.push('D');
+					away.draws++;
+					away.form.push('D');
 				}
-				stats.pointsScored += teamScore;
-				stats.pointsAgainst += oppScore;
 
-				// Rating calculation (simplified - assumes opponent is 1000 for now, 
-				// better would be to fetch all matches to get true ELO, but this is a start)
-				// For a real profile we'd need the whole season's ELO progression.
+				home.pointsScored += m.home_score;
+				home.pointsAgainst += m.away_score;
+				away.pointsScored += m.away_score;
+				away.pointsAgainst += m.home_score;
+
+				// Calculate ELO
+				const Ra = home.rating;
+				const Rb = away.rating;
+				const Ea = 1 / (1 + Math.pow(10, (Rb - Ra) / 400));
+				const Eb = 1 / (1 + Math.pow(10, (Ra - Rb) / 400));
 				
-				processedRecent.push({ ...m, opponent, teamScore, oppScore, result: teamScore > oppScore ? 'W' : (teamScore < oppScore ? 'L' : 'D') });
-			} else {
-				processedUpcoming.push({ ...m, opponent });
+				let Sa = 0.5;
+				if (m.home_score > m.away_score) Sa = 1;
+				else if (m.away_score > m.home_score) Sa = 0;
+				const Sb = 1 - Sa;
+
+				home.rating = Math.round(Ra + K_FACTOR * (Sa - Ea));
+				away.rating = Math.round(Rb + K_FACTOR * (Sb - Eb));
+			}
+
+			// If this match involves our team, add to list
+			if (m.home_team_id === teamId || m.away_team_id === teamId) {
+				const isHome = m.home_team_id === teamId;
+				const oppId = isHome ? m.away_team_id : m.home_team_id;
+				const opponent = allTeams.find(t => t.id === oppId);
+				const teamScore = isHome ? m.home_score : m.away_score;
+				const oppScore = isHome ? m.away_score : m.home_score;
+
+				if (isPast) {
+					processedRecent.push({
+						...m,
+						opponent,
+						teamScore,
+						oppScore,
+						result: teamScore > oppScore ? 'W' : (teamScore < oppScore ? 'L' : 'D')
+					});
+				} else {
+					processedUpcoming.push({ ...m, opponent });
+				}
 			}
 		});
 
+		// 5. Extract final stats for our team
+		const teamStats = standingsMap.get(teamId);
+		if (teamStats) {
+			stats = {
+				...teamStats,
+				form: teamStats.form.slice(-5)
+			};
+		}
+
 		recentMatches = processedRecent.reverse().slice(0, 10);
 		upcomingMatches = processedUpcoming.slice(0, 10);
-		stats.form = form.slice(-5);
 		
 		isLoading = false;
 	}

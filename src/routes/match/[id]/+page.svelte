@@ -22,6 +22,33 @@
 
 	let matchData = $state<any | null>(null);
 	let isPreview = $state(false);
+	let currentTime = $state(Date.now());
+
+	const isLive = $derived.by(() => {
+		if (!matchData || states.length === 0) return false;
+		const startTime = new Date(matchData.scheduled_time).getTime();
+		const endTime = startTime + ((states.length - 1) * playSpeed);
+		return currentTime >= startTime && currentTime < endTime;
+	});
+
+	const isCompleted = $derived.by(() => {
+		if (!matchData || states.length === 0) return false;
+		const startTime = new Date(matchData.scheduled_time).getTime();
+		const endTime = startTime + ((states.length - 1) * playSpeed);
+		return currentTime >= endTime;
+	});
+
+	// Auto-sync currentTick for live matches
+	$effect(() => {
+		if (isLive && matchData) {
+			const startTime = new Date(matchData.scheduled_time).getTime();
+			const elapsed = currentTime - startTime;
+			const liveTick = Math.floor(elapsed / playSpeed);
+			if (currentTick !== Math.min(liveTick, states.length - 1)) {
+				currentTick = Math.min(liveTick, states.length - 1);
+			}
+		}
+	});
 
 	async function loadMatch(matchId: string) {
 		isSimulating = true;
@@ -121,16 +148,29 @@
 	onMount(async () => {
 		if (browser) {
 			simWorker = new SimWorker();
-			simWorker.onmessage = (e) => {
-				if (e.data.type === 'SIMULATION_COMPLETE') {
-					states = e.data.states;
-					isSimulating = false;
+		simWorker.onmessage = (e) => {
+			if (e.data.type === 'SIMULATION_COMPLETE') {
+				states = e.data.states;
+				isSimulating = false;
+				// If not live and not playing, start playback automatically if match just completed
+				if (!isPlaying && !isLive) {
 					startPlayback();
 				}
-			};
+			}
+		};
 
-			const matchId = page.params.id;
-			if (matchId) await loadMatch(matchId);
+		const interval = setInterval(() => {
+			currentTime = Date.now();
+		}, 100);
+
+		const matchId = page.params.id;
+		if (matchId) loadMatch(matchId);
+
+		return () => {
+			if (simWorker) simWorker.terminate();
+			if (playbackInterval) window.clearInterval(playbackInterval);
+			clearInterval(interval);
+		};
 		}
 	});
 
@@ -163,6 +203,13 @@
 						<div class="h-8 w-40 bg-white/5 rounded-lg animate-pulse"></div>
 					{/if}
 				</div>
+
+				{#if isLive}
+					<div class="flex items-center gap-2 rounded-full bg-rose-600 px-3 py-1 shadow-lg animate-pulse">
+						<span class="h-1.5 w-1.5 rounded-full bg-white"></span>
+						<span class="text-[10px] font-black text-white uppercase tracking-widest">Live</span>
+					</div>
+				{/if}
 			</div>
 
 			<div class="flex items-center gap-4">
@@ -187,9 +234,10 @@
 				<!-- Playback Controls -->
 				<div class="w-full max-w-2xl mt-8 rounded-2xl border border-white/10 bg-black/40 p-4 shadow-2xl backdrop-blur-2xl">
 					<div class="flex items-center gap-6">
-						<button
+						<button 
 							onclick={togglePlayback}
-							class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-background-dark)] transition-all hover:scale-110 active:scale-95"
+							disabled={isLive}
+							class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-[var(--color-brand-primary)] text-[var(--color-background-dark)] transition-all hover:scale-110 active:scale-95 disabled:opacity-50 disabled:grayscale disabled:cursor-not-allowed"
 						>
 							{#if isPlaying}
 								<svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
@@ -201,13 +249,14 @@
 						<input
 							type="range"
 							min="0"
-							max={states.length - 1}
+							max={isLive ? currentTick : states.length - 1}
 							bind:value={currentTick}
-							class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/5 accent-[var(--color-brand-primary)]"
+							disabled={isLive}
+							class="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/5 accent-[var(--color-brand-primary)] disabled:cursor-not-allowed"
 						/>
 
 						<div class="text-[10px] font-mono text-white/40 whitespace-nowrap">
-							Tick {currentTick} <span class="text-white/10">/ {states.length - 1}</span>
+							Tick {currentTick} <span class="text-white/10">/ {isLive ? currentTick : states.length - 1}</span>
 						</div>
 					</div>
 				</div>

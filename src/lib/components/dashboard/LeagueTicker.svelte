@@ -17,20 +17,31 @@
 			.select(`
 				home_score,
 				away_score,
+				scheduled_time,
+				leagues (protocol_config),
 				home_team:teams!home_team_id (name),
 				away_team:teams!away_team_id (name)
 			`)
 			.eq('status', 'simulated')
 			.eq('season_id', activeSeason.id)
-			.order('scheduled_time', { ascending: false })
-			.limit(10);
+			.order('scheduled_time', { ascending: false });
 
 		if (error) {
 			console.error('Error fetching ticker events:', error);
 			return;
 		}
 
-		events = data.map(m => {
+		const nowTime = new Date().getTime();
+		const validMatches = (data || []).filter(m => {
+			const config = (m as any).leagues?.protocol_config || {};
+			const tickRate = config.tickRateMs || 750;
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+			const startTime = new Date(m.scheduled_time).getTime();
+			const endTime = startTime + (leagueMaxTicks * tickRate);
+			return nowTime >= endTime;
+		}).slice(0, 10);
+
+		events = validMatches.map(m => {
 			const home = m.home_team as unknown as { name: string };
 			const away = m.away_team as unknown as { name: string };
 			return `${home?.name || 'Unknown'} ${m.home_score} - ${m.away_score} ${away?.name || 'Unknown'}`;
