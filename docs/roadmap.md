@@ -49,7 +49,15 @@ _The goal is to refine the "vibe" and performance of the platform before locking
 
 ## Upcoming Phases
 
-### Phase 5: GitHub Auth & The Contributor Ecosystem
+### Phase 5: League & Team Operations
+
+_The goal is to build out the UI tooling necessary for League Administration, Team Practice, and Fan Viewing, establishing the core gameplay loop before locking it behind auth._
+
+- [ ] **League Administration**: A `/admin/league` dashboard for creating seasons, generating schedules, and managing simulation triggers.
+- [ ] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
+- [ ] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
+
+### Phase 6: GitHub Auth & The Contributor Ecosystem
 
 _The goal is to seamlessly integrate the community and establish the formal RBAC foundation._
 
@@ -59,7 +67,7 @@ _The goal is to seamlessly integrate the community and establish the formal RBAC
   - Initially powered by user submissions.
   - Implementing targeted scraping for highly trusted profiles (e.g., reliable Twitter feeds or YouTube channels).
 
-### Phase 6: The Protocol RFC Process & Reputation
+### Phase 7: The Protocol RFC Process & Reputation
 
 _The goal is to formalize how the game evolves and how trust is built._
 

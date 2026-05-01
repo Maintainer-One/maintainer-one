@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { GameState, Position } from '../../../packages/engine/types';
 
-	let { state }: { state: GameState } = $props();
+	let { state, showControlMap = false }: { state: GameState, showControlMap?: boolean } = $props();
 
 	const GRID_SIZE = 10;
 
@@ -23,6 +23,20 @@
 			<div class="border-[0.5px] border-[var(--color-brand-primary)]/20"></div>
 		{/each}
 	</div>
+
+	<!-- Control Map Overlay -->
+	{#if showControlMap && state.controlMap}
+		<div class="absolute inset-0 grid grid-cols-10 grid-rows-10">
+			{#each state.controlMap as row, y}
+				{#each row as cell, x}
+					<div 
+						class="transition-colors duration-500"
+						style="background-color: {cell && cell !== 'CONTESTED' ? `${state.teams[cell].color}22` : cell === 'CONTESTED' ? '#f59e0b11' : 'transparent'}"
+					></div>
+				{/each}
+			{/each}
+		</div>
+	{/if}
 
 	<!-- Point Zones -->
 	{#each state.pointZones as pz}
@@ -56,18 +70,20 @@
             "
 		>
 			<div
-				class="relative flex h-4/5 w-4/5 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md transition-colors duration-300
-                {player.team === 'A' ? 'border-blue-500 bg-blue-500/20 text-blue-300 shadow-blue-500/20' : 'border-rose-500 bg-rose-500/20 text-rose-300 shadow-rose-500/20'}"
+				class="relative flex h-4/5 w-4/5 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md transition-colors duration-300"
+				style="border-color: {state.teams[player.team].color}; background-color: {state.teams[player.team].color}33; color: {state.teams[player.team].color}; box-shadow: 0 0 10px {state.teams[player.team].color}33;"
 			>
-				<span class="text-[10px] font-black uppercase">{player.id}</span>
+				<span class="text-[10px] font-black uppercase">{state.teams[player.team].name[0]}{player.id.slice(1)}</span>
 				
 				{#if player.status === 'stunned'}
 					<span class="absolute -top-2 -right-2 text-[8px] font-black bg-rose-500 text-white rounded-full w-4 h-4 flex items-center justify-center animate-bounce shadow-lg">⚡</span>
 				{/if}
 				
 				<!-- Team Indicator Glow -->
-				<div class="absolute -inset-1.5 -z-10 animate-pulse rounded-full opacity-20 
-                    {player.team === 'A' ? 'bg-blue-400' : 'bg-rose-400'}">
+				<div 
+					class="absolute -inset-1.5 -z-10 animate-pulse rounded-full opacity-20"
+					style="background-color: {state.teams[player.team].color}"
+				>
                 </div>
 			</div>
 		</div>
@@ -81,7 +97,7 @@
                     Match Concluded
                 </div>
                 <h2 class="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">
-                    Team <span class="{state.winner === 'A' ? 'text-blue-400' : 'text-rose-400'}">{state.winner}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
+                    <span style="color: {state.teams[state.winner].color}">{state.teams[state.winner].name}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
                 </h2>
                 <div class="mt-6 flex flex-col items-center gap-1">
                     <p class="text-white/40 font-bold uppercase tracking-[0.2em] text-[10px]">Capture complete</p>

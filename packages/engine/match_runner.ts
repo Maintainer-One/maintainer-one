@@ -14,9 +14,10 @@ export async function simulateMatch(
 	protocolVersion: string,
 	homeLogic: TeamLogic,
 	awayLogic: TeamLogic,
-	config?: any
+	config?: any,
+	teamData?: { A: any, B: any }
 ): Promise<{ finalState: GameState; replay?: GameState[] }> {
-	let state = createInitialState(seed, protocolVersion, config);
+	let state = createInitialState(seed, protocolVersion, config, teamData);
 	const replay: GameState[] = [state];
 
 	for (let i = 0; i < MAX_TICKS; i++) {

@@ -29,8 +29,8 @@ export function tick(state: GameState, actions: PlayerAction[], config?: any): G
 /**
  * Creates a fresh game state for a specific Protocol.
  */
-export function createInitialState(seed: number, protocolVersion: string = 'v1', config?: any): GameState {
+export function createInitialState(seed: number, protocolVersion: string = 'v1', config?: any, teams?: { A: any, B: any }): GameState {
 	const protocol = getProtocol(protocolVersion);
 	const activeConfig = (config && Object.keys(config).length > 0) ? config : protocol.defaultConfig;
-	return protocol.createInitialState(activeConfig, seed);
+	return protocol.createInitialState(activeConfig, seed, teams);
 }

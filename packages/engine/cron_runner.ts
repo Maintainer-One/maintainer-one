@@ -22,8 +22,8 @@ async function runCron() {
         .select(`
             *,
             leagues (protocol_version, protocol_config),
-            home_team:teams!home_team_id (id, active_version_id),
-            away_team:teams!away_team_id (id, active_version_id)
+            home_team:teams!home_team_id (id, name, color, active_version_id),
+            away_team:teams!away_team_id (id, name, color, active_version_id)
         `)
         .eq('status', 'pending')
         .lte('scheduled_time', new Date().toISOString());
@@ -79,7 +79,9 @@ async function runCron() {
                 homeLogic,
                 awayLogic,
                 // @ts-ignore
-                match.leagues.protocol_config
+                match.leagues.protocol_config,
+                // @ts-ignore
+                { A: match.home_team, B: match.away_team }
             );
 
             // 4. Update Match in DB

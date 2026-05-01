@@ -9,12 +9,23 @@ export type Position = {
 
 export type TeamID = 'A' | 'B';
 
+export type PlayerStats = {
+	squaresMoved: number;
+	idleTicks: number;
+	singleStuns: number;
+	mutualStuns: number;
+	expectedCaptures: number;
+	contestedCaptures: number;
+	stolenCaptures: number;
+};
+
 export type Player = {
 	id: string;
 	team: TeamID;
 	position: Position;
 	status: 'active' | 'stunned' | 'knocked_out';
 	stunTicks?: number;
+	stats: PlayerStats;
 };
 
 export type PointZone = {
@@ -23,16 +34,35 @@ export type PointZone = {
 	_despawnAge: number; // Hidden from logic, despawns when age >= _despawnAge
 };
 
+export type TeamStats = {
+	controlPercentage: number;
+	averageControlPercentage: number;
+	contestedPercentage: number;
+	averageContestedPercentage: number;
+	oppositionPercentage: number;
+	averageOppositionPercentage: number;
+	expectedSpawns: number;
+	contestedSpawns: number;
+	opposedSpawns: number;
+	despawns: {
+		expected: number;
+		contested: number;
+		opposed: number;
+	};
+	luckScore: number;
+};
+
 export type GameState = {
 	tick: number;
 	protocolVersion: string;
-	teams: Record<TeamID, { name: string; score: number }>;
+	teams: Record<TeamID, { name: string; score: number; color: string; stats: TeamStats }>;
 	players: Player[];
 	pointZones: PointZone[];
 	nextZoneSpawnTick: number | null;
 	rngState: number; // The seed/state for the next random call
 	isFinished: boolean;
 	winner: TeamID | null;
+	controlMap?: (TeamID | 'CONTESTED' | null)[][];
 };
 
 export type ActionType = 'MOVE' | 'STAY';

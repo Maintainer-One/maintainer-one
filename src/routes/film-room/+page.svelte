@@ -13,7 +13,7 @@
 	import { fade } from 'svelte/transition';
 	import { scratchpad } from '$lib/stores/scratchpad';
 
-	type MatchItem = { id: string, home_team: { name: string }, away_team: { name: string } };
+	type MatchItem = { id: string, home_team: { name: string, color: string }, away_team: { name: string, color: string } };
 	let replays = $state<MatchItem[]>([]);
 	let selectedReplayId = $state<string | null>(null);
 	let states = $state<GameState[]>([]);
@@ -99,8 +99,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				seed,
 				league_id,
 				leagues (protocol_version, protocol_config),
-				home_team:teams!home_team_id (id, active_version_id),
-				away_team:teams!away_team_id (id, active_version_id)
+				home_team:teams!home_team_id (id, name, color, active_version_id),
+				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
 			.eq('id', matchId)
 			.single();
@@ -135,7 +135,10 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		// Initialize from tick 0
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config);
+		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config, {
+			A: match.home_team,
+			B: match.away_team
+		});
 		states = [initialState];
 		currentTick = 0;
 
@@ -214,96 +217,96 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	let currentLogicCode = $derived(activeTab === 'REF' ? '' : teamCodes[activeTab as 'A' | 'B']);
 
+	import { modal } from '$lib/stores/modal';
+
 	async function publishLogic() {
 		if (activeTab === 'REF') return;
 		
 		const matchId = page.url.searchParams.get('match');
 		if (!matchId) {
-			alert('You must be viewing a specific match to publish logic for a team.');
+			modal.alert('Action Required', 'You must be viewing a specific match to publish logic for a team.');
 			return;
 		}
 
-		const confirmPublish = confirm(`Are you sure you want to publish this logic for Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`);
-		if (!confirmPublish) return;
+		modal.confirm(
+			'Publish Logic', 
+			`Are you sure you want to publish this logic for Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`,
+			async () => {
+				isSimulating = true;
+				
+				try {
+					// 1. Get the team ID from the match
+					const { data: match, error: matchError } = await supabase
+						.from('matches')
+						.select(`
+							home_team_id,
+							away_team_id
+						`)
+						.eq('id', matchId)
+						.single();
 
-		isSimulating = true;
-		
-		try {
-			// 1. Get the team ID from the match
-			const { data: match, error: matchError } = await supabase
-				.from('matches')
-				.select(`
-					home_team_id,
-					away_team_id
-				`)
-				.eq('id', matchId)
-				.single();
+					if (matchError || !match) throw new Error('Could not find match team data');
 
-			if (matchError || !match) throw new Error('Could not find match team data');
+					const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
+					const code = teamCodes[activeTab];
 
-			const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
-			const code = teamCodes[activeTab];
+					// 2. Transpile
+					const cleanedCode = code
+						.replace(/import\s+[\s\S]*?;/g, '')
+						.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '')
+						.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ')
+						.trim();
+					
+					const compiledCode = `
+						const module = { exports: {} };
+						const exports = module.exports;
+						${cleanedCode};
+						const logic = typeof teamLogic !== 'undefined' ? teamLogic : (module.exports.teamLogic || module.exports.default || exports.teamLogic);
+						if (!logic) throw new Error("No logic function found.");
+						return logic(sense);
+					`;
 
-			// 2. Transpile (Mocked for now - we would use esbuild in a real backend, 
-			// but for browser-side we'll just use the source code as compiled for now 
-			// if it's already JS-compatible, or we'd need a worker-side esbuild)
-			// For this MVP, we'll store the "cleaned" code from createLogic
-			
-			// Let's use a simple regex-based "transpiler" like in the worker
-			const cleanedCode = code
-				.replace(/import\s+[\s\S]*?;/g, '')
-				.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '')
-				.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ')
-				.trim();
-			
-			const compiledCode = `
-				const module = { exports: {} };
-				const exports = module.exports;
-				${cleanedCode};
-				const logic = typeof teamLogic !== 'undefined' ? teamLogic : (module.exports.teamLogic || module.exports.default || exports.teamLogic);
-				if (!logic) throw new Error("No logic function found.");
-				return logic(sense);
-			`;
+					// 3. Get next version number
+					const { data: versions, error: vError } = await supabase
+						.from('team_code_versions')
+						.select('version_number')
+						.eq('team_id', teamId)
+						.order('version_number', { ascending: false })
+						.limit(1);
 
-			// 3. Get next version number
-			const { data: versions, error: vError } = await supabase
-				.from('team_code_versions')
-				.select('version_number')
-				.eq('team_id', teamId)
-				.order('version_number', { ascending: false })
-				.limit(1);
+					const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
 
-			const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
+					// 4. Insert new version
+					const { data: newV, error: insError } = await supabase
+						.from('team_code_versions')
+						.insert({
+							team_id: teamId,
+							version_number: nextVersion,
+							source_code: code,
+							compiled_code: compiledCode
+						})
+						.select()
+						.single();
 
-			// 4. Insert new version
-			const { data: newV, error: insError } = await supabase
-				.from('team_code_versions')
-				.insert({
-					team_id: teamId,
-					version_number: nextVersion,
-					source_code: code,
-					compiled_code: compiledCode
-				})
-				.select()
-				.single();
+					if (insError) throw insError;
 
-			if (insError) throw insError;
+					// 5. Update team's active version
+					const { error: updError } = await supabase
+						.from('teams')
+						.update({ active_version_id: newV.id })
+						.eq('id', teamId);
 
-			// 5. Update team's active version
-			const { error: updError } = await supabase
-				.from('teams')
-				.update({ active_version_id: newV.id })
-				.eq('id', teamId);
+					if (updError) throw updError;
 
-			if (updError) throw updError;
-
-			alert(`Success! Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
-		} catch (err: any) {
-			console.error('Publish Error:', err);
-			alert(`Failed to publish: ${err.message}`);
-		} finally {
-			isSimulating = false;
-		}
+					modal.alert('Success', `Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
+				} catch (err: any) {
+					console.error('Publish Error:', err);
+					modal.alert('Error', `Failed to publish: ${err.message}`);
+				} finally {
+					isSimulating = false;
+				}
+			}
+		);
 	}
 
 	function requestSimulation() {
@@ -348,7 +351,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			// Fetch available replays first
 			const { data: recentMatches } = await supabase
 				.from('matches')
-				.select(`id, home_team:teams!home_team_id (name), away_team:teams!away_team_id (name)`)
+				.select(`id, home_team:teams!home_team_id (name, color), away_team:teams!away_team_id (name, color)`)
 				.eq('status', 'simulated')
 				.order('scheduled_time', { ascending: false })
 				.limit(10);
@@ -381,6 +384,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	});
 	let currentState = $derived(states[currentTick]);
 	let currentProtocol = $derived(currentState ? getProtocol(currentState.protocolVersion) : null);
+	let currentMatch = $derived(replays.find(r => r.id === selectedReplayId));
 </script>
 
 <div 
@@ -420,18 +424,20 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			{/if}
 			<!-- Tabs -->
 			<div class="flex gap-6">
-				<button 
-					onclick={() => activeTab = 'A'}
-					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'A' ? 'border-b-2 border-blue-500 text-blue-400' : 'text-white/20 hover:text-white/40'}"
-				>
-					Alpha
-				</button>
-				<button 
-					onclick={() => activeTab = 'B'}
-					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'B' ? 'border-b-2 border-rose-500 text-rose-400' : 'text-white/20 hover:text-white/40'}"
-				>
-					Bravo
-				</button>
+					<button 
+						onclick={() => activeTab = 'A'}
+						class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'A' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
+						style={activeTab === 'A' ? `border-color: ${currentMatch?.home_team?.color || '#3b82f6'}` : ''}
+					>
+						{currentMatch?.home_team?.name || 'Home'}
+					</button>
+					<button 
+						onclick={() => activeTab = 'B'}
+						class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'B' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
+						style={activeTab === 'B' ? `border-color: ${currentMatch?.away_team?.color || '#f43f5e'}` : ''}
+					>
+						{currentMatch?.away_team?.name || 'Away'}
+					</button>
 				<button 
 					onclick={() => activeTab = 'REF'}
 					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'REF' ? 'border-b-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)]' : 'text-white/20 hover:text-white/40'}"
@@ -687,16 +693,16 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					</div>
 				</div>
 
-				<div class="grid grid-cols-2 gap-3">
-					<div class="rounded-2xl border border-blue-500/10 bg-blue-500/10 p-4">
-						<div class="mb-1 text-[9px] font-black text-blue-400 uppercase tracking-wider">Alpha</div>
-						<div class="text-2xl font-black text-blue-300">{currentState?.teams.A.score ?? 0}</div>
+					<div class="grid grid-cols-2 gap-3">
+						<div class="rounded-2xl border bg-black/20 p-4 shadow-inner" style="border-color: {currentState?.teams.A.color}22">
+							<div class="mb-1 text-[9px] font-black uppercase tracking-wider" style="color: {currentState?.teams.A.color}">{currentState?.teams.A.name}</div>
+							<div class="text-2xl font-black text-white">{currentState?.teams.A.score ?? 0}</div>
+						</div>
+						<div class="rounded-2xl border bg-black/20 p-4 shadow-inner" style="border-color: {currentState?.teams.B.color}22">
+							<div class="mb-1 text-[9px] font-black uppercase tracking-wider" style="color: {currentState?.teams.B.color}">{currentState?.teams.B.name}</div>
+							<div class="text-2xl font-black text-white">{currentState?.teams.B.score ?? 0}</div>
+						</div>
 					</div>
-					<div class="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4">
-						<div class="mb-1 text-[9px] font-black text-rose-400 uppercase tracking-wider">Bravo</div>
-						<div class="text-2xl font-black text-rose-300">{currentState?.teams.B.score ?? 0}</div>
-					</div>
-				</div>
 			</section>
 
 			<!-- Live State Inspector -->

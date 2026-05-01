@@ -12,7 +12,7 @@ export interface ProtocolDefinition<ConfigType = any> {
 	resolveStandings: (config: ConfigType, matches: any[]) => any;
 
 	// --- MATCH MECHANICS ---
-	createInitialState: (config: ConfigType, seed: number) => GameState;
+	createInitialState: (config: ConfigType, seed: number, teams?: { A: any, B: any }) => GameState;
 	resolve: (config: ConfigType, state: GameState, actions: PlayerAction[]) => GameState;
 }
 

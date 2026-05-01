@@ -42,6 +42,9 @@
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
 		return () => observer.disconnect();
 	});
+
+	import Modal from '$lib/components/Modal.svelte';
 </script>
 
 {@render children()}
+<Modal />
