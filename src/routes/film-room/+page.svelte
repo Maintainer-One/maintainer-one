@@ -19,6 +19,7 @@
 	let states = $state<GameState[]>([]);
 	let currentTick = $state(0);
 	let isPlaying = $state(false);
+	let baseTickRate = $state(750);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
 	
@@ -135,7 +136,12 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		// Initialize from tick 0
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config, {
+		const config = match.leagues.protocol_config || {};
+		baseTickRate = config.tickRateMs || 750;
+		playSpeed = baseTickRate;
+
+		// @ts-ignore
+		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, config, {
 			A: match.home_team,
 			B: match.away_team
 		});
@@ -544,7 +550,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			<div class="flex flex-1 flex-col items-center justify-center gap-10 overflow-hidden min-h-0">
 				<!-- Pitch -->
 				<div class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden p-4">
-					<ReplayGrid state={currentState} />
+					<ReplayGrid state={currentState} {playSpeed} />
 				</div>
 
 				<!-- Playback Hub (Floating Glass) -->
@@ -600,7 +606,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 								onclick={() => isSpeedOpen = !isSpeedOpen}
 								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 focus:ring-1 focus:ring-[var(--color-brand-primary)] min-w-[75px] flex items-center justify-between gap-2"
 							>
-								<span>{playSpeed === 1500 ? '0.5x' : playSpeed === 750 ? '1.0x' : playSpeed === 375 ? '2.0x' : 'MAX'}</span>
+								<span>{playSpeed > baseTickRate ? '0.5x' : playSpeed === baseTickRate ? '1.0x' : playSpeed > baseTickRate / 3 ? '2.0x' : 'MAX'}</span>
 								<svg class="h-3 w-3 opacity-30 transition-transform {isSpeedOpen ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
 							</button>
 
@@ -609,7 +615,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 									class="absolute bottom-full right-0 z-50 mb-2 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-3xl shadow-2xl overflow-hidden p-1 min-w-[85px]"
 									transition:fade={{ duration: 150 }}
 								>
-									{#each [{v: 1500, l: '0.5x'}, {v: 750, l: '1.0x'}, {v: 375, l: '2.0x'}, {v: 100, l: 'MAX'}] as speed}
+									{#each [{v: baseTickRate * 2, l: '0.5x'}, {v: baseTickRate, l: '1.0x'}, {v: Math.floor(baseTickRate / 2), l: '2.0x'}, {v: Math.floor(baseTickRate / 4), l: 'MAX'}] as speed}
 										<button 
 											onclick={() => {
 												playSpeed = speed.v;

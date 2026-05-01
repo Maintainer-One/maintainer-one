@@ -21,7 +21,7 @@
 	let hideSpoilers = $state(true);
 	let revealedScores = $state<Record<string, boolean>>({});
 
-	const TICK_RATE_MS = 750;
+	const DEFAULT_TICK_RATE = 750;
 	const MATCH_TICKS = 1000; // Still used as a fallback if config is missing
 	const GRACE_PERIOD_MS = 5 * 60 * 1000;
 
@@ -61,8 +61,9 @@
 			.filter(m => {
 				const startTime = new Date(m.scheduled_time).getTime();
 				const config = m.leagues?.protocol_config || {};
+				const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
-				const endTimeWithGrace = startTime + (leagueMaxTicks * TICK_RATE_MS) + GRACE_PERIOD_MS;
+				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
 				
 				return m.status === 'pending' || nowTime < endTimeWithGrace;
 			})
@@ -72,8 +73,9 @@
 			.filter(m => {
 				const startTime = new Date(m.scheduled_time).getTime();
 				const config = m.leagues?.protocol_config || {};
+				const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
-				const endTimeWithGrace = startTime + (leagueMaxTicks * TICK_RATE_MS) + GRACE_PERIOD_MS;
+				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
 				return m.status === 'simulated' && nowTime >= endTimeWithGrace;
 			})
 			.sort((a, b) => new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime())
@@ -143,18 +145,19 @@
 
 		// Calculate dynamic max duration from league config
 		const config = match.leagues?.protocol_config || {};
+		const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 		const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 
 		const simResult = matchSims[match.id];
 		const actualMaxTicks = simResult ? simResult.length - 1 : leagueMaxTicks;
-		const currentTick = Math.floor((nowTime - targetTime) / TICK_RATE_MS);
+		const currentTick = Math.floor((nowTime - targetTime) / tickRate);
 
 		if (currentTick < actualMaxTicks) {
 			return { label: `LIVE - TICK ${currentTick}`, type: 'live', tick: currentTick };
 		}
 
 		// Grace period or Finished
-		const endTime = targetTime + (actualMaxTicks * TICK_RATE_MS);
+		const endTime = targetTime + (actualMaxTicks * tickRate);
 		if (nowTime < endTime + GRACE_PERIOD_MS) {
 			return { label: 'MATCH COMPLETE', type: 'grace' };
 		}

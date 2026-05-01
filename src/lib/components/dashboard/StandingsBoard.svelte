@@ -7,7 +7,7 @@
 	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 
-	const TICK_RATE_MS = 750;
+	const DEFAULT_TICK_RATE = 750;
 	const K_FACTOR = 32;
 
 	async function fetchStandings() {
@@ -74,10 +74,11 @@
 			// Calculate dynamic max duration from league config
 			// @ts-ignore
 			const config = m.leagues?.protocol_config || {};
+			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 
 			const startTime = new Date(m.scheduled_time).getTime();
-			const endTime = startTime + (leagueMaxTicks * TICK_RATE_MS);
+			const endTime = startTime + (leagueMaxTicks * tickRate);
 			
 			if (nowTime < endTime) return; // Still "Live" or not started
 

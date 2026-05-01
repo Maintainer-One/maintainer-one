@@ -56,6 +56,11 @@
 			return;
 		}
 
+		// Set play speed from config
+		// @ts-ignore
+		const config = match.leagues?.protocol_config || {};
+		playSpeed = config.tickRateMs || 750;
+
 		// @ts-ignore
 		const homeVersionId = match.home_team.active_version_id;
 		// @ts-ignore
@@ -176,7 +181,7 @@
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
 				<div class="flex-1 w-full max-w-4xl min-h-0 p-4">
-					<ReplayGrid state={currentState} {showControlMap} />
+					<ReplayGrid state={currentState} {showControlMap} {playSpeed} />
 				</div>
 
 				<!-- Playback Controls -->

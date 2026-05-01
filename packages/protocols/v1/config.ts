@@ -14,6 +14,7 @@ export interface V1Config {
     stunPenaltyTicks: number;   // How long players are stunned upon collision
     maxGameTicks: number;       // The total duration of the match
     overtimeAllowed: boolean;   // If true, game continues past maxGameTicks until all zones despawn or are captured
+    tickRateMs: number;         // Milliseconds per tick for real-time visualization
 }
 
 export const defaultV1Config: V1Config = {
@@ -28,5 +29,6 @@ export const defaultV1Config: V1Config = {
     pointZoneMaxAge: 40,
     stunPenaltyTicks: 3,
     maxGameTicks: 100,
-    overtimeAllowed: true
+    overtimeAllowed: true,
+    tickRateMs: 750
 };

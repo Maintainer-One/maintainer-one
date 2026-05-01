@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { GameState, Position } from '../../../packages/engine/types';
 
-	let { state, showControlMap = false }: { state: GameState, showControlMap?: boolean } = $props();
+	let { state, showControlMap = false, playSpeed = 750 }: { state: GameState, showControlMap?: boolean, playSpeed?: number } = $props();
 
 	const GRID_SIZE = 10;
 
@@ -61,12 +61,13 @@
 	<!-- Players -->
 	{#each state.players as player (player.id)}
 		<div
-			class="absolute flex items-center justify-center transition-all duration-750 ease-in-out"
+			class="absolute flex items-center justify-center transition-all ease-in-out"
 			style="
                 left: {getPos(player.position).left}; 
                 top: {getPos(player.position).top}; 
                 width: {getPos(player.position).width}; 
                 height: {getPos(player.position).height};
+                transition-duration: {playSpeed}ms;
             "
 		>
 			<div
@@ -108,9 +109,3 @@
     {/if}
 </div>
 
-<style>
-	/* Ensures smooth gliding between tiles */
-	.duration-750 {
-		transition-duration: 750ms;
-	}
-</style>
