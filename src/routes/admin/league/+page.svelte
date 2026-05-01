@@ -4,7 +4,16 @@
 	import { supabase } from '$lib/supabase';
 	import { fade, slide } from 'svelte/transition';
 
-	type Season = { id: string, name: string, season_number: number, status: string, start_date: string };
+	type Season = { 
+		id: string, 
+		name: string, 
+		season_number: number, 
+		status: string, 
+		start_date: string,
+		end_date?: string,
+		game_density: number,
+		league_id: string
+	};
 	type Match = { id: string, home_team: { name: string }, away_team: { name: string }, status: string, scheduled_time: string };
 
 	let seasons = $state<Season[]>([]);
@@ -13,13 +22,16 @@
 	
 	let isCreatingSeason = $state(false);
 	let newSeasonName = $state('');
+	let newSeasonStartDate = $state(new Date().toISOString().split('T')[0]);
+	let newSeasonEndDate = $state(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+	let newSeasonDensity = $state(3);
 	let isGeneratingSchedule = $state(false);
 	let isSimulatingMatch = $state<string | null>(null);
 
 	async function loadSeasons() {
 		const { data, error } = await supabase
 			.from('seasons')
-			.select('id, name, season_number, status, start_date, league_id')
+			.select('id, name, season_number, status, start_date, end_date, game_density, league_id')
 			.order('season_number', { ascending: false });
 		if (!error && data) {
 			seasons = data;
@@ -49,7 +61,33 @@
 	}
 
 	async function createSeason() {
-		if (!newSeasonName) return;
+		if (!newSeasonName || !newSeasonStartDate || !newSeasonEndDate) return;
+		
+		const parseLocalDate = (dateStr: string) => {
+			const [year, month, day] = dateStr.split('-').map(Number);
+			return new Date(year, month - 1, day);
+		};
+
+		const start = parseLocalDate(newSeasonStartDate);
+		const end = parseLocalDate(newSeasonEndDate);
+		
+		if (start >= end) {
+			modal.alert('Error', 'Start date must be before end date');
+			return;
+		}
+
+		// Overlap check
+		const overlap = seasons.find(s => {
+			const sStart = new Date(s.start_date);
+			const sEnd = s.end_date ? new Date(s.end_date) : sStart; // Fallback if no end_date
+			return (start < sEnd && end > sStart);
+		});
+
+		if (overlap) {
+			modal.alert('Overlap Error', `This season overlaps with Season ${overlap.season_number} (${overlap.name})`);
+			return;
+		}
+
 		isCreatingSeason = true;
 		
 		// Get next season number
@@ -65,7 +103,9 @@
 				season_number: nextNum,
 				league_id: leagues.id,
 				status: 'pending',
-				start_date: new Date().toISOString()
+				start_date: start.toISOString(),
+				end_date: end.toISOString(),
+				game_density: newSeasonDensity
 			})
 			.select()
 			.single();
@@ -75,8 +115,37 @@
 			await loadSeasons();
 			selectedSeasonId = data.id;
 			await loadMatches(data.id);
+			isCreatingSeason = false;
+		} else if (error) {
+			modal.alert('Error', error.message);
 		}
 		isCreatingSeason = false;
+	}
+
+	async function deleteSeason(id: string) {
+		const season = seasons.find(s => s.id === id);
+		if (!season) return;
+
+		modal.confirm(
+			'Delete Season',
+			`Are you sure you want to delete ${season.name}? This will also delete all associated matches.`,
+			async () => {
+				const { error } = await supabase
+					.from('seasons')
+					.delete()
+					.eq('id', id);
+
+				if (!error) {
+					if (selectedSeasonId === id) {
+						selectedSeasonId = null;
+						matches = [];
+					}
+					await loadSeasons();
+				} else {
+					modal.alert('Error', error.message);
+				}
+			}
+		);
 	}
 
 	import { modal } from '$lib/stores/modal';
@@ -90,18 +159,54 @@
 			const { data: teams } = await supabase.from('teams').select('id, name');
 			if (!teams || teams.length < 2) throw new Error('Not enough teams to generate schedule');
 
-			// 2. Generate pairs (Round Robin)
-			const matchUps: { home: string, away: string }[] = [];
-			for (let i = 0; i < teams.length; i++) {
-				for (let j = i + 1; j < teams.length; j++) {
-					matchUps.push({ home: teams[i].id, away: teams[j].id });
-				}
-			}
-
-			// 3. Create matches in Supabase
 			const season = seasons.find(s => s.id === selectedSeasonId)!;
 			const startDate = new Date(season.start_date);
+			const density = season.game_density || 1;
 			const leagueId = season.league_id;
+
+			// 2. Circle Method for Round Robin (Single Set)
+			let teamList = [...teams];
+			const isOdd = teamList.length % 2 !== 0;
+			if (isOdd) {
+				// @ts-ignore
+				teamList.push({ id: 'BYE', name: 'BYE' });
+			}
+
+			const numRounds = teamList.length - 1;
+			const matchesPerRound = teamList.length / 2;
+			const singleRoundRobin: { home: string, away: string }[] = [];
+
+			for (let round = 0; round < numRounds; round++) {
+				for (let i = 0; i < matchesPerRound; i++) {
+					const home = teamList[i];
+					const away = teamList[teamList.length - 1 - i];
+
+					if (home.id !== 'BYE' && away.id !== 'BYE') {
+						if (round % 2 === 0) {
+							singleRoundRobin.push({ home: home.id, away: away.id });
+						} else {
+							singleRoundRobin.push({ home: away.id, away: home.id });
+						}
+					}
+				}
+				const rest = teamList.slice(1);
+				const last = rest.pop()!;
+				teamList = [teamList[0], last, ...rest];
+			}
+
+			// 3. Calculate repeats based on duration and density
+			const end = season.end_date ? new Date(season.end_date) : new Date(startDate.getTime() + 14 * 24 * 60 * 60 * 1000);
+			const durationDays = (end.getTime() - startDate.getTime()) / (24 * 60 * 60 * 1000);
+			const targetMatches = Math.floor(durationDays * density);
+			const numRepeats = Math.max(1, Math.floor(targetMatches / singleRoundRobin.length));
+			
+			const matchUps: { home: string, away: string }[] = [];
+			for (let i = 0; i < numRepeats; i++) {
+				matchUps.push(...singleRoundRobin);
+			}
+
+			// 4. Create matches in Supabase with density-based timing
+			const intervalMs = (24 * 60 * 60 * 1000) / density;
 
 			const matchInserts = matchUps.map((m, idx) => ({
 				league_id: leagueId,
@@ -110,14 +215,14 @@
 				away_team_id: m.away,
 				status: 'pending',
 				seed: Math.floor(Math.random() * 1000000),
-				scheduled_time: new Date(startDate.getTime() + idx * 12 * 60 * 60 * 1000).toISOString() // 2 games a day (every 12 hours)
+				scheduled_time: new Date(startDate.getTime() + idx * intervalMs).toISOString()
 			}));
 
 			const { error } = await supabase.from('matches').insert(matchInserts);
 			if (error) throw error;
 
 			await loadMatches(selectedSeasonId);
-			modal.alert('Success', 'Schedule generated successfully!');
+			modal.alert('Success', `Schedule generated! ${matchUps.length} matches across ${numRepeats} full round-robins.`);
 		} catch (err: any) {
 			modal.alert('Error', err.message);
 		} finally {
@@ -202,13 +307,47 @@
 			
 			{#if isCreatingSeason}
 				<div class="p-6 rounded-2xl bg-[var(--color-brand-primary)]/5 border border-[var(--color-brand-primary)]/20 space-y-4" transition:slide>
-					<input 
-						type="text" 
-						bind:value={newSeasonName} 
-						placeholder="Season Name (e.g. Spring 2026)"
-						class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-					/>
-					<div class="flex gap-2">
+					<div class="space-y-1">
+						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Name</label>
+						<input 
+							type="text" 
+							bind:value={newSeasonName} 
+							placeholder="Season Name (e.g. Spring 2026)"
+							class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+						/>
+					</div>
+
+					<div class="grid grid-cols-2 gap-4">
+						<div class="space-y-1">
+							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Start Date</label>
+							<input 
+								type="date" 
+								bind:value={newSeasonStartDate} 
+								class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+							/>
+						</div>
+						<div class="space-y-1">
+							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">End Date</label>
+							<input 
+								type="date" 
+								bind:value={newSeasonEndDate} 
+								class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+							/>
+						</div>
+					</div>
+
+					<div class="space-y-1">
+						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Game Density (Games/Day)</label>
+						<input 
+							type="number" 
+							min="1"
+							max="24"
+							bind:value={newSeasonDensity} 
+							class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+						/>
+					</div>
+
+					<div class="flex gap-2 pt-2">
 						<button 
 							onclick={createSeason}
 							class="flex-1 rounded-xl bg-[var(--color-brand-primary)] py-3 text-[9px] font-black uppercase text-black"
@@ -227,21 +366,40 @@
 
 			<div class="space-y-2">
 				{#each seasons as season}
-					<button 
-						onclick={() => {
-							selectedSeasonId = season.id;
-							loadMatches(season.id);
-						}}
-						class="w-full flex items-center justify-between p-4 rounded-xl border transition-all {selectedSeasonId === season.id ? 'bg-[var(--color-brand-primary)]/10 border-[var(--color-brand-primary)]/30 text-white' : 'bg-black/20 border-white/5 text-white/40 hover:bg-black/40'}"
-					>
-						<div class="flex flex-col items-start">
-							<span class="text-[10px] font-black uppercase tracking-widest">Season {season.season_number}</span>
-							<span class="text-xs font-bold">{season.name}</span>
-						</div>
-						<div class="px-2 py-0.5 rounded bg-black/40 text-[8px] font-black uppercase tracking-widest">
-							{season.status}
-						</div>
-					</button>
+					<div class="group relative">
+						<button 
+							onclick={() => {
+								selectedSeasonId = season.id;
+								loadMatches(season.id);
+							}}
+							class="w-full flex items-center justify-between p-4 rounded-xl border transition-all {selectedSeasonId === season.id ? 'bg-[var(--color-brand-primary)]/10 border-[var(--color-brand-primary)]/30 text-white' : 'bg-black/20 border-white/5 text-white/40 hover:bg-black/40'}"
+						>
+							<div class="flex flex-col items-start">
+								<span class="text-[10px] font-black uppercase tracking-widest">Season {season.season_number}</span>
+								<span class="text-xs font-bold">{season.name}</span>
+								<div class="flex items-center gap-2 mt-1 opacity-40">
+									<span class="text-[8px] font-black uppercase">{new Date(season.start_date).toLocaleDateString()}</span>
+									<span class="text-[8px] font-black opacity-20">→</span>
+									<span class="text-[8px] font-black uppercase">{season.end_date ? new Date(season.end_date).toLocaleDateString() : '??'}</span>
+									<span class="text-[8px] font-black ml-1 bg-white/5 px-1 rounded">{season.game_density} GPD</span>
+								</div>
+							</div>
+							<div class="px-2 py-0.5 rounded bg-black/40 text-[8px] font-black uppercase tracking-widest">
+								{season.status}
+							</div>
+						</button>
+						
+						<button 
+							onclick={(e) => {
+								e.stopPropagation();
+								deleteSeason(season.id);
+							}}
+							class="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500/40 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all z-10"
+							title="Delete Season"
+						>
+							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+						</button>
+					</div>
 				{/each}
 			</div>
 		</aside>

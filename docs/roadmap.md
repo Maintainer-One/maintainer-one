@@ -52,10 +52,13 @@ _The goal is to refine the "vibe" and performance of the platform before locking
 ### Phase 5: League & Team Operations
 
 _The goal is to build out the UI tooling necessary for League Administration, Team Practice, and Fan Viewing, establishing the core gameplay loop before locking it behind auth._
+o
 
 - [ ] **League Administration**: A `/admin/league` dashboard for creating seasons, generating schedules, and managing simulation triggers.
 - [ ] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
 - [ ] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
+- [ ] **Game Lore**: Establish the foundational lore and narrative for the game.
+- [ ] **Protocol V1 Scoring Update**: Update the V1 protocol to award points for the highest and lowest of each stat (e.g., the player most stunned and the player least stunned each earn their team a point). Points structure: Wins = 3, Draws = 1, Most/Least of each stat = 1, Losses = 0.
 
 ### Phase 6: GitHub Auth & The Contributor Ecosystem
 
