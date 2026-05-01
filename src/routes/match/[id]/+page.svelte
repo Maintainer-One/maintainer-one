@@ -20,7 +20,8 @@
 	let isSimulating = $state(false);
 	let showControlMap = $state(true);
 
-	let matchData = $state<{ home_team: { name: string }, away_team: { name: string } } | null>(null);
+	let matchData = $state<any | null>(null);
+	let isPreview = $state(false);
 
 	async function loadMatch(matchId: string) {
 		isSimulating = true;
@@ -30,6 +31,9 @@
 			.select(`
 				seed,
 				league_id,
+				scheduled_time,
+				season_id,
+				seasons (season_number),
 				leagues (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
@@ -44,7 +48,13 @@
 		}
 
 		// @ts-ignore
-		matchData = { home_team: match.home_team, away_team: match.away_team };
+		matchData = match;
+		isPreview = new Date() < new Date(match.scheduled_time);
+
+		if (isPreview) {
+			isSimulating = false;
+			return;
+		}
 
 		// @ts-ignore
 		const homeVersionId = match.home_team.active_version_id;
@@ -120,6 +130,8 @@
 	});
 
 	let currentState = $derived(states[currentTick]);
+
+	import MatchPreview from '$lib/components/match/MatchPreview.svelte';
 </script>
 
 <div class="flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 font-sans selection:bg-[var(--color-brand-primary)]/30">
@@ -159,7 +171,9 @@
 			</div>
 		</header>
 
-		{#if currentState}
+		{#if isPreview}
+			<MatchPreview match={matchData} />
+		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
 				<div class="flex-1 w-full max-w-4xl min-h-0 p-4">
 					<ReplayGrid state={currentState} {showControlMap} />

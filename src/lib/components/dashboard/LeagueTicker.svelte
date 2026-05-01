@@ -37,7 +37,11 @@
 		});
 
 		if (events.length === 0) {
-			events = ["Inaugural Season is live!", "Teams are preparing for their first matches.", "Spectators welcome in the Film Room."];
+			events = [
+				activeSeason ? `${activeSeason.name} is approaching!` : "Welcome to Maintainer One.",
+				"Teams are refining their protocols.",
+				"Check the schedule for upcoming match times."
+			];
 		}
 	}
 
