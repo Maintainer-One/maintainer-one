@@ -263,6 +263,8 @@
 		}
 	}
 
+	import { runSimulation } from '$lib/simulation';
+
 	async function triggerSimulation(matchId: string) {
 		isSimulatingMatch = matchId;
 		
@@ -274,20 +276,24 @@
 					seed,
 					league_id,
 					leagues (protocol_version, protocol_config),
-					home_team:teams!home_team_id (id, active_version_id),
-					away_team:teams!away_team_id (id, active_version_id)
+					home_team:teams!home_team_id (id, name, color, active_version_id),
+					away_team:teams!away_team_id (id, name, color, active_version_id)
 				`)
 				.eq('id', matchId)
 				.single();
 
 			if (error || !match) throw error;
 
+			const states = await runSimulation(match);
+			const finalState = states[states.length - 1];
+
 			const { error: updError } = await supabase
 				.from('matches')
 				.update({ 
 					status: 'simulated', 
-					home_score: Math.floor(Math.random() * 50),
-					away_score: Math.floor(Math.random() * 50)
+					home_score: finalState.teams.A.score,
+					away_score: finalState.teams.B.score,
+					winner_id: finalState.winner === 'A' ? match.home_team.id : (finalState.winner === 'B' ? match.away_team.id : null)
 				})
 				.eq('id', matchId);
 

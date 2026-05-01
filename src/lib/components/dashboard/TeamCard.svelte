@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { base } from '$app/paths';
+
 	let {
+		id,
 		name = 'Azure',
 		color = '#007FFF',
 		record = '0-0-0',
 		rating = '1000',
 	} = $props<{
+		id: string;
 		name?: string;
 		color?: string;
 		record?: string;
@@ -15,8 +19,9 @@
 	let gradientStyle = $derived(`background: linear-gradient(135deg, ${color}22 0%, transparent 100%); border-left-color: ${color};`);
 </script>
 
-<div
-	class="group relative overflow-hidden rounded-xl border border-white/10 bg-glass transition-all hover:bg-white/10 hover:shadow-lg"
+<a
+	href="{base}/team/{id}"
+	class="group relative block overflow-hidden rounded-xl border border-white/10 bg-glass transition-all hover:bg-white/10 hover:shadow-lg"
 	style="border-left-width: 4px; {gradientStyle}"
 >
 	<div class="p-4">
@@ -31,25 +36,25 @@
 				<h3 class="text-lg font-bold tracking-tight text-white">{name}</h3>
 			</div>
 			<div class="text-right">
-				<div class="text-xs text-white/50 uppercase tracking-wider">Rating</div>
-				<div class="font-mono font-bold text-[var(--color-brand-primary)]">{rating}</div>
+				<div class="text-[9px] text-white/30 uppercase font-black tracking-[0.2em] mb-0.5">Rating</div>
+				<div class="font-mono text-lg font-black text-[var(--color-brand-primary)] leading-none">{rating}</div>
 			</div>
 		</div>
 
 		<div class="flex items-center justify-between text-sm">
-			<div class="text-[var(--color-brand-secondary)]/60">Record: <span class="text-[var(--color-brand-secondary)] font-medium">{record}</span></div>
-			<button
-				class="text-xs font-bold transition-all hover:translate-x-1"
-				style="color: color-mix(in srgb, {color}, white 60%)"
+			<div class="text-xs font-bold text-[var(--color-brand-secondary)]/40 uppercase tracking-widest">Record: <span class="text-white ml-1">{record}</span></div>
+			<div
+				class="text-[10px] font-black uppercase tracking-widest transition-all group-hover:translate-x-1"
+				style="color: {color}"
 			>
 				View Profile &rarr;
-			</button>
+			</div>
 		</div>
 	</div>
 	
 	<!-- Hover highlight effect -->
 	<div 
 		class="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
-		style="background: radial-gradient(circle at center, ${color} 0%, transparent 70%);"
+		style="background: radial-gradient(circle at center, {color} 0%, transparent 70%);"
 	></div>
-</div>
+</a>

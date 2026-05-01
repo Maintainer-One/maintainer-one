@@ -5,11 +5,25 @@
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
 
-	let upcomingMatches: any[] = $state([]);
-	let recentMatches: any[] = $state([]);
+	import { runSimulation } from '$lib/simulation';
+
+	let upcomingMatches = $state<any[]>([]);
+	let recentMatches = $state<any[]>([]);
 	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 	let now = $state(new Date());
+
+	// Live Simulation State
+	let matchSims = $state<Record<string, any[]>>({});
+	let simulatingMatches = new Set<string>();
+
+	// Spoiler Protection
+	let hideSpoilers = $state(true);
+	let revealedScores = $state<Record<string, boolean>>({});
+
+	const TICK_RATE_MS = 750;
+	const MATCH_TICKS = 1000; // Still used as a fallback if config is missing
+	const GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 	async function fetchMatches() {
 		isLoading = true;
@@ -22,86 +36,161 @@
 			return;
 		}
 
-		// 1. Fetch upcoming matches (pending)
-		const { data: upcoming } = await supabase
+		const { data, error } = await supabase
 			.from('matches')
 			.select(`
-				id, status, home_score, away_score, scheduled_time,
-				home_team:teams!home_team_id (name, color),
-				away_team:teams!away_team_id (name, color)
+				id, status, home_score, away_score, scheduled_time, seed,
+				leagues (protocol_version, protocol_config),
+				home_team:teams!home_team_id (id, name, color, active_version_id),
+				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
 			.eq('season_id', activeSeason.id)
-			.eq('status', 'pending')
-			.order('scheduled_time', { ascending: true })
-			.limit(6);
+			.order('scheduled_time', { ascending: true });
 
-		// 2. Fetch recent matches (simulated)
-		const { data: recent } = await supabase
-			.from('matches')
-			.select(`
-				id, status, home_score, away_score, scheduled_time,
-				home_team:teams!home_team_id (name, color),
-				away_team:teams!away_team_id (name, color)
-			`)
-			.eq('season_id', activeSeason.id)
-			.eq('status', 'simulated')
-			.order('scheduled_time', { ascending: false })
-			.limit(6);
+		if (error) {
+			console.error('Error fetching matches:', error);
+			isLoading = false;
+			return;
+		}
 
-		upcomingMatches = upcoming || [];
-		recentMatches = recent || [];
+		const allMatches = data || [];
+		const nowTime = now.getTime();
+
+		// Logic for sectioning
+		upcomingMatches = allMatches
+			.filter(m => {
+				const startTime = new Date(m.scheduled_time).getTime();
+				const config = m.leagues?.protocol_config || {};
+				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+				const endTimeWithGrace = startTime + (leagueMaxTicks * TICK_RATE_MS) + GRACE_PERIOD_MS;
+				
+				return m.status === 'pending' || nowTime < endTimeWithGrace;
+			})
+			.slice(0, 6);
+
+		recentMatches = allMatches
+			.filter(m => {
+				const startTime = new Date(m.scheduled_time).getTime();
+				const config = m.leagues?.protocol_config || {};
+				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+				const endTimeWithGrace = startTime + (leagueMaxTicks * TICK_RATE_MS) + GRACE_PERIOD_MS;
+				return m.status === 'simulated' && nowTime >= endTimeWithGrace;
+			})
+			.sort((a, b) => new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime())
+			.slice(0, 6);
+
 		isLoading = false;
+
+		// Trigger background sims for Live matches
+		allMatches.forEach(m => {
+			const startTime = new Date(m.scheduled_time).getTime();
+			const endTime = startTime + (MATCH_TICKS * TICK_RATE_MS);
+			
+			if (m.status === 'simulated' && nowTime >= startTime && nowTime < endTime && !matchSims[m.id] && !simulatingMatches.has(m.id)) {
+				simulatingMatches.add(m.id);
+				runSimulation(m).then(states => {
+					matchSims[m.id] = states;
+					simulatingMatches.delete(m.id);
+				});
+			}
+		});
 	}
 
 	onMount(() => {
+		const stored = localStorage.getItem('hideSpoilers');
+		if (stored !== null) hideSpoilers = JSON.parse(stored);
+
 		fetchMatches();
 		const interval = setInterval(() => {
 			now = new Date();
+			// Re-fetch matches occasionally or just update the local filtering?
+			// For now, let's just refresh every 30s to keep statuses fresh
 		}, 1000);
-		return () => clearInterval(interval);
+
+		const refreshInterval = setInterval(fetchMatches, 30000);
+
+		return () => {
+			clearInterval(interval);
+			clearInterval(refreshInterval);
+		};
 	});
 
-	function formatMatchTime(scheduledTime: string, status: string) {
-		const target = new Date(scheduledTime);
-		const diff = target.getTime() - now.getTime();
+	$effect(() => {
+		localStorage.setItem('hideSpoilers', JSON.stringify(hideSpoilers));
+	});
 
-		if (status === 'simulated') {
-			const diffMins = Math.floor(Math.abs(diff) / 60000);
-			const diffHours = Math.floor(diffMins / 60);
-			const diffDays = Math.floor(diffHours / 24);
-
-			if (diffMins < 1) return 'Just now';
-			if (diffMins < 60) return `${diffMins}m ago`;
-			if (diffHours < 24) return `${diffHours}h ago`;
-			return `${diffDays}d ago`;
-		}
+	function getMatchStatus(match: any) {
+		const target = new Date(match.scheduled_time);
+		const targetTime = target.getTime();
+		const nowTime = now.getTime();
+		const diff = targetTime - nowTime;
 
 		if (diff > 0) {
+			// Upcoming
 			if (target.toDateString() === now.toDateString()) {
 				const h = Math.floor(diff / 3600000);
 				const m = Math.floor((diff % 3600000) / 60000);
 				const s = Math.floor((diff % 60000) / 1000);
-				return `Starts in ${h > 0 ? h + 'h ' : ''}${m}m ${s}s`;
+				return { label: `Starts in ${h > 0 ? h + 'h ' : ''}${m}m ${s}s`, type: 'upcoming' };
 			} else {
-				return target.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+				return { label: target.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }), type: 'upcoming' };
 			}
 		}
 
-		if (status === 'live') return 'LIVE NOW';
-		return 'In Progress';
+		if (match.status === 'pending') {
+			return { label: 'DELAYED', type: 'delayed' };
+		}
+
+		// Calculate dynamic max duration from league config
+		const config = match.leagues?.protocol_config || {};
+		const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+
+		const simResult = matchSims[match.id];
+		const actualMaxTicks = simResult ? simResult.length - 1 : leagueMaxTicks;
+		const currentTick = Math.floor((nowTime - targetTime) / TICK_RATE_MS);
+
+		if (currentTick < actualMaxTicks) {
+			return { label: `LIVE - TICK ${currentTick}`, type: 'live', tick: currentTick };
+		}
+
+		// Grace period or Finished
+		const endTime = targetTime + (actualMaxTicks * TICK_RATE_MS);
+		if (nowTime < endTime + GRACE_PERIOD_MS) {
+			return { label: 'MATCH COMPLETE', type: 'grace' };
+		}
+
+		const totalDiffMins = Math.floor(Math.abs(nowTime - targetTime) / 60000);
+		const diffHours = Math.floor(totalDiffMins / 60);
+		const diffDays = Math.floor(diffHours / 24);
+
+		if (totalDiffMins < 60) return { label: `${totalDiffMins}m ago`, type: 'past' };
+		if (diffHours < 24) return { label: `${diffHours}h ago`, type: 'past' };
+		return { label: `${diffDays}d ago`, type: 'past' };
+	}
+
+	function getLiveScore(matchId: string, tick: number) {
+		const states = matchSims[matchId];
+		if (!states) return { A: 0, B: 0 };
+		const state = states[Math.min(tick, states.length - 1)];
+		return { A: state.teams.A.score, B: state.teams.B.score };
 	}
 </script>
 
 {#snippet matchCard(match: any)}
+	{@const status = getMatchStatus(match)}
+	{@const liveScore = status.type === 'live' ? getLiveScore(match.id, status.tick!) : null}
+	{@const isRevealed = revealedScores[match.id] || !hideSpoilers}
+	
 	<div class="group relative flex flex-col gap-3 rounded-xl border border-white/10 bg-glass p-4 transition-all hover:bg-white/10 hover:shadow-lg">
-		{#if match.status === 'live'}
-			<div class="absolute -right-2 -top-2 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-500 border border-red-500/50">
+		{#if status.type === 'live'}
+			<div class="absolute -right-2 -top-2 flex items-center gap-1 rounded-full bg-red-500/20 px-3 py-1 text-xs font-bold text-red-500 border border-red-500/50 shadow-lg backdrop-blur-md">
 				<span class="h-2 w-2 animate-pulse rounded-full bg-red-500"></span>
 				LIVE
 			</div>
 		{/if}
 
 		<div class="flex flex-1 items-center justify-between">
+			<!-- Team A -->
 			<div class="flex flex-1 flex-col items-center gap-1 text-center">
 				<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.home_team.color}44; border: 2px solid {match.home_team.color}88; color: {match.home_team.color}">
 					{match.home_team.name.charAt(0)}
@@ -109,13 +198,30 @@
 				<span class="text-xs font-bold text-[var(--color-brand-secondary)]/80 line-clamp-1">{match.home_team.name}</span>
 			</div>
 
-			<div class="flex flex-col items-center justify-center px-4">
+			<!-- Score -->
+			<div class="flex flex-col items-center justify-center px-4 min-w-[120px]">
 				<div class="text-2xl font-black tracking-tighter text-white">
-					{match.home_score ?? 0} <span class="text-[var(--color-brand-secondary)]/20">-</span> {match.away_score ?? 0}
+					{#if status.type === 'upcoming' || status.type === 'delayed'}
+						0 <span class="text-[var(--color-brand-secondary)]/20">-</span> 0
+					{:else if isRevealed}
+						{liveScore ? liveScore.A : (match.home_score ?? 0)} 
+						<span class="text-[var(--color-brand-secondary)]/20">-</span> 
+						{liveScore ? liveScore.B : (match.away_score ?? 0)}
+					{:else}
+						<button 
+							onclick={(e) => { e.preventDefault(); revealedScores[match.id] = true; }}
+							class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-2 py-1 rounded-md hover:bg-[var(--color-brand-primary)]/20 transition-colors"
+						>
+							Reveal Score
+						</button>
+					{/if}
 				</div>
-				<span class="text-[10px] uppercase text-[var(--color-brand-secondary)]/40 font-bold tracking-wider">{formatMatchTime(match.scheduled_time, match.status)}</span>
+				<span class="text-[10px] uppercase font-bold tracking-wider {status.type === 'live' ? 'text-[var(--color-brand-primary)]' : 'text-[var(--color-brand-secondary)]/40'}">
+					{status.label}
+				</span>
 			</div>
 
+			<!-- Team B -->
 			<div class="flex flex-1 flex-col items-center gap-1 text-center">
 				<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.away_team.color}44; border: 2px solid {match.away_team.color}88; color: {match.away_team.color}">
 					{match.away_team.name.charAt(0)}
@@ -124,10 +230,23 @@
 			</div>
 		</div>
 
-		<div class="mt-2 flex border-t border-white/10 pt-3">
-			<a href="{base}/match/{match.id}" class="flex-1 text-center text-xs font-medium text-[var(--color-brand-primary)] transition-colors hover:text-white">
-				{match.status === 'live' ? 'Spectate Live' : (match.status === 'simulated' ? 'Watch Replay' : 'View Details')} &rarr;
-			</a>
+		<div class="mt-2 flex gap-2 border-t border-white/10 pt-3">
+			{#if status.type === 'upcoming' || status.type === 'delayed'}
+				<a href="{base}/match/{match.id}" class="flex-1 text-center text-xs font-black uppercase tracking-widest text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/10 py-2 rounded-lg">
+					View Details &rarr;
+				</a>
+			{:else if status.type === 'live'}
+				<a href="{base}/match/{match.id}" class="flex-1 text-center text-xs font-black uppercase tracking-widest text-white bg-[var(--color-brand-primary)]/20 transition-all hover:bg-[var(--color-brand-primary)]/30 py-2 rounded-lg border border-[var(--color-brand-primary)]/30">
+					Watch Match &rarr;
+				</a>
+			{:else}
+				<a href="{base}/match/{match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all hover:bg-white/5 py-2 rounded-lg">
+					Watch
+				</a>
+				<a href="{base}/film-room?match={match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/5 py-2 rounded-lg">
+					Analyze
+				</a>
+			{/if}
 		</div>
 		
 		<div class="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-10 transition-opacity rounded-xl" style="background: linear-gradient(90deg, {match.home_team.color} 0%, {match.away_team.color} 100%);"></div>
@@ -143,14 +262,20 @@
 			<p>No matches scheduled yet.</p>
 		</div>
 	{:else}
-		<!-- Upcoming Section -->
+		<!-- Upcoming & Live Section -->
 		{#if upcomingMatches.length > 0}
 			<section class="space-y-4">
 				<div class="flex items-center justify-between border-b border-white/10 pb-2">
 					<h2 class="text-xl font-bold tracking-tight text-[var(--color-brand-secondary)] flex items-center gap-2">
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
-						Upcoming Matches
+						Upcoming & Live
 					</h2>
+					<button 
+						onclick={() => hideSpoilers = !hideSpoilers}
+						class="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-white/10 transition-all {hideSpoilers ? 'bg-white/5 text-white/40' : 'bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30'}"
+					>
+						{hideSpoilers ? 'Spoilers Hidden' : 'Showing Scores'}
+					</button>
 				</div>
 				<div class="grid gap-4 sm:grid-cols-2">
 					{#each upcomingMatches as match}

@@ -7,10 +7,12 @@
 	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 
+	const TICK_RATE_MS = 750;
+	const K_FACTOR = 32;
+
 	async function fetchStandings() {
 		isLoading = true;
 		
-		// 1. Get active season
 		activeSeason = await getActiveSeason();
 		if (!activeSeason) {
 			teams = [];
@@ -30,11 +32,16 @@
 		}
 
 		// 3. Fetch matches for active season
+		// We fetch all simulated matches and their metadata to calculate ELO and filter by time
 		const { data: matchesData, error: matchesError } = await supabase
 			.from('matches')
-			.select('home_team_id, away_team_id, home_score, away_score, winner_id')
+			.select(`
+				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status,
+				leagues (protocol_config)
+			`)
 			.eq('status', 'simulated')
-			.eq('season_id', activeSeason.id);
+			.eq('season_id', activeSeason.id)
+			.order('scheduled_time', { ascending: true });
 
 		if (matchesError) {
 			console.error('Error fetching matches:', matchesError);
@@ -42,7 +49,7 @@
 			return;
 		}
 
-		// 3. Calculate records
+		// 4. Initialize standings map
 		const standingsMap = new Map();
 		teamsData.forEach(t => {
 			standingsMap.set(t.id, { 
@@ -51,16 +58,30 @@
 				losses: 0, 
 				draws: 0, 
 				points: 0,
-				rating: 1000 + Math.floor(Math.random() * 50) // Placeholder rating
+				rating: 1000
 			});
 		});
 
+		const nowTime = new Date().getTime();
+
+		// 5. Calculate records and ELO
+		// We only process matches that have fully finished their "Live" duration
 		matchesData.forEach(m => {
 			const home = standingsMap.get(m.home_team_id);
 			const away = standingsMap.get(m.away_team_id);
-			
 			if (!home || !away) return;
 
+			// Calculate dynamic max duration from league config
+			// @ts-ignore
+			const config = m.leagues?.protocol_config || {};
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+
+			const startTime = new Date(m.scheduled_time).getTime();
+			const endTime = startTime + (leagueMaxTicks * TICK_RATE_MS);
+			
+			if (nowTime < endTime) return; // Still "Live" or not started
+
+			// Update Records
 			if (m.home_score > m.away_score) {
 				home.wins++;
 				home.points += 3;
@@ -75,15 +96,30 @@
 				home.points += 1;
 				away.points += 1;
 			}
+
+			// Calculate ELO
+			const Ra = home.rating;
+			const Rb = away.rating;
+			const Ea = 1 / (1 + Math.pow(10, (Rb - Ra) / 400));
+			const Eb = 1 / (1 + Math.pow(10, (Ra - Rb) / 400));
+			
+			let Sa = 0.5; // Draw
+			if (m.home_score > m.away_score) Sa = 1;
+			else if (m.away_score > m.home_score) Sa = 0;
+			
+			const Sb = 1 - Sa;
+
+			home.rating = Math.round(Ra + K_FACTOR * (Sa - Ea));
+			away.rating = Math.round(Rb + K_FACTOR * (Sb - Eb));
 		});
 
-		// 4. Sort and format
+		// 6. Sort and format
 		teams = Array.from(standingsMap.values())
 			.map(t => ({
 				...t,
 				record: `${t.wins}-${t.losses}-${t.draws}`
 			}))
-			.sort((a, b) => b.points - a.points || b.wins - a.wins);
+			.sort((a, b) => b.points - a.points || b.rating - a.rating || b.wins - a.wins);
 
 		isLoading = false;
 	}
