@@ -309,8 +309,12 @@ export function resolveProtocolV1(
 			// If multiple players capture same zone on same tick, we can split points or give to first.
 			// Let's just give it to the first found for simplicity, though collision rules usually prevent multiple.
 			const winner = capturers[0];
+			const team = nextTeams[winner.team];
 			const scoreAwarded = config.pointZoneValue === 0 ? pz.age : config.pointZoneValue;
-			nextTeams[winner.team].score += scoreAwarded;
+			
+			team.score += scoreAwarded;
+			team.stats.totalCaptures += 1;
+			team.stats.averagePointsPerCapture = team.score / team.stats.totalCaptures;
 
 			// Track capture stats
 			const owner = controlMap[pz.position.y][pz.position.x];

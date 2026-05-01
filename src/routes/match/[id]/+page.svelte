@@ -263,6 +263,21 @@
 					</div>
 				</section>
 
+				<!-- Capture Efficiency -->
+				<section>
+					<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-6">Capture Efficiency</h3>
+					<div class="grid grid-cols-2 gap-4">
+						<div class="rounded-2xl border border-white/5 bg-white/5 p-4 text-center">
+							<div class="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1">Pts / Capture</div>
+							<div class="text-xl font-black" style="color: {currentState.teams.A.color}">{currentState.teams.A.stats.averagePointsPerCapture.toFixed(2)}</div>
+						</div>
+						<div class="rounded-2xl border border-white/5 bg-white/5 p-4 text-center">
+							<div class="text-[8px] font-black text-white/20 uppercase tracking-widest mb-1">Pts / Capture</div>
+							<div class="text-xl font-black" style="color: {currentState.teams.B.color}">{currentState.teams.B.stats.averagePointsPerCapture.toFixed(2)}</div>
+						</div>
+					</div>
+				</section>
+
 				<!-- Player Performance -->
 				<section>
 					<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-6">Player Performance</h3>

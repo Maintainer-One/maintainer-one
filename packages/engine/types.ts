@@ -50,6 +50,8 @@ export type TeamStats = {
 		opposed: number;
 	};
 	luckScore: number;
+	totalCaptures: number;
+	averagePointsPerCapture: number;
 };
 
 export type GameState = {

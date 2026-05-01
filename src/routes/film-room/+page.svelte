@@ -697,10 +697,16 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 						<div class="rounded-2xl border bg-black/20 p-4 shadow-inner" style="border-color: {currentState?.teams.A.color}22">
 							<div class="mb-1 text-[9px] font-black uppercase tracking-wider" style="color: {currentState?.teams.A.color}">{currentState?.teams.A.name}</div>
 							<div class="text-2xl font-black text-white">{currentState?.teams.A.score ?? 0}</div>
+							<div class="mt-2 text-[8px] font-black text-white/10 uppercase tracking-widest">
+								Avg {currentState?.teams.A.stats.averagePointsPerCapture.toFixed(2)} pts/cap
+							</div>
 						</div>
 						<div class="rounded-2xl border bg-black/20 p-4 shadow-inner" style="border-color: {currentState?.teams.B.color}22">
 							<div class="mb-1 text-[9px] font-black uppercase tracking-wider" style="color: {currentState?.teams.B.color}">{currentState?.teams.B.name}</div>
 							<div class="text-2xl font-black text-white">{currentState?.teams.B.score ?? 0}</div>
+							<div class="mt-2 text-[8px] font-black text-white/10 uppercase tracking-widest">
+								Avg {currentState?.teams.B.stats.averagePointsPerCapture.toFixed(2)} pts/cap
+							</div>
 						</div>
 					</div>
 			</section>

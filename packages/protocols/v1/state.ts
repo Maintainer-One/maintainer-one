@@ -32,7 +32,9 @@ export function createInitialStateV1(config: V1Config, seed: number, teams?: { A
             contested: 0,
             opposed: 0
         },
-        luckScore: 0
+        luckScore: 0,
+        totalCaptures: 0,
+        averagePointsPerCapture: 0
     });
     
     return {

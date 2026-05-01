@@ -19,7 +19,7 @@
 	async function loadSeasons() {
 		const { data, error } = await supabase
 			.from('seasons')
-			.select('id, name, season_number, status, start_date')
+			.select('id, name, season_number, status, start_date, league_id')
 			.order('season_number', { ascending: false });
 		if (!error && data) {
 			seasons = data;
@@ -302,7 +302,7 @@
 													{isSimulatingMatch === match.id ? 'Simulating...' : 'Run Sim Now'}
 												</button>
 											{:else}
-												<a href="{base}/match/${match.id}" class="text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-colors">
+												<a href="{base}/match/{match.id}" class="text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-colors">
 													View Replay
 												</a>
 											{/if}
