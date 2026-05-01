@@ -10,7 +10,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			const randomDir = directions[Math.floor(Math.random() * directions.length)];
 			actions.push({ playerId: player.id, type: 'MOVE', direction: randomDir });
 		} else {
-			const pointZone = sense.pointZone;
+			const pointZone = sense.pointZone || sense.pointZones?.[0];
 			if (!pointZone) {
 				actions.push({ playerId: player.id, type: 'STAY' });
 				continue;

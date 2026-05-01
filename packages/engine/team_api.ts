@@ -11,6 +11,7 @@ export type SensedPointZone = Omit<PointZone, '_despawnAge'>;
  */
 export type SensedState = Omit<GameState, 'pointZones'> & {
 	pointZones: SensedPointZone[];
+	pointZone?: SensedPointZone; // Convenience for bots that only care about one zone
 };
 
 /**

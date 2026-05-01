@@ -21,12 +21,15 @@ self.onmessage = async (e: MessageEvent) => {
 
 				// 1. Get actions from both teams
 				// V1 has perfect info EXCEPT for hidden despawn ages
+				const visibleZones = currentState.pointZones.map((pz: PointZone) => {
+					const { _despawnAge, ...visible } = pz;
+					return visible;
+				});
+
 				const sense = {
 					...currentState,
-					pointZones: currentState.pointZones.map((pz: PointZone) => {
-						const { _despawnAge, ...visible } = pz;
-						return visible;
-					})
+					pointZones: visibleZones,
+					pointZone: visibleZones[0]
 				};
 				
 				const alphaActions: PlayerAction[] = alphaLogic(sense) || [];

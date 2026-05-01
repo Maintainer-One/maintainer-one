@@ -24,8 +24,8 @@ export const defaultV1Config: V1Config = {
     maxPointZones: 1,
     pointZoneValue: 0, // Age-based scoring
     pointZoneForesight: 0,
-    pointZoneMinAge: 5,
-    pointZoneMaxAge: 15,
+    pointZoneMinAge: 20,
+    pointZoneMaxAge: 40,
     stunPenaltyTicks: 3,
     maxGameTicks: 100,
     overtimeAllowed: true

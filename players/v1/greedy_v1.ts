@@ -7,7 +7,7 @@ import type { PlayerAction, SensedState } from '../../packages/engine/team_api.t
  */
 export const greedyLogic = (sense: SensedState): PlayerAction[] => {
 	const actions: PlayerAction[] = [];
-	const pointZone = sense.pointZone;
+	const pointZone = sense.pointZones?.[0];
 
 	if (!pointZone) return [];
 

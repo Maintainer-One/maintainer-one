@@ -41,8 +41,8 @@ export function resolveProtocolV1(
 			const y = Math.floor(rng.next() * BOARD_SIZE);
 			
 			// Roll hidden lifespan
-			const spanRange = config.pointZoneMaxAge - config.pointZoneMinAge;
-			const lifespan = config.pointZoneMinAge + Math.floor(rng.next() * (spanRange + 1));
+			const spanRange = (config.pointZoneMaxAge ?? 40) - (config.pointZoneMinAge ?? 20);
+			const lifespan = (config.pointZoneMinAge ?? 20) + Math.floor(rng.next() * (spanRange + 1));
 			
 			pointZones.push({
 				position: { x, y },
@@ -160,7 +160,7 @@ export function resolveProtocolV1(
 	}
 	pointZones = zonesToKeep;
 
-	// Update state
+	// Final state updates
 	nextState.pointZones = pointZones;
 	nextState.nextZoneSpawnTick = nextZoneSpawnTick;
 	nextState.rngState = rng.getState();

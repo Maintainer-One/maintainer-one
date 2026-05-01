@@ -23,12 +23,15 @@ export async function simulateMatch(
 		if (state.isFinished) break;
 
 		// 1. Generate SensedState for each team (strip hidden vars)
+		const visibleZones = state.pointZones.map(pz => {
+			const { _despawnAge, ...visible } = pz;
+			return visible;
+		});
+
 		const sense = {
 			...state,
-			pointZones: state.pointZones.map(pz => {
-				const { _despawnAge, ...visible } = pz;
-				return visible;
-			})
+			pointZones: visibleZones,
+			pointZone: visibleZones[0]
 		};
 
 		// 2. Get actions from both Team Logic instances

@@ -1,387 +1,44 @@
-<script lang="ts">
-	import { base } from '$app/paths';
-	import { browser } from '$app/environment';
-	import { page } from '$app/state';
-	import { onMount, onDestroy } from 'svelte';
-	import { supabase } from '$lib/supabase';
-	import { createInitialState } from '../../../packages/engine/core';
-	import { getProtocol } from '../../../packages/protocols/registry';
-	import type { GameState } from '../../../packages/engine/types';
-	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
-	import StateInspector from '$lib/components/StateInspector.svelte';
-	import SimWorker from '$lib/workers/sim.worker?worker';
-	import { fade } from 'svelte/transition';
-	import { scratchpad } from '$lib/stores/scratchpad';
+Loading svelte-check in workspace: /home/mitch/projects/maintainer-one
+Getting Svelte diagnostics...
 
-	type MatchItem = { id: string, home_team: { name: string }, away_team: { name: string } };
-	let replays = $state<MatchItem[]>([]);
-	let selectedReplayId = $state<string | null>(null);
-	let states = $state<GameState[]>([]);
-	let currentTick = $state(0);
-	let isPlaying = $state(false);
-	let playSpeed = $state(750);
-	let playbackInterval: number | null = null;
-	
-	// UI State
-	let isLibraryOpen = $state(false);
-	let isSpeedOpen = $state(false);
-	
-	// Simulation Worker state
-	let Editor: any = $state();
-	let simWorker: Worker | null = null;
-	let isSimulating = $state(false);
-	let errorMessage = $state<string | null>(null);
-	let branchTick = $state<number | null>(null);
-	let simulationDebounceTimer: number | null = null;
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:39:32
+Error: Property 'typescriptDefaults' does not exist on type '{ deprecated: true; }'. (ts)
+			// Configure TypeScript Compiler Options
+			monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+				target: monaco.languages.typescript.ScriptTarget.ESNext,
 
-	// Layout State
-	let asideWidth = $state(450);
-	let isResizing = $state(false);
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:40:41
+Error: Property 'ScriptTarget' does not exist on type '{ deprecated: true; }'. (ts)
+			monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+				target: monaco.languages.typescript.ScriptTarget.ESNext,
+				allowNonTsExtensions: true,
 
-	// Logic Editing State
-	let activeTab = $state<'A' | 'B' | 'REF'>('A');
-	let teamCodes = $state({ A: '', B: '' });
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:42:51
+Error: Property 'ModuleResolutionKind' does not exist on type '{ deprecated: true; }'. (ts)
+				allowNonTsExtensions: true,
+				moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+				module: monaco.languages.typescript.ModuleKind.CommonJS,
 
-	const STARTER_CODE = `import type { PlayerAction, SensedState } from '../../packages/engine/team_api.ts';
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:43:41
+Error: Property 'ModuleKind' does not exist on type '{ deprecated: true; }'. (ts)
+				moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
+				module: monaco.languages.typescript.ModuleKind.CommonJS,
+				noEmit: true,
 
-export const teamLogic = (sense: SensedState): PlayerAction[] => {
-	const actions: PlayerAction[] = [];
-	const pointZone = sense.pointZones[0];
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:49:32
+Error: Property 'typescriptDefaults' does not exist on type '{ deprecated: true; }'. (ts)
+			// Feed the engine types to Monaco
+			monaco.languages.typescript.typescriptDefaults.addExtraLib(typesRaw, 'file:///packages/engine/types.ts');
+			monaco.languages.typescript.typescriptDefaults.addExtraLib(teamApiRaw, 'file:///packages/engine/team_api.ts');
 
-	if (!pointZone) return [];
+/home/mitch/projects/maintainer-one/src/lib/components/MonacoEditor.svelte:50:32
+Error: Property 'typescriptDefaults' does not exist on type '{ deprecated: true; }'. (ts)
+			monaco.languages.typescript.typescriptDefaults.addExtraLib(typesRaw, 'file:///packages/engine/types.ts');
+			monaco.languages.typescript.typescriptDefaults.addExtraLib(teamApiRaw, 'file:///packages/engine/team_api.ts');
 
-	for (const player of sense.players) {
-		if (player.status !== 'active') continue;
-
-		const targetX = pointZone.position.x;
-		const targetY = pointZone.position.y;
-		const currentX = player.position.x;
-		const currentY = player.position.y;
-
-		let action: PlayerAction = { playerId: player.id, type: 'STAY' };
-
-		// Starter Strategy: Direct path to Point Zone
-		if (currentY < targetY) {
-			action = { playerId: player.id, type: 'MOVE', direction: 'DOWN' };
-		} else if (currentY > targetY) {
-			action = { playerId: player.id, type: 'MOVE', direction: 'UP' };
-		} else if (currentX < targetX) {
-			action = { playerId: player.id, type: 'MOVE', direction: 'RIGHT' };
-		} else if (currentX > targetX) {
-			action = { playerId: player.id, type: 'MOVE', direction: 'LEFT' };
-		}
-
-		actions.push(action);
-	}
-
-	return actions;
-};`;
-
-	// Sync scratchpad with state
-	$effect(() => {
-		const unsubscribe = scratchpad.subscribe(values => {
-			// Priority: Existing state > Scratchpad > Starter Code
-			if (!teamCodes.A) teamCodes.A = values.A || STARTER_CODE;
-			if (!teamCodes.B) teamCodes.B = values.B || STARTER_CODE;
-		});
-		return unsubscribe;
-	});
-
-	// Removed loadReplay since we use loadMatchReplay exclusively now.
-
-	async function loadMatchReplay(matchId: string) {
-		stopPlayback();
-		isSimulating = true;
-		
-		const { data: match, error } = await supabase
-			.from('matches')
-			.select(`
-				seed,
-				league_id,
-				leagues (protocol_version, protocol_config),
-				home_team:teams!home_team_id (id, active_version_id),
-				away_team:teams!away_team_id (id, active_version_id)
-			`)
-			.eq('id', matchId)
-			.single();
-
-		if (error || !match) {
-			console.error('Error fetching match:', error);
-			isSimulating = false;
-			return;
-		}
-
-		// @ts-ignore
-		const homeVersionId = match.home_team.active_version_id;
-		// @ts-ignore
-		const awayVersionId = match.away_team.active_version_id;
-
-		const { data: versions, error: versionError } = await supabase
-			.from('team_code_versions')
-			.select('id, source_code, compiled_code')
-			.in('id', [homeVersionId, awayVersionId]);
-
-		if (versionError || !versions || versions.length < 2) {
-			console.error('Error fetching versions:', versionError);
-			isSimulating = false;
-			return;
-		}
-
-		const homeV = versions.find(v => v.id === homeVersionId)!;
-		const awayV = versions.find(v => v.id === awayVersionId)!;
-
-		teamCodes.A = homeV.source_code;
-		teamCodes.B = awayV.source_code;
-
-		// Initialize from tick 0
-		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config);
-		states = [initialState];
-		currentTick = 0;
-
-		// Request simulation from worker using the COMPILED code for perfect determinism
-		if (simWorker) {
-			simWorker.postMessage({
-				type: 'SIMULATE_BRANCH',
-				startState: initialState,
-				alphaCompiled: homeV.compiled_code,
-				bravoCompiled: awayV.compiled_code,
-				maxTicks: 500
-			});
-		}
-	}
-
-	function togglePlayback() {
-		if (isPlaying) stopPlayback();
-		else startPlayback();
-	}
-
-	function startPlayback() {
-		if (currentTick >= states.length - 1) currentTick = 0;
-		isPlaying = true;
-		playbackInterval = window.setInterval(() => {
-			if (currentTick < states.length - 1) currentTick++;
-			else stopPlayback();
-		}, playSpeed);
-	}
-
-	function stopPlayback() {
-		isPlaying = false;
-		if (playbackInterval) {
-			clearInterval(playbackInterval);
-			playbackInterval = null;
-		}
-	}
-
-	function handleSelection(e: Event) {
-		const target = e.target as HTMLSelectElement;
-		selectedReplayId = target.value;
-		if (selectedReplayId) {
-			loadMatchReplay(selectedReplayId);
-		}
-		branchTick = null; // Reset branch point
-	}
-
-	function stepForward() {
-		stopPlayback();
-		if (currentTick < states.length - 1) currentTick++;
-	}
-
-	function stepBackward() {
-		stopPlayback();
-		if (currentTick > 0) currentTick--;
-	}
-
-	function startResizing(e: MouseEvent) {
-		isResizing = true;
-	}
-
-	function handleMouseMove(e: MouseEvent) {
-		if (!isResizing) return;
-		asideWidth = Math.max(300, Math.min(800, e.clientX));
-	}
-
-	function stopResizing() {
-		isResizing = false;
-	}
-
-	function handleCodeChange(newCode: string) {
-		if (activeTab === 'REF') return;
-		teamCodes[activeTab] = newCode;
-		scratchpad.updateCode(activeTab, newCode);
-		requestSimulation();
-	}
-
-	let currentLogicCode = $derived(activeTab === 'REF' ? '' : teamCodes[activeTab as 'A' | 'B']);
-
-	async function publishLogic() {
-		if (activeTab === 'REF') return;
-		
-		const matchId = page.url.searchParams.get('match');
-		if (!matchId) {
-			alert('You must be viewing a specific match to publish logic for a team.');
-			return;
-		}
-
-		const confirmPublish = confirm(`Are you sure you want to publish this logic for Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`);
-		if (!confirmPublish) return;
-
-		isSimulating = true;
-		
-		try {
-			// 1. Get the team ID from the match
-			const { data: match, error: matchError } = await supabase
-				.from('matches')
-				.select(`
-					home_team_id,
-					away_team_id
-				`)
-				.eq('id', matchId)
-				.single();
-
-			if (matchError || !match) throw new Error('Could not find match team data');
-
-			const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
-			const code = teamCodes[activeTab];
-
-			// 2. Transpile (Mocked for now - we would use esbuild in a real backend, 
-			// but for browser-side we'll just use the source code as compiled for now 
-			// if it's already JS-compatible, or we'd need a worker-side esbuild)
-			// For this MVP, we'll store the "cleaned" code from createLogic
-			
-			// Let's use a simple regex-based "transpiler" like in the worker
-			const cleanedCode = code
-				.replace(/import\s+[\s\S]*?;/g, '')
-				.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '')
-				.replace(/export\s+const\s+teamLogic\s*=\s*/, 'const teamLogic = ')
-				.trim();
-			
-			const compiledCode = `
-				const module = { exports: {} };
-				const exports = module.exports;
-				${cleanedCode};
-				const logic = typeof teamLogic !== 'undefined' ? teamLogic : (module.exports.teamLogic || module.exports.default || exports.teamLogic);
-				if (!logic) throw new Error("No logic function found.");
-				return logic(sense);
-			`;
-
-			// 3. Get next version number
-			const { data: versions, error: vError } = await supabase
-				.from('team_code_versions')
-				.select('version_number')
-				.eq('team_id', teamId)
-				.order('version_number', { ascending: false })
-				.limit(1);
-
-			const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
-
-			// 4. Insert new version
-			const { data: newV, error: insError } = await supabase
-				.from('team_code_versions')
-				.insert({
-					team_id: teamId,
-					version_number: nextVersion,
-					source_code: code,
-					compiled_code: compiledCode
-				})
-				.select()
-				.single();
-
-			if (insError) throw insError;
-
-			// 5. Update team's active version
-			const { error: updError } = await supabase
-				.from('teams')
-				.update({ active_version_id: newV.id })
-				.eq('id', teamId);
-
-			if (updError) throw updError;
-
-			alert(`Success! Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
-		} catch (err: any) {
-			console.error('Publish Error:', err);
-			alert(`Failed to publish: ${err.message}`);
-		} finally {
-			isSimulating = false;
-		}
-	}
-
-	function requestSimulation() {
-		if (simulationDebounceTimer) clearTimeout(simulationDebounceTimer);
-		
-		simulationDebounceTimer = window.setTimeout(() => {
-			if (!simWorker || states.length === 0) return;
-			isSimulating = true;
-			branchTick = currentTick; // Mark the fork point
-			
-			simWorker.postMessage({
-				type: 'SIMULATE_BRANCH',
-				startState: $state.snapshot(states[currentTick]),
-				alphaCode: teamCodes.A,
-				bravoCode: teamCodes.B,
-				maxTicks: 500 - currentTick
-			});
-		}, 500);
-	}
-
-	onMount(async () => {
-		if (browser) {
-			// Initialize Worker
-			simWorker = new SimWorker();
-			simWorker.onmessage = (e) => {
-				if (e.data.type === 'SIMULATION_COMPLETE') {
-					const newBranch = e.data.states;
-					states = [...states.slice(0, currentTick), ...newBranch];
-					isSimulating = false;
-					errorMessage = null;
-					
-					// Auto-play if it's a fresh match load
-					if (currentTick === 0) startPlayback();
-				} else if (e.data.type === 'SIMULATION_ERROR') {
-					console.error('Simulation Error:', e.data.error);
-					errorMessage = e.data.error;
-					isSimulating = false;
-					branchTick = null;
-				}
-			};
-
-			// Fetch available replays first
-			const { data: recentMatches } = await supabase
-				.from('matches')
-				.select(`id, home_team:teams!home_team_id (name), away_team:teams!away_team_id (name)`)
-				.eq('status', 'simulated')
-				.order('scheduled_time', { ascending: false })
-				.limit(10);
-				
-			if (recentMatches && recentMatches.length > 0) {
-				// @ts-ignore
-				replays = recentMatches;
-			}
-
-			const matchId = page.url.searchParams.get('match');
-			if (matchId) {
-				selectedReplayId = matchId;
-				await loadMatchReplay(matchId);
-			} else if (replays.length > 0) {
-				selectedReplayId = replays[0].id;
-				await loadMatchReplay(replays[0].id);
-			}
-
-			// Initialize Smart Editor
-			Editor = (await import('$lib/components/SmartEditor.svelte')).default;
-		}
-	});
-	
-	// Client-side cleanup only
-	$effect(() => {
-		return () => {
-			stopPlayback();
-			if (simWorker) simWorker.terminate();
-		};
-	});
-	let currentState = $derived(states[currentTick]);
-	let currentProtocol = $derived(currentState ? getProtocol(currentState.protocolVersion) : null);
-</script>
+/home/mitch/projects/maintainer-one/src/routes/film-room/+page.svelte:386:1
+Warn: `<div>` with a mousemove, mouseup or mouseleave handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
 
 <div 
 	class="flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 selection:bg-[var(--color-brand-primary)]/30 font-sans"
@@ -715,22 +372,24 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	</aside>
 </div>
 
-<style>
-	input[type='range']::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		height: 14px;
-		width: 14px;
-		border-radius: 50%;
-		background: #10b981;
-		box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
-		cursor: pointer;
-	}
+/home/mitch/projects/maintainer-one/src/routes/film-room/+page.svelte:505:2
+Warn: Non-interactive element `<div>` should not be assigned mouse or keyboard event listeners
+https://svelte.dev/e/a11y_no_noninteractive_element_interactions (svelte)
+	<!-- Resize Handle -->
+	<div 
+		onmousedown={startResizing}
+		class="w-1 cursor-col-resize bg-zinc-800/50 transition-colors hover:bg-emerald-500/50 active:bg-emerald-500"
+		role="separator"
+	></div>
 
-	.no-scrollbar::-webkit-scrollbar {
-		display: none;
-	}
-	.no-scrollbar {
-		-ms-overflow-style: none;
-		scrollbar-width: none;
-	}
-</style>
+/home/mitch/projects/maintainer-one/src/routes/film-room/+page.svelte:634:4
+Warn: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+		<div class="mb-10 relative">
+			<label class="mb-3 block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
+				Match Library
+			</label>
+			<button
+
+====================================
+svelte-check found 6 errors and 3 warnings in 2 files

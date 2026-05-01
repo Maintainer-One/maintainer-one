@@ -13,7 +13,7 @@ export function tick(state: GameState, actions: PlayerAction[], config?: any): G
 	// 2. Resolve the Protocol dynamically
 	const protocol = getProtocol(state.protocolVersion);
 	// Fallback to default config if none provided
-	const activeConfig = config || protocol.defaultConfig;
+	const activeConfig = (config && Object.keys(config).length > 0) ? config : protocol.defaultConfig;
 	let nextState = protocol.resolve(activeConfig, state, actions);
 
 	// 3. Update the RNG state for the next tick
@@ -31,6 +31,6 @@ export function tick(state: GameState, actions: PlayerAction[], config?: any): G
  */
 export function createInitialState(seed: number, protocolVersion: string = 'v1', config?: any): GameState {
 	const protocol = getProtocol(protocolVersion);
-	const activeConfig = config || protocol.defaultConfig;
+	const activeConfig = (config && Object.keys(config).length > 0) ? config : protocol.defaultConfig;
 	return protocol.createInitialState(activeConfig, seed);
 }
