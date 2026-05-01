@@ -12,6 +12,7 @@
 		start_date: string,
 		end_date?: string,
 		game_density: number,
+		game_slots: string[],
 		league_id: string
 	};
 	type Match = { id: string, home_team: { name: string }, away_team: { name: string }, status: string, scheduled_time: string };
@@ -24,14 +25,14 @@
 	let newSeasonName = $state('');
 	let newSeasonStartDate = $state(new Date().toISOString().split('T')[0]);
 	let newSeasonEndDate = $state(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-	let newSeasonDensity = $state(3);
+	let newSeasonSlots = $state(['12:00', '15:00']);
 	let isGeneratingSchedule = $state(false);
 	let isSimulatingMatch = $state<string | null>(null);
 
 	async function loadSeasons() {
 		const { data, error } = await supabase
 			.from('seasons')
-			.select('id, name, season_number, status, start_date, end_date, game_density, league_id')
+			.select('id, name, season_number, status, start_date, end_date, game_density, game_slots, league_id')
 			.order('season_number', { ascending: false });
 		if (!error && data) {
 			seasons = data;
@@ -105,7 +106,8 @@
 				status: 'pending',
 				start_date: start.toISOString(),
 				end_date: end.toISOString(),
-				game_density: newSeasonDensity
+				game_density: newSeasonSlots.length,
+				game_slots: newSeasonSlots
 			})
 			.select()
 			.single();
@@ -120,6 +122,19 @@
 			modal.alert('Error', error.message);
 		}
 		isCreatingSeason = false;
+	}
+
+	async function updateMatchTime(matchId: string, newTime: string) {
+		const { error } = await supabase
+			.from('matches')
+			.update({ scheduled_time: new Date(newTime).toISOString() })
+			.eq('id', matchId);
+
+		if (!error) {
+			await loadMatches(selectedSeasonId!);
+		} else {
+			modal.alert('Error', error.message);
+		}
 	}
 
 	async function deleteSeason(id: string) {
@@ -205,18 +220,36 @@
 				matchUps.push(...singleRoundRobin);
 			}
 
-			// 4. Create matches in Supabase with density-based timing
-			const intervalMs = (24 * 60 * 60 * 1000) / density;
+			// 4. Create matches in Supabase with slot-based timing
+			const slots = season.game_slots || ['12:00', '15:00'];
+			const matchInserts = [];
+			let matchIdx = 0;
+			let dayOffset = 0;
 
-			const matchInserts = matchUps.map((m, idx) => ({
-				league_id: leagueId,
-				season_id: selectedSeasonId,
-				home_team_id: m.home,
-				away_team_id: m.away,
-				status: 'pending',
-				seed: Math.floor(Math.random() * 1000000),
-				scheduled_time: new Date(startDate.getTime() + idx * intervalMs).toISOString()
-			}));
+			while (matchIdx < matchUps.length) {
+				for (const slot of slots) {
+					if (matchIdx >= matchUps.length) break;
+
+					const [hours, minutes] = slot.split(':').map(Number);
+					const scheduledTime = new Date(startDate);
+					// Important: use getDate/setDate to handle month rollovers correctly
+					scheduledTime.setDate(startDate.getDate() + dayOffset);
+					scheduledTime.setHours(hours, minutes, 0, 0);
+
+					const m = matchUps[matchIdx];
+					matchInserts.push({
+						league_id: leagueId,
+						season_id: selectedSeasonId,
+						home_team_id: m.home,
+						away_team_id: m.away,
+						status: 'pending',
+						seed: Math.floor(Math.random() * 1000000),
+						scheduled_time: scheduledTime.toISOString()
+					});
+					matchIdx++;
+				}
+				dayOffset++;
+			}
 
 			const { error } = await supabase.from('matches').insert(matchInserts);
 			if (error) throw error;
@@ -336,15 +369,33 @@
 						</div>
 					</div>
 
-					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Game Density (Games/Day)</label>
-						<input 
-							type="number" 
-							min="1"
-							max="24"
-							bind:value={newSeasonDensity} 
-							class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-						/>
+					<div class="space-y-2">
+						<div class="flex items-center justify-between ml-1">
+							<label class="text-[8px] font-black uppercase tracking-widest text-white/40">Daily Game Slots</label>
+							<button 
+								onclick={() => newSeasonSlots = [...newSeasonSlots, '18:00']}
+								class="text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline"
+							>
+								+ Add Slot
+							</button>
+						</div>
+						<div class="grid grid-cols-2 gap-2">
+							{#each newSeasonSlots as slot, i}
+								<div class="flex gap-2">
+									<input 
+										type="time" 
+										bind:value={newSeasonSlots[i]} 
+										class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+									/>
+									<button 
+										onclick={() => newSeasonSlots = newSeasonSlots.filter((_, idx) => idx !== i)}
+										class="p-2 text-white/20 hover:text-red-500 transition-colors"
+									>
+										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+									</button>
+								</div>
+							{/each}
+						</div>
 					</div>
 
 					<div class="flex gap-2 pt-2">
@@ -381,7 +432,7 @@
 									<span class="text-[8px] font-black uppercase">{new Date(season.start_date).toLocaleDateString()}</span>
 									<span class="text-[8px] font-black opacity-20">→</span>
 									<span class="text-[8px] font-black uppercase">{season.end_date ? new Date(season.end_date).toLocaleDateString() : '??'}</span>
-									<span class="text-[8px] font-black ml-1 bg-white/5 px-1 rounded">{season.game_density} GPD</span>
+									<span class="text-[8px] font-black ml-1 bg-white/5 px-1 rounded">{season.game_slots?.length || season.game_density} SLOTS</span>
 								</div>
 							</div>
 							<div class="px-2 py-0.5 rounded bg-black/40 text-[8px] font-black uppercase tracking-widest">
@@ -442,8 +493,13 @@
 												<span style="color: {match.away_team.color || 'white'}">{match.away_team.name}</span>
 											</div>
 										</td>
-										<td class="px-6 py-4 text-[10px] font-bold text-white/40">
-											{new Date(match.scheduled_time).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+										<td class="px-6 py-4">
+											<input 
+												type="datetime-local" 
+												value={new Date(new Date(match.scheduled_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)}
+												onchange={(e) => updateMatchTime(match.id, e.currentTarget.value)}
+												class="bg-transparent border-none text-[10px] font-bold text-white/40 focus:text-white focus:outline-none cursor-pointer"
+											/>
 										</td>
 										<td class="px-6 py-4">
 											<span class="text-[9px] font-black uppercase tracking-widest {match.status === 'simulated' ? 'text-emerald-400' : 'text-amber-400'}">
