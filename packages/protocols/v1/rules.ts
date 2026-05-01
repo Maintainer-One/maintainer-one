@@ -1,4 +1,4 @@
-import type { GameState, PlayerAction, Position, PointZone, TeamID } from '../../engine/types.ts';
+import type { GameState, PlayerAction, Position, PointZone, TeamID, GameEvent } from '../../engine/types.ts';
 import type { V1Config } from './config.ts';
 import { DeterministicRNG } from '../../engine/random.ts';
 import { BOARD_SIZE } from './state.ts';
@@ -20,13 +20,16 @@ export function resolveProtocolV1(
 	let pointZones = state.pointZones.map((pz) => ({ ...pz }));
 	let nextZoneSpawnTick = state.nextZoneSpawnTick;
 
+	const lastEvents: GameEvent[] = [];
+
 	const nextState: GameState = { 
 		...state, 
 		tick: state.tick + 1,
 		teams: nextTeams,
 		players: players,
 		pointZones: pointZones,
-		nextZoneSpawnTick
+		nextZoneSpawnTick,
+		lastEvents
 	};
 
 	// --- BOARD CONTROL CALCULATION ---
@@ -124,8 +127,19 @@ export function resolveProtocolV1(
 	// --- SPAWN NEW ZONES ---
 	if (nextZoneSpawnTick !== null && nextState.tick >= nextZoneSpawnTick) {
 		if (pointZones.length < config.maxPointZones) {
-			const x = Math.floor(rng.next() * BOARD_SIZE);
-			const y = Math.floor(rng.next() * BOARD_SIZE);
+			const occupied = new Set(players.filter(p => p.status !== 'knocked_out').map(p => `${p.position.x},${p.position.y}`));
+			
+			const available = [];
+			for (let _y = 0; _y < BOARD_SIZE; _y++) {
+				for (let _x = 0; _x < BOARD_SIZE; _x++) {
+					if (!occupied.has(`${_x},${_y}`)) available.push({ x: _x, y: _y });
+				}
+			}
+
+			if (available.length > 0) {
+				const spawnPos = available[Math.floor(rng.next() * available.length)];
+				const x = spawnPos.x;
+				const y = spawnPos.y;
 			
 			// Roll hidden lifespan
 			const spanRange = (config.pointZoneMaxAge ?? 40) - (config.pointZoneMinAge ?? 20);
@@ -158,6 +172,7 @@ export function resolveProtocolV1(
 				// No owner (unreachable by both)
 				nextTeams.A.stats.opposedSpawns += 1; // Or some other category? 
 				nextTeams.B.stats.opposedSpawns += 1;
+			}
 			}
 		}
 		// Reset countdown for next spawn
@@ -286,6 +301,8 @@ export function resolveProtocolV1(
 		if (newlyStunned.has(player.id)) {
 			player.status = 'stunned';
 			player.stunTicks = config.stunPenaltyTicks;
+			
+			lastEvents.push({ type: 'STUN', playerId: player.id, position: { ...player.position } });
 
 			// Determine if it was a mutual stun
 			const partners = collisionPartners.get(player.id) || [];
@@ -310,11 +327,18 @@ export function resolveProtocolV1(
 			// Let's just give it to the first found for simplicity, though collision rules usually prevent multiple.
 			const winner = capturers[0];
 			const team = nextTeams[winner.team];
-			const scoreAwarded = config.pointZoneValue === 0 ? pz.age : config.pointZoneValue;
+			const scoreAwarded = config.pointZoneValue === 0 ? Math.max(1, pz.age) : config.pointZoneValue;
 			
 			team.score += scoreAwarded;
 			team.stats.totalCaptures += 1;
 			team.stats.averagePointsPerCapture = team.score / team.stats.totalCaptures;
+
+			lastEvents.push({
+				type: 'CAPTURE',
+				team: winner.team,
+				score: scoreAwarded,
+				position: { ...pz.position }
+			});
 
 			// Track capture stats
 			const owner = controlMap[pz.position.y][pz.position.x];

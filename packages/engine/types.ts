@@ -54,6 +54,17 @@ export type TeamStats = {
 	averagePointsPerCapture: number;
 };
 
+export type GameEvent = {
+	type: 'CAPTURE';
+	team: TeamID;
+	score: number;
+	position: Position;
+} | {
+	type: 'STUN';
+	playerId: string;
+	position: Position;
+};
+
 export type GameState = {
 	tick: number;
 	protocolVersion: string;
@@ -65,6 +76,7 @@ export type GameState = {
 	isFinished: boolean;
 	winner: TeamID | null;
 	controlMap?: (TeamID | 'CONTESTED' | null)[][];
+	lastEvents?: GameEvent[];
 };
 
 export type ActionType = 'MOVE' | 'STAY';

@@ -1,5 +1,8 @@
 import { tick } from '../../../packages/engine/core';
 import type { GameState, PlayerAction, PointZone, Player } from '../../../packages/engine/types';
+import { DeterministicRNG } from '../../../packages/engine/random';
+
+const originalMathRandom = Math.random;
 
 /**
  * Web Worker for running the simulation engine in the background.
@@ -12,6 +15,10 @@ self.onmessage = async (e: MessageEvent) => {
 		try {
 			const alphaLogic = alphaCompiled ? loadCompiled(alphaCompiled) : createLogic(alphaCode);
 			const bravoLogic = bravoCompiled ? loadCompiled(bravoCompiled) : createLogic(bravoCode);
+
+			// Sandbox Math.random for deterministic team logic
+			const sandboxRNG = new DeterministicRNG(startState.rngState ^ 0xdeadbeef);
+			self.Math.random = () => sandboxRNG.next();
 
 			const states: GameState[] = [startState];
 			let currentState = startState;
@@ -46,8 +53,11 @@ self.onmessage = async (e: MessageEvent) => {
 				states.push(currentState);
 			}
 
+			// Restore just in case
+			self.Math.random = originalMathRandom;
 			self.postMessage({ type: 'SIMULATION_COMPLETE', states });
 		} catch (error) {
+			self.Math.random = originalMathRandom;
 			self.postMessage({ type: 'SIMULATION_ERROR', error: (error as Error).message });
 		}
 	} else if (type === 'SIMULATE_BATCH') {
@@ -60,9 +70,13 @@ self.onmessage = async (e: MessageEvent) => {
 			const results = [];
 
 			for (let i = 0; i < iterations; i++) {
-				const seed = seeds ? seeds[i] : Math.floor(Math.random() * 1000000);
+				const seed = seeds ? seeds[i] : Math.floor(originalMathRandom() * 1000000);
 				const { createInitialState } = await import('../../../packages/engine/core');
 				let currentState = createInitialState(seed, protocolVersion, config, teamData);
+				
+				// Sandbox Math.random per match
+				const sandboxRNG = new DeterministicRNG(seed ^ 0xdeadbeef);
+				self.Math.random = () => sandboxRNG.next();
 				
 				const states: GameState[] = [currentState];
 
@@ -98,8 +112,11 @@ self.onmessage = async (e: MessageEvent) => {
 				results.push({ seed, finalState: currentState });
 			}
 
+			// Restore just in case
+			self.Math.random = originalMathRandom;
 			self.postMessage({ type: 'BATCH_COMPLETE', results });
 		} catch (error) {
+			self.Math.random = originalMathRandom;
 			self.postMessage({ type: 'SIMULATION_ERROR', error: (error as Error).message });
 		}
 	}

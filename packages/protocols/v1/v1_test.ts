@@ -101,3 +101,48 @@ Deno.test("Protocol V1: Age-based Scoring", () => {
     assertEquals(state.teams.A.score, 11, "Should award points equal to age (11)");
     assertEquals(state.pointZones.length, 0, "Zone should be removed after capture");
 });
+
+Deno.test("Protocol V1: Minimum Capture Score", () => {
+	const config = { ...defaultV1Config, pointZoneValue: 0 }; // 0 means age-based
+	let state = createInitialStateV1(config, 12345);
+	
+	// Inject a zone with age -1 (will age to 0 on next tick)
+	state.pointZones = [{ position: { x: 5, y: 5 }, age: -1, _despawnAge: 100 }];
+	state.players[0].position = { x: 4, y: 5 }; // a1
+	
+	// Move player onto the zone
+	const actions = [
+		{ playerId: 'a1', type: 'MOVE' as const, direction: 'RIGHT' as const }
+	];
+
+	state = resolveProtocolV1(config, state, actions);
+
+	// Zone aged to 0. Minimum score should be 1.
+	assertEquals(state.teams.A.score, 1, "Should award minimum 1 point even if age is 0");
+});
+
+Deno.test("Protocol V1: No Spawn on Occupied Squares", () => {
+	const config = { ...defaultV1Config, pointZoneSpawnRate: 1, maxPointZones: 1 };
+	let state = createInitialStateV1(config, 12345);
+	
+	// Fill all but one square with players
+	state.players = [];
+	for (let y = 0; y < 10; y++) {
+		for (let x = 0; x < 10; x++) {
+			if (x === 5 && y === 5) continue; // Leave (5,5) empty
+			state.players.push({
+				id: `p_${x}_${y}`,
+				team: 'A',
+				position: { x, y },
+				status: 'active',
+				stats: { squaresMoved: 0, idleTicks: 0, singleStuns: 0, mutualStuns: 0, expectedCaptures: 0, contestedCaptures: 0, stolenCaptures: 0 }
+			});
+		}
+	}
+
+	state = resolveProtocolV1(config, state, []);
+
+	assertEquals(state.pointZones.length, 1, "Should spawn a zone");
+	assertEquals(state.pointZones[0].position.x, 5, "Should spawn on the only empty square (x)");
+	assertEquals(state.pointZones[0].position.y, 5, "Should spawn on the only empty square (y)");
+});

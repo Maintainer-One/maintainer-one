@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { GameState, Position } from '../../../packages/engine/types';
+	import { fade, fly } from 'svelte/transition';
 
 	let { state, showControlMap = false, playSpeed = 750 }: { state: GameState, showControlMap?: boolean, playSpeed?: number } = $props();
 
@@ -90,6 +91,36 @@
 		</div>
 	{/each}
 
+	<!-- Floating Events -->
+	{#if state.lastEvents}
+		{#each state.lastEvents as event (`${state.tick}-${event.type}-${event.position.x}-${event.position.y}`)}
+			<div
+				class="absolute flex items-center justify-center pointer-events-none z-40"
+				style="
+                    left: {getPos(event.position).left}; 
+                    top: {getPos(event.position).top}; 
+                    width: {getPos(event.position).width}; 
+                    height: {getPos(event.position).height};
+                "
+			>
+				{#if event.type === 'CAPTURE'}
+					<div 
+						in:fly={{ y: 20, duration: Math.min(400, playSpeed) }} 
+						out:fade={{ duration: Math.min(300, playSpeed) }}
+						class="absolute text-xl md:text-2xl font-black drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] -mt-16"
+						style="color: {state.teams[event.team].color}"
+					>
+						+{event.score}
+					</div>
+					<div 
+						class="absolute inset-0 rounded-full border-[3px] opacity-0"
+						style="border-color: {state.teams[event.team].color}; animation: pop {Math.min(600, playSpeed)}ms ease-out forwards;"
+					></div>
+				{/if}
+			</div>
+		{/each}
+	{/if}
+
     <!-- Victory Overlay -->
     {#if state.isFinished}
         <div class="absolute inset-0 flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50">
@@ -108,4 +139,9 @@
         </div>
     {/if}
 </div>
-
+<style>
+	@keyframes pop {
+		0% { transform: scale(0.5); opacity: 1; }
+		100% { transform: scale(2); opacity: 0; }
+	}
+</style>

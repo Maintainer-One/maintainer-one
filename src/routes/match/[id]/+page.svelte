@@ -177,7 +177,7 @@
 		</header>
 
 		{#if isPreview}
-			<MatchPreview match={matchData} />
+			<MatchPreview match={matchData} onCountdownComplete={() => loadMatch(matchData.id)} />
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
 				<div class="flex-1 w-full max-w-4xl min-h-0 p-4">

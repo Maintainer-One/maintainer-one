@@ -3,18 +3,19 @@
 	import { supabase } from '$lib/supabase';
 	import { fade, fly } from 'svelte/transition';
 
-	let { match } = $props<{ match: any }>();
+	let { match, onCountdownComplete } = $props<{ match: any, onCountdownComplete?: () => void }>();
 
 	let homeStats = $state<any>(null);
 	let awayStats = $state<any>(null);
 	let isLoading = $state(true);
 	let countdown = $state('');
+	let intervalId: number;
 
 	async function fetchStats(teamId: string) {
 		// 1. Try current season matches
 		let { data: matches, error } = await supabase
 			.from('matches')
-			.select('home_team_id, away_team_id, home_score, away_score, status, season_id')
+			.select('home_team_id, away_team_id, home_score, away_score, status, season_id, scheduled_time, leagues (protocol_config)')
 			.eq('status', 'simulated')
 			.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 			.eq('season_id', match.season_id)
@@ -32,7 +33,7 @@
 			if (seasons && seasons[0]) {
 				const { data: prevMatches } = await supabase
 					.from('matches')
-					.select('home_team_id, away_team_id, home_score, away_score, status')
+					.select('home_team_id, away_team_id, home_score, away_score, status, scheduled_time, leagues (protocol_config)')
 					.eq('status', 'simulated')
 					.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 					.eq('season_id', seasons[0].id)
@@ -43,10 +44,22 @@
 
 		if (!matches || matches.length === 0) return { wins: 0, losses: 0, draws: 0, avgScore: 0, form: [] };
 
+		const nowTime = new Date().getTime();
+		const validMatches = matches.filter(m => {
+			const config = m.leagues?.protocol_config || match.leagues?.protocol_config || {};
+			const tickRate = config.tickRateMs || 750;
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+			const startTime = new Date(m.scheduled_time).getTime();
+			const endTime = startTime + (leagueMaxTicks * tickRate);
+			return nowTime >= endTime;
+		});
+
+		if (validMatches.length === 0) return { wins: 0, losses: 0, draws: 0, avgScore: 0, form: [] };
+
 		let wins = 0, losses = 0, draws = 0, totalScore = 0;
 		const form: string[] = [];
 
-		matches.forEach((m: any) => {
+		validMatches.forEach((m: any) => {
 			const isHome = m.home_team_id === teamId;
 			const teamScore = isHome ? m.home_score : m.away_score;
 			const oppScore = isHome ? m.away_score : m.home_score;
@@ -68,7 +81,7 @@
 			wins,
 			losses,
 			draws,
-			avgScore: totalScore / matches.length,
+			avgScore: totalScore / validMatches.length,
 			form: form.reverse()
 		};
 	}
@@ -80,6 +93,8 @@
 
 		if (diff <= 0) {
 			countdown = "00:00:00";
+			if (intervalId) clearInterval(intervalId);
+			if (onCountdownComplete) onCountdownComplete();
 			return;
 		}
 
@@ -99,8 +114,8 @@
 		isLoading = false;
 
 		updateCountdown();
-		const interval = setInterval(updateCountdown, 1000);
-		return () => clearInterval(interval);
+		intervalId = window.setInterval(updateCountdown, 1000);
+		return () => clearInterval(intervalId);
 	});
 </script>
 
