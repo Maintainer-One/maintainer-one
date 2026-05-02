@@ -17,7 +17,7 @@ self.onmessage = async (e: MessageEvent) => {
 			const bravoLogic = bravoCompiled ? loadCompiled(bravoCompiled) : createLogic(bravoCode);
 
 			// Sandbox Math.random for deterministic team logic
-			const sandboxRNG = new DeterministicRNG(startState.rngState ^ 0xdeadbeef);
+			const sandboxRNG = new DeterministicRNG((startState.rngState ^ 0xdeadbeef) >>> 0);
 			self.Math.random = () => sandboxRNG.next();
 
 			const states: GameState[] = [startState];
@@ -75,7 +75,7 @@ self.onmessage = async (e: MessageEvent) => {
 				let currentState = createInitialState(seed, protocolVersion, config, teamData);
 				
 				// Sandbox Math.random per match
-				const sandboxRNG = new DeterministicRNG(seed ^ 0xdeadbeef);
+				const sandboxRNG = new DeterministicRNG((seed ^ 0xdeadbeef) >>> 0);
 				self.Math.random = () => sandboxRNG.next();
 				
 				const states: GameState[] = [currentState];

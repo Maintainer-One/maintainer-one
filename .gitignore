@@ -37,3 +37,6 @@ supabase/.temp/
 # Deno
 .deno/
 deno.lock
+
+# Debugging Scripts
+scratch/

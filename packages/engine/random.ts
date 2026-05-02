@@ -8,6 +8,9 @@ export class DeterministicRNG {
 
 	constructor(seed: number) {
 		this.state = seed || 1;
+		if (this.state < 0) {
+			this.state = (this.state % 4294967296) + 4294967296;
+		}
 	}
 
 	/**
@@ -17,6 +20,9 @@ export class DeterministicRNG {
 	next(): number {
 		// LCG parameters (using common ones)
 		this.state = (this.state * 1664525 + 1013904223) % 4294967296;
+		if (this.state < 0) {
+			this.state += 4294967296;
+		}
 		return this.state / 4294967296;
 	}
 

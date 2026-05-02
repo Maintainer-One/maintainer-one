@@ -86,7 +86,10 @@
 		// Trigger background sims for Live matches
 		allMatches.forEach(m => {
 			const startTime = new Date(m.scheduled_time).getTime();
-			const endTime = startTime + (MATCH_TICKS * TICK_RATE_MS);
+			const config = m.leagues?.protocol_config || {};
+			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+			const endTime = startTime + (leagueMaxTicks * tickRate);
 			
 			if (m.status === 'simulated' && nowTime >= startTime && nowTime < endTime && !matchSims[m.id] && !simulatingMatches.has(m.id)) {
 				simulatingMatches.add(m.id);

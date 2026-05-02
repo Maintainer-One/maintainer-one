@@ -1,6 +1,7 @@
 import { createInitialState, tick } from './core.ts';
 import type { GameState, PlayerAction } from './types.ts';
 import type { TeamLogic } from './team_api.ts';
+import { DeterministicRNG } from './random.ts';
 
 /**
  * Match Runner: Orchestrates a full game between two automated teams.
@@ -19,6 +20,12 @@ export async function simulateMatch(
 ): Promise<{ finalState: GameState; replay?: GameState[] }> {
 	let state = createInitialState(seed, protocolVersion, config, teamData);
 	const replay: GameState[] = [state];
+
+	const originalMathRandom = Math.random;
+	const sandboxRNG = new DeterministicRNG((state.rngState ^ 0xdeadbeef) >>> 0);
+	Math.random = () => sandboxRNG.next();
+
+	try {
 
 	for (let i = 0; i < MAX_TICKS; i++) {
 		if (state.isFinished) break;
@@ -48,6 +55,10 @@ export async function simulateMatch(
 		// 3. Tick the engine
 		state = tick(state, combinedActions, config);
 		replay.push(state);
+	}
+
+	} finally {
+		Math.random = originalMathRandom;
 	}
 
 	return { finalState: state, replay };
