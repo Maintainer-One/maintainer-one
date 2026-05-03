@@ -14,18 +14,19 @@
 		activeSeason = await getActiveSeason();
 		if (!activeSeason) return;
 
-		// Fetch a featured match: prefer one that is simulated, otherwise next pending
+		// Fetch a featured match: prefer one that is played/simulated, otherwise next upcoming
 		const { data } = await supabase
 			.from('matches')
 			.select(`
 				id,
 				status,
 				home_team:teams!home_team_id (name, color),
-				away_team:teams!away_team_id (name, color)
+				away_team:teams!away_team_id (id, name, color)
 			`)
 			.eq('season_id', activeSeason.id)
-			.order('status', { ascending: false }) // simulated > pending
-			.order('scheduled_time', { ascending: true })
+			.in('status', ['played', 'simmed', 'simulated', 'scheduled'])
+			// Custom ordering logic: we want completed matches at the top if they just finished
+			.order('scheduled_time', { ascending: false }) 
 			.limit(1)
 			.maybeSingle();
 		
@@ -112,28 +113,28 @@
 					<div>
 						<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
 							<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
-							{featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
-						</div>
-						<h2 class="text-4xl font-black text-white tracking-tighter">
-							{#if featuredMatch}
-								<span style="color: {featuredMatch.home_team.color}">{featuredMatch.home_team.name}</span>
-								<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span>
-								<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
-							{:else}
-								League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_0_10px_rgba(209,250,229,0.2)] mx-2">VS</span> Arena
-							{/if}
-						</h2>
-						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
-							{activeSeason ? `Currently following ${activeSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
-						</p>
+						{featuredMatch?.status === 'played' || featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
 					</div>
-					
-					{#if featuredMatch}
-						<a 
-							href="{base}/match/{featuredMatch.id}" 
-							class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
-						>
-							{featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
+					<h2 class="text-4xl font-black text-white tracking-tighter">
+						{#if featuredMatch}
+							<span style="color: {featuredMatch.home_team.color}">{featuredMatch.home_team.name}</span>
+							<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span>
+							<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
+						{:else}
+							League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span> Arena
+						{/if}
+					</h2>
+					<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
+						{activeSeason ? `Currently following ${activeSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
+					</p>
+				</div>
+				
+				{#if featuredMatch}
+					<a 
+						href="{base}/match/{featuredMatch.id}" 
+						class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
+					>
+						{featuredMatch.status === 'played' || featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
 							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 						</a>
 					{:else}

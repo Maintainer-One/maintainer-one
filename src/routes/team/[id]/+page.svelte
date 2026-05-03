@@ -102,7 +102,7 @@
 			const startTime = new Date(m.scheduled_time).getTime();
 			const endTime = startTime + (leagueMaxTicks * tickRate);
 
-			const isPast = m.status === 'simulated' && now > endTime;
+			const isPast = (m.status === 'played' || m.status === 'simulated');
 
 			if (isPast) {
 				// Update Records

@@ -16,11 +16,11 @@
 		let { data: matches, error } = await supabase
 			.from('matches')
 			.select('home_team_id, away_team_id, home_score, away_score, status, season_id, scheduled_time, leagues (protocol_config)')
-			.eq('status', 'simulated')
+			.in('status', ['played', 'simulated'])
 			.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 			.eq('season_id', match.season_id)
 			.order('scheduled_time', { ascending: false });
-
+...
 		// 2. If no matches in current season, try previous season
 		if (!matches || matches.length === 0) {
 			const { data: seasons } = await supabase
@@ -34,7 +34,7 @@
 				const { data: prevMatches } = await supabase
 					.from('matches')
 					.select('home_team_id, away_team_id, home_score, away_score, status, scheduled_time, leagues (protocol_config)')
-					.eq('status', 'simulated')
+					.in('status', ['played', 'simulated'])
 					.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 					.eq('season_id', seasons[0].id)
 					.order('scheduled_time', { ascending: false });

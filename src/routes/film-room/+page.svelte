@@ -371,7 +371,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			const { data: recentMatches } = await supabase
 				.from('matches')
 				.select(`id, home_team:teams!home_team_id (name, color), away_team:teams!away_team_id (name, color)`)
-				.eq('status', 'simulated')
+				.in('status', ['played', 'simulated', 'simmed'])
 				.order('scheduled_time', { ascending: false })
 				.limit(10);
 				
