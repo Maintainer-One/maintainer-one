@@ -65,6 +65,8 @@
 				scheduled_time,
 				code_lock_time,
 				status,
+				home_score,
+				away_score,
 				home_team:teams!home_team_id (name, color),
 				away_team:teams!away_team_id (name, color)
 			`)
@@ -145,15 +147,38 @@
 		return new Date(scheduled.getTime() - offsetMinutes * 60000).toISOString();
 	}
 
+	function determineNewStatus(match: any, newScheduledIso: string) {
+		const now = new Date();
+		const newScheduled = new Date(newScheduledIso);
+		const isMovingToFuture = newScheduled > now;
+		
+		console.log('Determining status for', match.id, 'New time:', newScheduledIso, 'Moving to future?', isMovingToFuture, 'Current status:', match.status);
+
+		if (isMovingToFuture) {
+			// If moving to the future, it should be ready for a new broadcast cycle
+			if (match.status === 'played' || match.status === 'simmed' || match.home_score !== null) {
+				return 'simmed'; // Keep results, wait for broadcast
+			} else {
+				return 'scheduled'; // Needs simulation
+			}
+		}
+		return match.status;
+	}
+
 	async function updateMatchTime(matchId: string, newTime: string) {
 		const scheduledIso = new Date(newTime).toISOString();
 		const season = seasons.find(s => s.id === selectedSeasonId);
+		const match = matches.find(m => m.id === matchId);
 		const offset = season?.code_lock_offset_minutes || 30;
 		const codeLockIso = calculateCodeLockTime(scheduledIso, offset);
 
 		const { error } = await supabase
 			.from('matches')
-			.update({ scheduled_time: scheduledIso, code_lock_time: codeLockIso })
+			.update({ 
+				scheduled_time: scheduledIso, 
+				code_lock_time: codeLockIso,
+				status: determineNewStatus(match, scheduledIso)
+			})
 			.eq('id', matchId);
 
 		if (!error) {
@@ -209,7 +234,8 @@
 				updates.push({ 
 					id: match.id, 
 					scheduled_time: absoluteIso, 
-					code_lock_time: calculateCodeLockTime(absoluteIso, offset) 
+					code_lock_time: calculateCodeLockTime(absoluteIso, offset),
+					status: determineNewStatus(match, absoluteIso)
 				});
 			}
 		} else if (bulkActionType === 'shift') {
@@ -224,7 +250,8 @@
 				updates.push({ 
 					id: match.id, 
 					scheduled_time: newScheduledIso,
-					code_lock_time: calculateCodeLockTime(newScheduledIso, offset)
+					code_lock_time: calculateCodeLockTime(newScheduledIso, offset),
+					status: determineNewStatus(match, newScheduledIso)
 				});
 			}
 		} else if (bulkActionType === 'stagger') {
@@ -239,7 +266,8 @@
 				updates.push({ 
 					id: match.id, 
 					scheduled_time: newScheduledIso,
-					code_lock_time: calculateCodeLockTime(newScheduledIso, offset)
+					code_lock_time: calculateCodeLockTime(newScheduledIso, offset),
+					status: determineNewStatus(match, newScheduledIso)
 				});
 				currentStaggerTime += intervalMs;
 			}
@@ -253,13 +281,15 @@
 		}
 
 		if (updates.length > 0) {
-			const { error } = await supabase.from('matches').upsert(updates.map(u => ({
-				...matches.find(m => m.id === u.id),
-				...u
-			})));
+			const results = await Promise.all(updates.map(u => {
+				const { id, ...data } = u;
+				return supabase.from('matches').update(data).eq('id', id);
+			}));
 			
-			if (error) {
-				modal.alert('Error', error.message);
+			const firstError = results.find(r => r.error)?.error;
+			
+			if (firstError) {
+				modal.alert('Error', firstError.message);
 			} else {
 				await loadMatches(selectedSeasonId!);
 				isBulkActionModalOpen = false;
@@ -745,10 +775,17 @@
 											/>
 										</td>
 										<td class="px-6 py-4">
-											<div class="flex items-center gap-2 text-xs font-bold text-white">
-												<span style="color: {match.home_team.color || 'white'}">{match.home_team.name}</span>
-												<span class="text-white/10 uppercase text-[9px]">vs</span>
-												<span style="color: {match.away_team.color || 'white'}">{match.away_team.name}</span>
+											<div class="flex flex-col gap-1">
+												<div class="flex items-center gap-2 text-xs font-bold text-white">
+													<span style="color: {match.home_team.color || 'white'}">{match.home_team.name}</span>
+													<span class="text-white/10 uppercase text-[9px]">vs</span>
+													<span style="color: {match.away_team.color || 'white'}">{match.away_team.name}</span>
+												</div>
+												{#if match.status === 'played' || (match.status === 'simmed' && match.home_score !== null)}
+													<div class="text-[10px] font-black text-[var(--color-brand-primary)]">
+														{match.home_score} - {match.away_score}
+													</div>
+												{/if}
 											</div>
 										</td>
 										<td class="px-6 py-4">

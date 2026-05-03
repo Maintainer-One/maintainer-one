@@ -26,7 +26,6 @@
 	const GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 	async function fetchMatches() {
-		isLoading = true;
 		
 		activeSeason = await getActiveSeason();
 		if (!activeSeason) {
@@ -40,6 +39,7 @@
 			.from('matches')
 			.select(`
 				id, status, home_score, away_score, scheduled_time, seed,
+				home_code_version_id, away_code_version_id, home_override_version_id, away_override_version_id,
 				leagues (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
@@ -65,7 +65,7 @@
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
 				
-				return m.status === 'pending' || nowTime < endTimeWithGrace;
+				return m.status === 'pending' || m.status === 'scheduled' || nowTime < endTimeWithGrace;
 			})
 			.slice(0, 6);
 
@@ -76,7 +76,7 @@
 				const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
-				return m.status === 'simulated' && nowTime >= endTimeWithGrace;
+				return (m.status === 'simulated' || m.status === 'simmed' || m.status === 'played') && nowTime >= endTimeWithGrace;
 			})
 			.sort((a, b) => new Date(b.scheduled_time).getTime() - new Date(a.scheduled_time).getTime())
 			.slice(0, 6);
@@ -91,7 +91,7 @@
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const endTime = startTime + (leagueMaxTicks * tickRate);
 			
-			if (m.status === 'simulated' && nowTime >= startTime && nowTime < endTime && !matchSims[m.id] && !simulatingMatches.has(m.id)) {
+			if ((m.status === 'simulated' || m.status === 'simmed' || m.status === 'played') && nowTime >= startTime && nowTime < endTime && !matchSims[m.id] && !simulatingMatches.has(m.id)) {
 				simulatingMatches.add(m.id);
 				runSimulation(m).then(states => {
 					matchSims[m.id] = states;
@@ -142,7 +142,7 @@
 			}
 		}
 
-		if (match.status === 'pending') {
+		if (match.status === 'pending' || match.status === 'scheduled') {
 			return { label: 'DELAYED', type: 'delayed' };
 		}
 

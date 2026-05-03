@@ -11,8 +11,7 @@
 	const K_FACTOR = 32;
 
 	async function fetchStandings() {
-		isLoading = true;
-		
+
 		activeSeason = await getActiveSeason();
 		if (!activeSeason) {
 			teams = [];
@@ -39,7 +38,7 @@
 				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status,
 				leagues (protocol_config)
 			`)
-			.eq('status', 'simulated')
+			.in('status', ['simulated', 'simmed', 'played'])
 			.eq('season_id', activeSeason.id)
 			.order('scheduled_time', { ascending: true });
 
@@ -127,6 +126,8 @@
 
 	onMount(() => {
 		fetchStandings();
+		const interval = setInterval(fetchStandings, 10000); // Refresh every 10s
+		return () => clearInterval(interval);
 	});
 </script>
 

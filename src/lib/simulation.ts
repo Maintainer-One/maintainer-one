@@ -4,8 +4,8 @@ import { createInitialState } from '../../packages/engine/core';
 import type { GameState } from '../../packages/engine/types';
 
 export async function runSimulation(match: any): Promise<GameState[]> {
-	const homeVersionId = match.home_team.active_version_id;
-	const awayVersionId = match.away_team.active_version_id;
+	const homeVersionId = match.home_code_version_id || match.home_override_version_id || match.home_team.active_version_id;
+	const awayVersionId = match.away_code_version_id || match.away_override_version_id || match.away_team.active_version_id;
 
 	const { data: versions } = await supabase
 		.from('team_code_versions')

@@ -10,9 +10,9 @@
 		home_team: { name: string, color?: string }, 
 		away_team: { name: string, color?: string }, 
 		scheduled_time: string, 
-		status: string,
-		home_score: number,
-		away_score: number
+		status: 'scheduled' | 'simmed' | 'played' | 'simulated',
+		home_score: number | null,
+		away_score: number | null
 	};
 
 	let seasons = $state<Season[]>([]);
@@ -167,12 +167,12 @@
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{#each dayMatches as match}
 							<a 
-								href="{base}/{match.status === 'simulated' ? `match/${match.id}` : '#'}"
-								class="group flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-6 transition-all hover:bg-black/40 hover:border-[var(--color-brand-primary)]/30 hover:scale-[1.01] {match.status !== 'simulated' ? 'cursor-default' : ''}"
+								href="{base}/{(match.status === 'played' || match.status === 'simulated') ? `match/${match.id}` : '#'}"
+								class="group flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-6 transition-all hover:bg-black/40 hover:border-[var(--color-brand-primary)]/30 hover:scale-[1.01] {(match.status !== 'played' && match.status !== 'simulated') ? 'cursor-default' : ''}"
 							>
 								<div class="flex flex-col gap-1">
-									<span class="text-[8px] font-black uppercase tracking-[0.2em] {match.status === 'simulated' ? 'text-emerald-400' : 'text-amber-400'}">
-										{match.status === 'simulated' ? 'Completed' : 'Upcoming'}
+									<span class="text-[8px] font-black uppercase tracking-[0.2em] {(match.status === 'played' || match.status === 'simulated') ? 'text-emerald-400' : 'text-amber-400'}">
+										{(match.status === 'played' || match.status === 'simulated') ? 'Completed' : 'Upcoming'}
 									</span>
 									<span class="text-[10px] font-bold text-white/40">{formatTime(match.scheduled_time)}</span>
 								</div>
@@ -184,9 +184,9 @@
 									</div>
 
 									<div class="flex flex-col items-center gap-1">
-										{#if match.status === 'simulated'}
+										{#if match.status === 'played' || match.status === 'simulated'}
 											<div class="px-3 py-1 rounded-lg bg-white/5 text-sm font-black text-white tracking-tighter">
-												{match.home_score} - {match.away_score}
+												{match.home_score ?? 0} - {match.away_score ?? 0}
 											</div>
 										{:else}
 											<div class="text-[10px] font-black text-white/10 uppercase">vs</div>
@@ -200,7 +200,7 @@
 								</div>
 
 								<div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 text-white/20 group-hover:text-[var(--color-brand-primary)] transition-colors">
-									{#if match.status === 'simulated'}
+									{#if match.status === 'played' || match.status === 'simulated'}
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
 									{:else}
 										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
