@@ -13,10 +13,8 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-async function runCron() {
-    console.log("🚀 Starting Automated Season Runner...");
-
-    // 1. Fetch pending matches scheduled for now or earlier
+async function simulateLockedMatches() {
+    // 1. Fetch scheduled matches past their code lock time
     const { data: matches, error: matchError } = await supabase
         .from('matches')
         .select(`
@@ -25,30 +23,27 @@ async function runCron() {
             home_team:teams!home_team_id (id, name, color, active_version_id),
             away_team:teams!away_team_id (id, name, color, active_version_id)
         `)
-        .eq('status', 'pending')
-        .lte('scheduled_time', new Date().toISOString());
+        .eq('status', 'scheduled')
+        .lte('code_lock_time', new Date().toISOString());
 
     if (matchError) {
-        console.error("Error fetching matches:", matchError);
+        console.error("Error fetching locked matches:", matchError);
         return;
     }
 
-    if (!matches || matches.length === 0) {
-        console.log("No pending matches to simulate.");
-        return;
-    }
+    if (!matches || matches.length === 0) return;
 
-    console.log(`Found ${matches.length} matches to simulate.`);
+    console.log(`Found ${matches.length} matches ready to simulate (Code Locked).`);
 
     for (const match of matches) {
         try {
             console.log(`🏟 Simulating Match: ${match.id}`);
 
             // 2. Fetch code versions
-            // @ts-ignore: home_team and away_team are returned by the join
-            const homeVersionId = match.home_team.active_version_id;
             // @ts-ignore
-            const awayVersionId = match.away_team.active_version_id;
+            const homeVersionId = match.home_override_version_id || match.home_team.active_version_id;
+            // @ts-ignore
+            const awayVersionId = match.away_override_version_id || match.away_team.active_version_id;
 
             if (!homeVersionId || !awayVersionId) {
                 console.error(`Skipping match ${match.id}: One or both teams lack an active version.`);
@@ -84,11 +79,11 @@ async function runCron() {
                 { A: match.home_team, B: match.away_team }
             );
 
-            // 4. Update Match in DB
+            // 4. Update Match in DB to 'simmed'
             const { error: updateError } = await supabase
                 .from('matches')
                 .update({
-                    status: 'simulated',
+                    status: 'simmed',
                     home_score: finalState.teams.A.score,
                     away_score: finalState.teams.B.score,
                     home_code_version_id: homeVersionId,
@@ -100,7 +95,7 @@ async function runCron() {
             if (updateError) {
                 console.error(`Error updating match ${match.id}:`, updateError);
             } else {
-                console.log(`✅ Match ${match.id} simulated successfully. Score: ${finalState.teams.A.score} - ${finalState.teams.B.score}`);
+                console.log(`✅ Match ${match.id} simulated successfully. Awaiting broadcast time.`);
             }
 
         } catch (err) {
@@ -109,14 +104,51 @@ async function runCron() {
     }
 }
 
-// Deno Cron (Production) - Runs daily at 9:00 AM
+async function broadcastPlayedMatches() {
+    // Transition matches from 'simmed' to 'played' when scheduled_time arrives
+    const { data: matches, error } = await supabase
+        .from('matches')
+        .select('id')
+        .eq('status', 'simmed')
+        .lte('scheduled_time', new Date().toISOString());
+
+    if (error) {
+        console.error("Error fetching broadcast-ready matches:", error);
+        return;
+    }
+
+    if (!matches || matches.length === 0) return;
+
+    for (const match of matches) {
+        const { error: updateError } = await supabase
+            .from('matches')
+            .update({ status: 'played' })
+            .eq('id', match.id);
+
+        if (updateError) {
+            console.error(`Failed to broadcast match ${match.id}:`, updateError);
+        } else {
+            console.log(`📺 Match ${match.id} is now LIVE (Played)!`);
+        }
+    }
+}
+
+async function runCron() {
+    console.log(`[${new Date().toISOString()}] Running Match Lifecycle Cron...`);
+    await simulateLockedMatches();
+    await broadcastPlayedMatches();
+}
+
+// Deno Cron (Production) - Runs every minute
 // @ts-ignore: Deno.cron is a global in Deno environment
 if (typeof Deno.cron === 'function') {
     // @ts-ignore
-    Deno.cron("Daily Season Simulation", "0 9 * * *", runCron);
+    Deno.cron("Match Lifecycle Runner", "* * * * *", runCron);
 }
 
-// Local Trigger
+// Local Trigger & Polling Loop
 if (import.meta.main) {
-    runCron();
+    console.log("Starting local cron runner (polling every 10 seconds)...");
+    runCron(); // run immediately
+    setInterval(runCron, 10000);
 }

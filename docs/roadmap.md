@@ -55,6 +55,7 @@ _The goal is to build out the UI tooling necessary for League Administration, Te
 o
 
 - [ ] **League Administration**: A `/admin/league` dashboard for creating seasons, generating schedules, and managing simulation triggers.
+- [ ] **Team Dashboard**: A `/team` dashboard for teams to manage their code versions (including naming versions) and assign specific override versions for upcoming matchups.
 - [ ] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
 - [ ] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
 - [ ] **Game Lore**: Establish the foundational lore and narrative for the game.
