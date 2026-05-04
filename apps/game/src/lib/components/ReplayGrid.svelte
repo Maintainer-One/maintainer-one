@@ -17,27 +17,31 @@
 	}
 </script>
 
-<div class="relative aspect-square h-full max-h-full max-w-full overflow-hidden rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
-	<!-- Pitch Lines -->
-	<div class="absolute inset-0 grid grid-cols-10 grid-rows-10 opacity-30">
-		{#each Array(100) as _, i (i)}
-			<div class="border-[0.5px] border-[var(--color-brand-primary)]/20"></div>
-		{/each}
-	</div>
-
-	<!-- Control Map Overlay -->
-	{#if showControlMap && state.controlMap}
-		<div class="absolute inset-0 grid grid-cols-10 grid-rows-10">
-			{#each state.controlMap as row, y}
-				{#each row as cell, x}
-					<div 
-						class="transition-colors duration-500"
-						style="background-color: {cell && cell !== 'CONTESTED' ? `${state.teams[cell].color}22` : cell === 'CONTESTED' ? '#f59e0b11' : 'transparent'}"
-					></div>
-				{/each}
+<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
+	
+	<!-- Background Elements (Clipped to border radius) -->
+	<div class="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+		<!-- Pitch Lines -->
+		<div class="absolute inset-0 grid grid-cols-10 grid-rows-10 opacity-30">
+			{#each Array(100) as _, i (i)}
+				<div class="border-[0.5px] border-[var(--color-brand-primary)]/20"></div>
 			{/each}
 		</div>
-	{/if}
+
+		<!-- Control Map Overlay -->
+		{#if showControlMap && state.controlMap}
+			<div class="absolute inset-0 grid grid-cols-10 grid-rows-10">
+				{#each state.controlMap as row, y}
+					{#each row as cell, x}
+						<div 
+							class="transition-colors duration-500"
+							style="background-color: {cell && cell !== 'CONTESTED' ? `${state.teams[cell].color}22` : cell === 'CONTESTED' ? '#f59e0b11' : 'transparent'}"
+						></div>
+					{/each}
+				{/each}
+			</div>
+		{/if}
+	</div>
 
 	<!-- Point Zones -->
 	{#each state.pointZones as pz}

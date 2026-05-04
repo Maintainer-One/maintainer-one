@@ -74,6 +74,14 @@
 					toggleMatch(m, true);
 				}
 			}
+		} else {
+			const nowTime = Date.now();
+			for (const m of availableMatches) {
+				const startTime = new Date(m.scheduled_time).getTime();
+				if (startTime - nowTime <= 5 * 60 * 1000) {
+					toggleMatch(m, true);
+				}
+			}
 		}
 	}
 
@@ -81,8 +89,10 @@
 		const newSet = new Set(selectedMatchIds);
 		if (!forceAdd && newSet.has(match.id)) {
 			newSet.delete(match.id);
+			selectedMatchIds = newSet;
 		} else {
 			newSet.add(match.id);
+			selectedMatchIds = newSet;
 			if (!matchSims[match.id] && !simulatingMatches.has(match.id)) {
 				simulatingMatches.add(match.id);
 				try {
@@ -95,7 +105,6 @@
 				}
 			}
 		}
-		selectedMatchIds = newSet;
 	}
 
 	onMount(() => {
