@@ -192,7 +192,7 @@
 <div class="min-h-screen bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 selection:bg-[var(--color-brand-primary)]/30">
 	{#if isLoading}
 		<div class="flex h-screen items-center justify-center">
-			<BrandLoading message="Retrieving Team Protocol..." />
+			<BrandLoading message="Retrieving Team Data..." />
 		</div>
 	{:else if teamData}
 		<!-- Header -->
@@ -207,7 +207,7 @@
 					<div class="flex flex-col gap-2">
 						<div class="flex items-center gap-4">
 							<h1 class="text-5xl font-black tracking-tighter text-white uppercase">{teamData.name}</h1>
-							<span class="rounded-full bg-white/5 px-4 py-1 text-xs font-black uppercase tracking-widest text-white/40 border border-white/10">Active Protocol</span>
+							<span class="rounded-full bg-white/5 px-4 py-1 text-xs font-black uppercase tracking-widest text-white/40 border border-white/10">Active Logic</span>
 						</div>
 						<div class="flex items-center gap-6 text-sm font-bold text-white/40">
 							<div class="flex items-center gap-2">
@@ -220,6 +220,11 @@
 							</div>
 						</div>
 					</div>
+				</div>
+
+				<div class="flex items-center gap-4" in:fly={{ x: 20, duration: 800 }}>
+					<a href="{base}/team/{teamId}/test-runner" class="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all shadow-lg backdrop-blur-md">Test Logic</a>
+					<a href="{base}/team/{teamId}/dashboard" class="rounded-xl border border-[var(--color-brand-primary)]/20 bg-[var(--color-brand-primary)]/10 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-all shadow-lg backdrop-blur-md">Manage Team</a>
 				</div>
 			</div>
 
@@ -304,7 +309,7 @@
 							</a>
 						{/each}
 						{#if recentMatches.length === 0}
-							<div class="py-12 text-center border-2 border-dashed border-white/5 rounded-2xl italic text-white/10">No recent protocol logs found.</div>
+							<div class="py-12 text-center border-2 border-dashed border-white/5 rounded-2xl italic text-white/10">No recent match results found.</div>
 						{/if}
 					</div>
 				</section>

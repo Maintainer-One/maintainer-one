@@ -20,7 +20,6 @@
 			.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 			.eq('season_id', match.season_id)
 			.order('scheduled_time', { ascending: false });
-...
 		// 2. If no matches in current season, try previous season
 		if (!matches || matches.length === 0) {
 			const { data: seasons } = await supabase

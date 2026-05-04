@@ -19,6 +19,7 @@
 	let states = $state<GameState[]>([]);
 	let currentTick = $state(0);
 	let isPlaying = $state(false);
+	let showControlMap = $state(false);
 	let baseTickRate = $state(750);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
@@ -541,9 +542,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				<!-- Identity Block Card -->
 				<div class="inline-flex flex-col rounded-3xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
 					<div class="flex items-center gap-4">
-						<a href="{base}/" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:border-[var(--color-brand-primary)]/30 hover:bg-[var(--color-brand-primary)]/5 hover:text-[var(--color-brand-primary)] hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md" aria-label="Go Back">
+						<button 
+							onclick={() => window.history.back()}
+							class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:border-[var(--color-brand-primary)]/30 hover:bg-[var(--color-brand-primary)]/5 hover:text-[var(--color-brand-primary)] hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md" 
+							aria-label="Go Back"
+						>
 							<svg class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-						</a>
+						</button>
 						<div class="flex flex-col">
 							<h1 class="text-xl font-black tracking-tighter text-[var(--color-brand-secondary)] uppercase leading-none">
 								Film <span class="text-[var(--color-brand-primary)]">Room</span>
@@ -563,7 +568,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			<div class="flex flex-1 flex-col items-center justify-center gap-10 overflow-hidden min-h-0">
 				<!-- Pitch -->
 				<div class="flex-1 w-full min-h-0 flex items-center justify-center overflow-hidden p-4">
-					<ReplayGrid state={currentState} {playSpeed} />
+					<ReplayGrid state={currentState} {playSpeed} {showControlMap} />
 				</div>
 
 				<!-- Playback Hub (Floating Glass) -->
@@ -615,6 +620,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 						</div>
 
 						<div class="flex items-center gap-2 relative">
+							<button
+								onclick={() => showControlMap = !showControlMap}
+								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase transition-all {showControlMap ? 'text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/5' : 'text-white/40 hover:text-white'} outline-none focus:ring-1 focus:ring-[var(--color-brand-primary)] min-w-[120px]"
+							>
+								Map: {showControlMap ? 'Visible' : 'Hidden'}
+							</button>
+
 							<button
 								onclick={() => isSpeedOpen = !isSpeedOpen}
 								class="rounded-xl border border-white/5 bg-black/40 px-4 py-2 text-[10px] font-black uppercase text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 focus:ring-1 focus:ring-[var(--color-brand-primary)] min-w-[75px] flex items-center justify-between gap-2"
