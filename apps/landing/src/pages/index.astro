@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import HeroReplay from '../components/HeroReplay.svelte';
+import BrandLogo from '$lib/components/BrandLogo.svelte';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
@@ -34,8 +35,11 @@ const initialState = match?.initial_state;
 		)}
 
 		<div class="relative z-10 min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-black/80 via-black/60 to-[var(--color-background-dark)] px-4">
-			<div class="max-w-4xl mx-auto text-center">
-				<h1 class="text-7xl md:text-9xl font-black italic tracking-tighter text-white uppercase leading-none drop-shadow-2xl mb-8">
+			<div class="max-w-4xl mx-auto text-center flex flex-col items-center">
+				<div class="mb-6 drop-shadow-2xl hover:scale-105 transition-transform duration-500">
+					<BrandLogo size="w-32 h-32 md:w-48 md:h-48" />
+				</div>
+				<h1 class="text-7xl md:text-9xl font-black tracking-tighter text-white uppercase leading-none drop-shadow-2xl mb-8">
 					Maintainer <span class="text-[var(--color-brand-primary)]">One</span>
 				</h1>
 				
