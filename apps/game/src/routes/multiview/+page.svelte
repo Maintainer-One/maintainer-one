@@ -55,7 +55,7 @@
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
 			.eq('season_id', activeSeason.id)
-			.in('status', ['pending', 'scheduled'])
+			.in('status', ['pending', 'scheduled', 'simulated', 'simmed', 'played'])
 			.order('scheduled_time', { ascending: true });
 
 		if (error) {
@@ -80,7 +80,15 @@
 			const nowTime = Date.now();
 			for (const m of availableMatches) {
 				const startTime = new Date(m.scheduled_time).getTime();
-				if (startTime - nowTime <= 5 * 60 * 1000) {
+				const config = (m.seasons as any)?.protocol_config ?? (m.leagues as any)?.protocol_config ?? {};
+				const tickRate = config.tickRateMs || 750;
+				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+				const endTime = startTime + (leagueMaxTicks * tickRate);
+
+				// Auto-select if:
+				// 1. Match is live (now is between start and end)
+				// 2. Match starts in the next 5 minutes
+				if ((nowTime >= startTime && nowTime < endTime) || (startTime - nowTime <= 5 * 60 * 1000 && startTime > nowTime)) {
 					toggleMatch(m, true);
 				}
 			}

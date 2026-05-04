@@ -170,8 +170,9 @@
 				</h2>
 				<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Name</label>
+						<label for="season-name" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Name</label>
 						<input 
+							id="season-name"
 							type="text" 
 							bind:value={newSeasonName} 
 							placeholder="Season Name (e.g. Spring 2026)"
@@ -179,24 +180,27 @@
 						/>
 					</div>
 					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Code Lock Offset (Minutes)</label>
+						<label for="lock-offset" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Code Lock Offset (Minutes)</label>
 						<input 
+							id="lock-offset"
 							type="number" 
 							bind:value={newSeasonCodeLockOffset} 
 							class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
 						/>
 					</div>
 					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Start Date</label>
+						<label for="start-date" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Start Date</label>
 						<input 
+							id="start-date"
 							type="date" 
 							bind:value={newSeasonStartDate} 
 							class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
 						/>
 					</div>
 					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">End Date</label>
+						<label for="end-date" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">End Date</label>
 						<input 
+							id="end-date"
 							type="date" 
 							bind:value={newSeasonEndDate} 
 							class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
@@ -216,14 +220,17 @@
 						<button onclick={() => newSeasonSlots = [...newSeasonSlots, '18:00']} class="text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline ml-2">+ Add Slot</button>
 					</div>
 				</div>
-				<div class="flex flex-wrap gap-2">
+				<div class="flex flex-wrap gap-3">
 					{#each newSeasonSlots as slot, i}
-						<div class="flex items-center gap-1 w-[150px]">
+						<div class="flex items-center gap-1 w-[180px]">
 							<input 
 								type="time" 
 								bind:value={newSeasonSlots[i]} 
 								class="flex-1 bg-black/60 border border-white/10 rounded-xl px-2 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
 							/>
+							<button onclick={() => newSeasonSlots = [...newSeasonSlots, slot]} class="p-2 text-white/20 hover:text-[var(--color-brand-primary)] transition-colors" title="Duplicate Slot">
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"/></svg>
+							</button>
 							<button onclick={() => newSeasonSlots = newSeasonSlots.filter((_, idx) => idx !== i)} class="p-2 text-white/20 hover:text-red-500 transition-colors" title="Remove Slot">
 								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
 							</button>
@@ -238,8 +245,9 @@
 				</h2>
 				
 				<div class="space-y-2">
-					<label class="text-[9px] font-black uppercase tracking-widest text-white/40 ml-1">Protocol Version</label>
+					<label for="protocol-version" class="text-[9px] font-black uppercase tracking-widest text-white/40 ml-1">Protocol Version</label>
 					<select 
+						id="protocol-version"
 						bind:value={protocolVersion} 
 						class="w-full md:w-1/2 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-[var(--color-brand-primary)] outline-none focus:border-[var(--color-brand-primary)]/50 transition-colors [&>option]:text-black"
 					>
@@ -250,12 +258,12 @@
 				{#if protocolVersion === 'v1'}
 					<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Max Game Ticks</label>
-							<input type="number" bind:value={v1Config.maxGameTicks} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="max-ticks" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Max Game Ticks</label>
+							<input id="max-ticks" type="number" bind:value={v1Config.maxGameTicks} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Tick Rate (ms)</label>
-							<input type="number" bind:value={v1Config.tickRateMs} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="tick-rate" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Tick Rate (ms)</label>
+							<input id="tick-rate" type="number" bind:value={v1Config.tickRateMs} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1 flex flex-col justify-end pb-2">
 							<label class="flex items-center gap-2 cursor-pointer">
@@ -265,29 +273,29 @@
 						</div>
 
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Spawn Rate (Ticks)</label>
-							<input type="number" bind:value={v1Config.pointZoneSpawnRate} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="spawn-rate" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Spawn Rate (Ticks)</label>
+							<input id="spawn-rate" type="number" bind:value={v1Config.pointZoneSpawnRate} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Max Active Zones</label>
-							<input type="number" bind:value={v1Config.maxPointZones} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="max-zones" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Max Active Zones</label>
+							<input id="max-zones" type="number" bind:value={v1Config.maxPointZones} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Fixed Value (0 = Age)</label>
-							<input type="number" bind:value={v1Config.pointZoneValue} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="zone-value" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Fixed Value (0 = Age)</label>
+							<input id="zone-value" type="number" bind:value={v1Config.pointZoneValue} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Min Age</label>
-							<input type="number" bind:value={v1Config.pointZoneMinAge} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="min-age" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Min Age</label>
+							<input id="min-age" type="number" bind:value={v1Config.pointZoneMinAge} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Max Age</label>
-							<input type="number" bind:value={v1Config.pointZoneMaxAge} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="max-age" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Zone Max Age</label>
+							<input id="max-age" type="number" bind:value={v1Config.pointZoneMaxAge} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Stun Penalty Ticks</label>
-							<input type="number" bind:value={v1Config.stunPenaltyTicks} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
+							<label for="stun-penalty" class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Stun Penalty Ticks</label>
+							<input id="stun-penalty" type="number" bind:value={v1Config.stunPenaltyTicks} class="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50" />
 						</div>
 					</div>
 				{/if}

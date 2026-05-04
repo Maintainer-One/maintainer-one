@@ -19,3 +19,5 @@ https://svelte.dev/e/a11y_no_static_element_interactions[39m
 4:04:07 PM [vite] (ssr) page reload .svelte-kit/generated/server/internal.js
 4:04:07 PM [vite] (ssr) page reload .svelte-kit/generated/root.svelte
 4:04:07 PM [vite] (ssr) page reload .svelte-kit/generated/root.js
+4:41:51 PM [vite] (ssr) page reload src/routes/multiview/+page.svelte
+4:52:34 PM [vite] (ssr) page reload /home/mitch/projects/maintainer-one/packages/protocols/v1/league.ts

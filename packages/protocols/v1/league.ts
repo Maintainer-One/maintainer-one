@@ -111,7 +111,7 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
             if (val < minVal) minVal = val;
         }
         
-        if (maxVal === -Infinity || minVal === Infinity) continue;
+        if (maxVal === -Infinity || minVal === Infinity || (maxVal === 0 && minVal === 0)) continue;
 
         const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
         const maxTeams = new Set<string>();

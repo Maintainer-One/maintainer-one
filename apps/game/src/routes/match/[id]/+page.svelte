@@ -61,9 +61,8 @@
 				league_id,
 				scheduled_time,
 				season_id,
-				seasons (season_number),
 				leagues (protocol_version, protocol_config),
-				seasons (protocol_version, protocol_config),
+				seasons (season_number, protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
@@ -369,7 +368,22 @@
 										{currentState.teams[p.team].name[0]}{p.id.slice(1)}
 									</div>
 									<div class="flex flex-col">
-										<span class="text-[10px] font-black text-white/80 leading-none mb-1">{p.stats.expectedCaptures + p.stats.contestedCaptures + p.stats.stolenCaptures} Captures</span>
+										<div class="flex items-center gap-1.5 leading-none mb-1">
+											<span class="text-[10px] font-black text-white/80 group/pts relative cursor-help">
+												{p.stats.pointsScored || 0} Pts
+												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#111] border border-white/10 rounded text-[8px] font-black uppercase tracking-widest text-white opacity-0 group-hover/pts:opacity-100 transition-opacity duration-75 whitespace-nowrap pointer-events-none z-50 shadow-2xl">Points Scored</div>
+											</span>
+											<span class="text-[10px] font-black text-white/20">/</span>
+											<span class="text-[10px] font-black text-white/80 group/cps relative cursor-help">
+												{p.stats.expectedCaptures + p.stats.contestedCaptures + p.stats.stolenCaptures} Cps
+												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#111] border border-white/10 rounded text-[8px] font-black uppercase tracking-widest text-white opacity-0 group-hover/cps:opacity-100 transition-opacity duration-75 whitespace-nowrap pointer-events-none z-50 shadow-2xl">Total Captures</div>
+											</span>
+											<span class="text-[10px] font-black text-white/20">/</span>
+											<span class="text-[10px] font-black text-[var(--color-brand-primary)] group/ppc relative cursor-help">
+												{((p.stats.pointsScored || 0) / Math.max(1, p.stats.expectedCaptures + p.stats.contestedCaptures + p.stats.stolenCaptures)).toFixed(1)} PPC
+												<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-[#111] border border-white/10 rounded text-[8px] font-black uppercase tracking-widest text-white opacity-0 group-hover/ppc:opacity-100 transition-opacity duration-75 whitespace-nowrap pointer-events-none z-50 shadow-2xl">Points Per Capture</div>
+											</span>
+										</div>
 										<span class="text-[8px] font-bold text-white/20 uppercase tracking-widest">{p.stats.squaresMoved} Squares Moved</span>
 									</div>
 								</div>
