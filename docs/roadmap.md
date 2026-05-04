@@ -59,7 +59,7 @@ o
 - [x] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
 - [x] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
 - [x] **Protocol V1 Scoring Update**: Update the V1 protocol to award points for the highest and lowest of each stat (e.g., the player most stunned and the player least stunned each earn their team a point). Points structure: Wins = 3, Draws = 1, Most/Least of each stat = 1, Losses = 0.
-- [ ] **Game Lore**: Establish the foundational lore and narrative for the game.
+- [x] **Game Lore**: Establish the foundational lore and narrative for the game.
 
 ### Phase 6: GitHub Auth & The Contributor Ecosystem
 
