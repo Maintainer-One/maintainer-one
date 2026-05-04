@@ -279,12 +279,21 @@
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.78-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
 						Upcoming & Live
 					</h2>
-					<button 
-						onclick={() => hideSpoilers = !hideSpoilers}
-						class="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-white/10 transition-all {hideSpoilers ? 'bg-white/5 text-white/40' : 'bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30'}"
-					>
-						{hideSpoilers ? 'Spoilers Hidden' : 'Showing Scores'}
-					</button>
+					<div class="flex items-center gap-3">
+						<a 
+							href="{base}/multiview" 
+							class="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-rose-500/30 text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 transition-all flex items-center gap-1.5"
+						>
+							<span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+							Multiview
+						</a>
+						<button 
+							onclick={() => hideSpoilers = !hideSpoilers}
+							class="text-[9px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded-full border border-white/10 transition-all {hideSpoilers ? 'bg-white/5 text-white/40' : 'bg-[var(--color-brand-primary)]/20 text-[var(--color-brand-primary)] border-[var(--color-brand-primary)]/30'}"
+						>
+							{hideSpoilers ? 'Spoilers Hidden' : 'Showing Scores'}
+						</button>
+					</div>
 				</div>
 				<div class="grid gap-4 sm:grid-cols-2">
 					{#each upcomingMatches as match}

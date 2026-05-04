@@ -82,6 +82,13 @@
 			>
 				Film Room
 			</a>
+			<a 
+				href="{base}/multiview" 
+				class="px-6 py-3 bg-rose-500 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 hover:scale-105 transition-all text-sm uppercase tracking-tighter flex items-center gap-2"
+			>
+				<span class="h-2 w-2 rounded-full bg-white animate-pulse"></span>
+				Multiview
+			</a>
 			<div class="relative group">
 				<button 
 					class="p-3 bg-white/5 border border-white/10 text-white/20 rounded-xl group-hover:text-[var(--color-brand-primary)] group-hover:border-[var(--color-brand-primary)]/30 transition-all flex items-center justify-center"

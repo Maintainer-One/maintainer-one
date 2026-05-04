@@ -6,6 +6,7 @@
 	"/leaderboard": [],
 	"/match/[id]": [],
 	"/match/[id]/stats": [],
+	"/multiview": [],
 	"/player/[teamId]/[unitIndex]": [],
 	"/schedule": [],
 	"/team/exhibition": [],

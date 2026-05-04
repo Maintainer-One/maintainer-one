@@ -15,25 +15,27 @@ export const nodes = [
 	() => import('./nodes/11'),
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
-	() => import('./nodes/14')
+	() => import('./nodes/14'),
+	() => import('./nodes/15')
 ];
 
 export const server_loads = [];
 
 export const dictionary = {
 		"/": [2],
-		"/admin/authority": [11],
-		"/admin/league": [12],
-		"/film-room": [5],
-		"/leaderboard": [4],
-		"/match/[id]": [13],
-		"/match/[id]/stats": [14],
+		"/admin/authority": [12],
+		"/admin/league": [13],
+		"/film-room": [6],
+		"/leaderboard": [5],
+		"/match/[id]": [14],
+		"/match/[id]/stats": [15],
+		"/multiview": [4],
 		"/player/[teamId]/[unitIndex]": [3],
-		"/schedule": [10],
-		"/team/exhibition": [6],
-		"/team/[id]": [7],
-		"/team/[id]/dashboard": [8],
-		"/team/[id]/test-runner": [9]
+		"/schedule": [11],
+		"/team/exhibition": [7],
+		"/team/[id]": [8],
+		"/team/[id]/dashboard": [9],
+		"/team/[id]/test-runner": [10]
 	};
 
 export const hooks = {
