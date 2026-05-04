@@ -22,6 +22,22 @@
 	let selectedSeasonId = $state<string | null>(null);
 	let matches = $state<Match[]>([]);
 	
+	// League & Tab State
+	let leagues = $state<any[]>([]);
+	let selectedLeagueId = $state<string | null>(null);
+	let activeTab = $state<'schedule' | 'franchises'>('schedule');
+
+	// Franchise State
+	let leagueTeams = $state<any[]>([]);
+	let selectedTeamId = $state<string | null>(null);
+	let isCreatingTeam = $state(false);
+	let newTeamName = $state('');
+	let newTeamColor = $state('#ffffff');
+	
+	let isCreatingPlayer = $state(false);
+	let newPlayerName = $state('');
+	let newPlayerUnitIndex = $state('');
+	
 	let isCreatingSeason = $state(false);
 	let newSeasonName = $state('');
 	let newSeasonStartDate = $state(new Date().toISOString().split('T')[0]);
@@ -43,10 +59,62 @@
 	let bulkStaggerStartTime = $state(new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16));
 	let bulkStaggerInterval = $state(15);
 
+	async function loadLeagues() {
+		const { data, error } = await supabase.from('leagues').select('*').order('created_at', { ascending: false });
+		if (!error && data) {
+			leagues = data;
+			const urlParams = new URLSearchParams(window.location.search);
+			const urlLeagueId = urlParams.get('league');
+			
+			if (urlLeagueId && data.find(l => l.id === urlLeagueId)) {
+				selectedLeagueId = urlLeagueId;
+			} else if (data.length > 0) {
+				selectedLeagueId = data[0].id;
+			}
+			await loadLeagueData();
+		}
+	}
+
+	async function loadLeagueData() {
+		if (!selectedLeagueId) return;
+		selectedSeasonId = null;
+		matches = [];
+		await Promise.all([
+			loadSeasons(),
+			loadTeams()
+		]);
+	}
+
+	async function handleLeagueChange(event: Event) {
+		const select = event.target as HTMLSelectElement;
+		selectedLeagueId = select.value;
+		
+		const url = new URL(window.location.href);
+		url.searchParams.set('league', selectedLeagueId);
+		window.history.pushState({}, '', url);
+
+		await loadLeagueData();
+	}
+
+	async function loadTeams() {
+		if (!selectedLeagueId) return;
+		const { data, error } = await supabase
+			.from('teams')
+			.select('*, players(*)')
+			.eq('league_id', selectedLeagueId)
+			.order('name');
+		
+		if (!error && data) {
+			leagueTeams = data;
+		}
+	}
+
 	async function loadSeasons() {
+		if (!selectedLeagueId) return;
 		const { data, error } = await supabase
 			.from('seasons')
 			.select('id, name, season_number, status, start_date, end_date, game_density, game_slots, code_lock_offset_minutes, league_id')
+			.eq('league_id', selectedLeagueId)
 			.order('season_number', { ascending: false });
 		if (!error && data) {
 			seasons = data;
@@ -88,9 +156,10 @@
 
 		const start = parseLocalDate(newSeasonStartDate);
 		const end = parseLocalDate(newSeasonEndDate);
+		end.setHours(23, 59, 59, 999);
 		
-		if (start >= end) {
-			modal.alert('Error', 'Start date must be before end date');
+		if (start > end) {
+			modal.alert('Error', 'Start date must be on or before end date');
 			return;
 		}
 
@@ -98,7 +167,7 @@
 		const overlap = seasons.find(s => {
 			const sStart = new Date(s.start_date);
 			const sEnd = s.end_date ? new Date(s.end_date) : sStart; // Fallback if no end_date
-			return (start < sEnd && end > sStart);
+			return (start <= sEnd && end >= sStart);
 		});
 
 		if (overlap) {
@@ -111,15 +180,15 @@
 		// Get next season number
 		const nextNum = (seasons[0]?.season_number ?? 0) + 1;
 		
-		const { data: leagues } = await supabase.from('leagues').select('id').limit(1).single();
-		if (!leagues) return;
+		const { data: currentLeague } = await supabase.from('leagues').select('id').eq('id', selectedLeagueId).single();
+		if (!currentLeague) return;
 
 		const { data, error } = await supabase
 			.from('seasons')
 			.insert({
 				name: newSeasonName,
 				season_number: nextNum,
-				league_id: leagues.id,
+				league_id: currentLeague.id,
 				status: 'pending',
 				start_date: start.toISOString(),
 				end_date: end.toISOString(),
@@ -473,8 +542,42 @@
 		}
 	}
 
+	async function createTeam() {
+		if (!selectedLeagueId || !newTeamName) return;
+		const { error } = await supabase.from('teams').insert({
+			league_id: selectedLeagueId,
+			name: newTeamName,
+			color: newTeamColor
+		});
+		if (!error) {
+			isCreatingTeam = false;
+			newTeamName = '';
+			newTeamColor = '#ffffff';
+			await loadTeams();
+		} else {
+			modal.alert('Error', error.message);
+		}
+	}
+
+	async function createPlayer() {
+		if (!selectedTeamId || !newPlayerName || !newPlayerUnitIndex) return;
+		const { error } = await supabase.from('players').insert({
+			team_id: selectedTeamId,
+			name: newPlayerName,
+			unit_index: newPlayerUnitIndex
+		});
+		if (!error) {
+			isCreatingPlayer = false;
+			newPlayerName = '';
+			newPlayerUnitIndex = '';
+			await loadTeams();
+		} else {
+			modal.alert('Error', error.message);
+		}
+	}
+
 	onMount(async () => {
-		await loadSeasons();
+		await loadLeagues();
 	});
 </script>
 
@@ -497,16 +600,49 @@
 		</div>
 
 		<div class="flex items-center gap-4">
-			<button 
-				onclick={() => isCreatingSeason = !isCreatingSeason}
-				class="rounded-xl border border-white/5 bg-black/40 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
-			>
-				+ New Season
-			</button>
+			{#if leagues.length > 0}
+				<div class="relative">
+					<select 
+						value={selectedLeagueId} 
+						onchange={handleLeagueChange}
+						class="appearance-none bg-black/40 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] outline-none focus:border-[var(--color-brand-primary)]/50 transition-colors cursor-pointer"
+					>
+						{#each leagues as league}
+							<option value={league.id} class="text-black">{league.name}</option>
+						{/each}
+					</select>
+					<svg class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-brand-primary)] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+				</div>
+			{/if}
+			{#if activeTab === 'schedule'}
+				<button 
+					onclick={() => isCreatingSeason = !isCreatingSeason}
+					class="rounded-xl border border-white/5 bg-black/40 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
+				>
+					+ New Season
+				</button>
+			{/if}
 		</div>
 	</header>
 
-	<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
+	<!-- Tabs -->
+	<div class="max-w-6xl mx-auto flex items-center gap-2 mb-8 border-b border-white/5 pb-4">
+		<button 
+			onclick={() => activeTab = 'schedule'} 
+			class="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'schedule' ? 'bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] border border-[var(--color-brand-primary)]/20' : 'text-white/40 hover:bg-white/5 hover:text-white'}"
+		>
+			Schedule Management
+		</button>
+		<button 
+			onclick={() => activeTab = 'franchises'} 
+			class="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'franchises' ? 'bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)] border border-[var(--color-brand-primary)]/20' : 'text-white/40 hover:bg-white/5 hover:text-white'}"
+		>
+			Franchises & Rosters
+		</button>
+	</div>
+
+	{#if activeTab === 'schedule'}
+		<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
 		<!-- Sidebar: Season Selection -->
 		<aside class="space-y-6">
 			<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Seasons</h3>
@@ -861,4 +997,157 @@
 			{/if}
 		</div>
 	</div>
+	{:else if activeTab === 'franchises'}
+		<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
+			<!-- Teams Sidebar -->
+			<aside class="space-y-6">
+				<div class="flex items-center justify-between">
+					<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Franchises</h3>
+					<button 
+						onclick={() => isCreatingTeam = !isCreatingTeam}
+						class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline"
+					>
+						+ New Team
+					</button>
+				</div>
+				
+				{#if isCreatingTeam}
+					<div class="p-6 rounded-2xl bg-[var(--color-brand-primary)]/5 border border-[var(--color-brand-primary)]/20 space-y-4" transition:slide>
+						<div class="space-y-1">
+							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Team Name</label>
+							<input 
+								type="text" 
+								bind:value={newTeamName} 
+								placeholder="e.g. Cobalt Sentinels"
+								class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+							/>
+						</div>
+						<div class="space-y-1">
+							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Color (Hex)</label>
+							<div class="flex items-center gap-2">
+								<input type="color" bind:value={newTeamColor} class="w-10 h-10 rounded border border-white/10 bg-transparent cursor-pointer" />
+								<input 
+									type="text" 
+									bind:value={newTeamColor} 
+									class="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none font-mono focus:border-[var(--color-brand-primary)]/50"
+								/>
+							</div>
+						</div>
+						<div class="flex gap-2 pt-2">
+							<button 
+								onclick={createTeam}
+								disabled={!newTeamName}
+								class="flex-1 rounded-lg bg-[var(--color-brand-primary)] py-2 text-[10px] font-black uppercase tracking-widest text-black hover:bg-[var(--color-brand-primary)]/80 disabled:opacity-50 transition-colors"
+							>
+								Create Team
+							</button>
+						</div>
+					</div>
+				{/if}
+
+				<div class="flex flex-col gap-2">
+					{#each leagueTeams as team}
+						<button 
+							onclick={() => selectedTeamId = team.id}
+							class="w-full flex items-center justify-between px-6 py-4 rounded-xl border text-left transition-all {selectedTeamId === team.id ? 'border-white/20 bg-white/5' : 'border-white/5 bg-black/20 hover:border-white/10 hover:bg-black/40'}"
+						>
+							<div class="flex items-center gap-3">
+								<div class="w-3 h-3 rounded-full shadow-lg" style="background-color: {team.color}; box-shadow: 0 0 10px {team.color}40"></div>
+								<span class="text-xs font-bold uppercase tracking-widest text-white/80">{team.name}</span>
+							</div>
+							<span class="text-[9px] font-black text-white/30 bg-black/40 px-2 py-1 rounded">{team.players?.length || 0} Players</span>
+						</button>
+					{/each}
+				</div>
+			</aside>
+
+			<!-- Roster Management -->
+			<div class="lg:col-span-2 space-y-6">
+				{#if selectedTeamId}
+					{@const team = leagueTeams.find(t => t.id === selectedTeamId)}
+					<div class="flex items-center justify-between border-b border-white/5 pb-4">
+						<div class="flex items-center gap-4">
+							<div class="w-4 h-4 rounded-full" style="background-color: {team.color};"></div>
+							<h2 class="text-xl font-black uppercase tracking-widest text-white">{team.name} Roster</h2>
+						</div>
+						<button 
+							onclick={() => isCreatingPlayer = !isCreatingPlayer}
+							class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline"
+						>
+							+ Add Player
+						</button>
+					</div>
+
+					{#if isCreatingPlayer}
+						<div class="p-6 rounded-2xl bg-black/40 border border-white/10 space-y-4 mb-8" transition:slide>
+							<div class="grid grid-cols-2 gap-4">
+								<div class="space-y-1">
+									<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Player Name</label>
+									<input 
+										type="text" 
+										bind:value={newPlayerName} 
+										placeholder="e.g. John Doe"
+										class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
+									/>
+								</div>
+								<div class="space-y-1">
+									<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Unit Index (ID)</label>
+									<input 
+										type="text" 
+										bind:value={newPlayerUnitIndex} 
+										placeholder="e.g. 1, 2, or 3"
+										class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none font-mono focus:border-[var(--color-brand-primary)]/50"
+									/>
+								</div>
+							</div>
+							<div class="flex gap-2 pt-2">
+								<button 
+									onclick={createPlayer}
+									disabled={!newPlayerName || !newPlayerUnitIndex}
+									class="rounded-lg bg-white/10 px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/20 disabled:opacity-50 transition-colors"
+								>
+									Save Player
+								</button>
+							</div>
+						</div>
+					{/if}
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						{#each [...(team.players || [])].sort((a, b) => a.unit_index.localeCompare(b.unit_index)) as player}
+							<div class="group flex flex-col p-6 rounded-2xl border border-white/5 bg-black/20 hover:border-white/10 transition-all">
+								<div class="flex items-start justify-between mb-4">
+									<div>
+										<h4 class="text-sm font-black text-white uppercase tracking-widest">{player.name}</h4>
+										<p class="text-[9px] font-bold text-[var(--color-brand-primary)] uppercase tracking-[0.2em] mt-1">Unit {player.unit_index}</p>
+									</div>
+									<div class="w-8 h-8 rounded-lg border border-white/5 bg-black/40 flex items-center justify-center font-black text-xs text-white/30 group-hover:text-[var(--color-brand-primary)] transition-colors">
+										{player.unit_index}
+									</div>
+								</div>
+								
+								<div class="mt-auto flex justify-between items-end border-t border-white/5 pt-4">
+									<div class="text-[8px] font-bold text-white/30 uppercase tracking-widest">
+										Status: <span class="text-emerald-400 ml-1">{player.status}</span>
+									</div>
+									<a href="{base}/player/{team.id}/{player.unit_index}" class="text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-colors">
+										View Profile
+									</a>
+								</div>
+							</div>
+						{/each}
+						
+						{#if !team.players || team.players.length === 0}
+							<div class="col-span-2 py-12 text-center border-2 border-dashed border-white/5 rounded-3xl">
+								<p class="text-sm font-bold text-white/20 uppercase tracking-widest">No players on roster</p>
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<div class="py-24 text-center">
+						<p class="text-sm font-bold text-white/20 uppercase tracking-widest">Select a team to view their roster</p>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </div>

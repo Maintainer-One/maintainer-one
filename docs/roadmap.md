@@ -82,6 +82,7 @@ _The goal is to formalize how the game evolves and how trust is built._
 ## Long-Term Vision
 
 - **In-House Version Control**: The "Big Audacious Goal" is to build a robust, custom, git-compatible version control system directly into the platform for managing team logic and protocol development.
+- **Tick-by-Tick Event Tracking**: Create a dedicated `match_events` database schema to capture granular simulation events (e.g., stuns, captures) with their exact tick and positional data, enabling advanced analytics and scrubber functionality in the Film Room.
 - **Tiered Official Leagues**: Expanding beyond "Maintainer One" to lower-tier official leagues (e.g., Maintainer Two) as popularity demands, making top-tier team maintenance a prestigious achievement.
 - **Fan Predictions**: A gamified fan experience featuring outcome prediction mechanics and global leaderboards to keep viewers engaged with "premiering" matches.
 

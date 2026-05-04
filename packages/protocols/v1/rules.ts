@@ -349,6 +349,7 @@ export function resolveProtocolV1(
 			} else {
 				winner.stats.stolenCaptures += 1;
 			}
+			winner.stats.pointsScored += scoreAwarded;
 
 			// Zone is destroyed (not added to zonesToKeep)
 		} else {

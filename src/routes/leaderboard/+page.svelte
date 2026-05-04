@@ -186,6 +186,9 @@
 				valA = a.totalCaptures; valB = b.totalCaptures;
 			} else if (sortColumn === 'totalStuns') {
 				valA = a.totalStuns; valB = b.totalStuns;
+			} else if (sortColumn === 'ptsPerCap') {
+				valA = a.totalCaptures > 0 ? (a.stats.pointsScored || 0) / a.totalCaptures : 0;
+				valB = b.totalCaptures > 0 ? (b.stats.pointsScored || 0) / b.totalCaptures : 0;
 			} else {
 				valA = a.stats[sortColumn] || 0;
 				valB = b.stats[sortColumn] || 0;
@@ -312,10 +315,10 @@
 										{#each award.players as player}
 											{@const color = getTeamColor(player.teamId)}
 											{@const teamName = getTeamName(player.teamId)}
-											<div class="flex items-center gap-2 rounded bg-black/40 px-2 py-1.5 border border-white/5" style="border-left: 2px solid {color}">
-												<span class="text-[10px] font-black" style="color: {color}">{teamName.charAt(0)}{player.unitIndex}</span>
-												<span class="text-[9px] font-bold text-white/50">{teamName}</span>
-											</div>
+											<a href="{base}/player/{player.teamId}/{player.unitIndex}" class="flex items-center gap-2 rounded bg-black/40 px-2 py-1.5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group/link" style="border-left: 2px solid {color}">
+												<span class="text-[10px] font-black group-hover/link:text-white transition-colors" style="color: {color}">{teamName.charAt(0)}{player.unitIndex}</span>
+												<span class="text-[9px] font-bold text-white/50 group-hover/link:text-white/80 transition-colors">{teamName}</span>
+											</a>
 										{/each}
 									</div>
 								</div>
@@ -348,6 +351,12 @@
 								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('idleTicks')}>
 									<div class="flex items-center justify-center gap-2">Idle Ticks {#if sortColumn === 'idleTicks'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
 								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('pointsScored')}>
+									<div class="flex items-center justify-center gap-2">Points {#if sortColumn === 'pointsScored'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('ptsPerCap')}>
+									<div class="flex items-center justify-center gap-2">Pts/Cap {#if sortColumn === 'ptsPerCap'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
 								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('totalStuns')}>
 									<div class="flex items-center justify-center gap-2">Total Stuns {#if sortColumn === 'totalStuns'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
 								</th>
@@ -375,7 +384,7 @@
 							{#each allPlayers as p}
 								{@const color = getTeamColor(p.teamId)}
 								{@const teamName = getTeamName(p.teamId)}
-								<tr class="group hover:bg-white/5 transition-colors">
+								<tr class="group hover:bg-white/5 transition-colors cursor-pointer" onclick={() => window.location.href = `${base}/player/${p.teamId}/${p.unitIndex}`}>
 									<td class="p-4 pl-6">
 										<div class="flex items-center gap-3">
 											<div class="h-8 w-8 rounded flex items-center justify-center font-black text-xs uppercase" style="background-color: {color}22; border: 1px solid {color}66; color: {color}">
@@ -386,6 +395,8 @@
 									</td>
 									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.squaresMoved || 0}</td>
 									<td class="p-4 text-center font-mono text-sm text-white/40">{p.stats.idleTicks || 0}</td>
+									<td class="p-4 text-center font-mono font-bold text-white text-md">{p.stats.pointsScored || 0}</td>
+									<td class="p-4 text-center font-mono text-sm text-[var(--color-brand-primary)]">{p.totalCaptures > 0 ? ((p.stats.pointsScored || 0) / p.totalCaptures).toFixed(1) : '0.0'}</td>
 									<td class="p-4 text-center font-mono font-bold text-white text-md">{p.totalStuns}</td>
 									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.singleStuns || 0}</td>
 									<td class="p-4 text-center font-mono text-sm text-white/40">{p.stats.mutualStuns || 0}</td>

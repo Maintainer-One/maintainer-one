@@ -14,7 +14,8 @@ export function createInitialStateV1(config: V1Config, seed: number, teams?: { A
         mutualStuns: 0,
         expectedCaptures: 0,
         contestedCaptures: 0,
-        stolenCaptures: 0
+        stolenCaptures: 0,
+        pointsScored: 0
     });
 
     const emptyTeamStats = () => ({

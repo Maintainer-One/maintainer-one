@@ -174,13 +174,15 @@
 								<th class="p-4 text-center">Stuns</th>
 								<th class="p-4 text-center">Mutual Stuns</th>
 								<th class="p-4 text-center text-[var(--color-brand-primary)]">Captures</th>
+								<th class="p-4 text-center">Points</th>
+								<th class="p-4 text-center">Pts/Cap</th>
 								<th class="p-4 pr-6 text-center text-rose-400">Stolen</th>
 							</tr>
 						</thead>
 						<tbody class="divide-y divide-white/5">
 							{#each [...(stats.players || [])].sort((a, b) => a.id.localeCompare(b.id)) as p}
 								{@const team = p.team === 'A' ? match.home_team : match.away_team}
-								<tr class="group hover:bg-white/5 transition-colors">
+								<tr class="group hover:bg-white/5 transition-colors cursor-pointer" onclick={() => window.location.href = `${base}/player/${team.id}/${p.id.replace(/^[ab]/, '')}`}>
 									<td class="p-4 pl-6">
 										<div class="flex items-center gap-3">
 											<div class="h-8 w-8 rounded flex items-center justify-center font-black text-xs uppercase" style="background-color: {team.color}22; border: 1px solid {team.color}66; color: {team.color}">
@@ -194,6 +196,8 @@
 									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.singleStuns}</td>
 									<td class="p-4 text-center font-mono text-sm text-white/40">{p.stats.mutualStuns}</td>
 									<td class="p-4 text-center font-mono font-bold text-[var(--color-brand-primary)] text-lg">{p.stats.expectedCaptures + p.stats.contestedCaptures}</td>
+									<td class="p-4 text-center font-mono font-bold text-white text-md">{p.stats.pointsScored || 0}</td>
+									<td class="p-4 text-center font-mono text-sm text-[var(--color-brand-primary)]">{(p.stats.expectedCaptures + p.stats.contestedCaptures) > 0 ? ((p.stats.pointsScored || 0) / (p.stats.expectedCaptures + p.stats.contestedCaptures)).toFixed(1) : '0.0'}</td>
 									<td class="p-4 pr-6 text-center font-mono font-bold text-rose-400 text-lg">{p.stats.stolenCaptures}</td>
 								</tr>
 							{/each}

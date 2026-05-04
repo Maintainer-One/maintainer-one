@@ -135,7 +135,7 @@ Deno.test("Protocol V1: No Spawn on Occupied Squares", () => {
 				team: 'A',
 				position: { x, y },
 				status: 'active',
-				stats: { squaresMoved: 0, idleTicks: 0, singleStuns: 0, mutualStuns: 0, expectedCaptures: 0, contestedCaptures: 0, stolenCaptures: 0 }
+				stats: { squaresMoved: 0, idleTicks: 0, singleStuns: 0, mutualStuns: 0, expectedCaptures: 0, contestedCaptures: 0, stolenCaptures: 0, pointsScored: 0 }
 			});
 		}
 	}

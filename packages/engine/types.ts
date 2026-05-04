@@ -17,6 +17,7 @@ export type PlayerStats = {
 	expectedCaptures: number;
 	contestedCaptures: number;
 	stolenCaptures: number;
+	pointsScored: number;
 };
 
 export type Player = {

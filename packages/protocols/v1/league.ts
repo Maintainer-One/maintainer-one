@@ -95,7 +95,7 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
     }
 
     // Distribute Stat Points
-    const statKeys = ['squaresMoved', 'idleTicks', 'singleStuns', 'mutualStuns', 'expectedCaptures', 'contestedCaptures', 'stolenCaptures'];
+    const statKeys = ['squaresMoved', 'idleTicks', 'singleStuns', 'mutualStuns', 'expectedCaptures', 'contestedCaptures', 'stolenCaptures', 'pointsScored'];
     
     // We will collect player awards to return alongside standings
     const playerAwards: Array<{ statName: string, formattedKey: string, type: 'Most' | 'Least', value: number, players: { teamId: string, unitIndex: string }[] }> = [];
