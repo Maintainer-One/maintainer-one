@@ -1,0 +1,15 @@
+{
+	"/": [],
+	"/admin/authority": [],
+	"/admin/league": [],
+	"/film-room": [],
+	"/leaderboard": [],
+	"/match/[id]": [],
+	"/match/[id]/stats": [],
+	"/player/[teamId]/[unitIndex]": [],
+	"/schedule": [],
+	"/team/exhibition": [],
+	"/team/[id]": [],
+	"/team/[id]/dashboard": [],
+	"/team/[id]/test-runner": []
+}

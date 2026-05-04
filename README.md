@@ -76,19 +76,32 @@ Maintainer One is built with a modern, high-performance web stack:
    npm install
    ```
 
-3. **Start Supabase Locally**: _Ensure Docker is running._
+3. **Configure Environment Variables**:
+   Because this project uses a monorepo structure, your environment variables live in the root directory. You must create symbolic links so the individual applications can access them.
+
+   ```bash
+   cp .env.example .env
+   # Add your Supabase credentials to the root .env file
+
+   # Create symlinks for the apps
+   ln -s ../../.env apps/game/.env
+   ln -s ../../.env apps/landing/.env
+   ```
+   *(Windows users: If `ln -s` fails, you can simply copy the `.env` file into both the `apps/game/` and `apps/landing/` directories.)*
+
+4. **Start Supabase Locally**: _Ensure Docker is running._
 
    ```bash
    supabase start
    ```
 
-4. **Run a Local Simulation**:
+5. **Run a Local Simulation**:
 
    ```bash
    deno task sim --teamA players/my-logic.ts --teamB players/rival.ts
    ```
 
-5. **Start the Web UI**:
+6. **Start the Web UI**:
    ```bash
    deno task dev
    ```

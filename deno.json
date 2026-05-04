@@ -1,13 +1,14 @@
 {
 	"tasks": {
-		"dev": "deno run -A npm:vite dev",
-		"build": "deno run -A npm:vite build",
-		"preview": "deno run -A npm:vite preview",
+		"dev": "deno task --cwd apps/game dev",
+		"dev:landing": "deno task --cwd apps/landing dev",
+		"build": "deno task --cwd apps/game build",
+		"preview": "deno task --cwd apps/game preview",
 		"test": "deno test -A --parallel packages/",
-		"check": "deno check src/**/*.ts packages/**/*.ts",
+		"check": "cd apps/game && npm run check",
 		"lint": "deno lint",
 		"fmt": "deno fmt && deno run -A npm:prettier --write .",
-		"e2e": "npx playwright test",
+		"e2e": "cd apps/game && npx playwright test",
 		"sim": "deno run -A packages/engine/match_runner.ts",
 		"cron": "deno run -A packages/engine/cron_runner.ts"
 	},
@@ -17,6 +18,6 @@
 	},
 	"nodeModulesDir": "auto",
 	"fmt": {
-		"exclude": [".svelte-kit", "build", "dist", "node_modules"]
+		"exclude": [".svelte-kit", "build", "dist", "node_modules", "apps/landing/.astro"]
 	}
 }

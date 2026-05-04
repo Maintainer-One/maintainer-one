@@ -1,0 +1,58 @@
+---
+import '../styles/global.css';
+import HeroReplay from '../components/HeroReplay.svelte';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Fetch a recent played match
+const { data: match } = await supabase
+	.from('matches')
+	.select('id, initial_state')
+	.eq('status', 'played')
+	.order('scheduled_time', { ascending: false })
+	.limit(1)
+	.single();
+
+const initialState = match?.initial_state;
+---
+
+<html lang="en" class="dark">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>Maintainer One</title>
+	</head>
+	<body class="bg-[var(--color-background-dark)] text-white font-sans antialiased overflow-x-hidden min-h-screen relative">
+		
+		{initialState && (
+			<HeroReplay {initialState} client:only="svelte" />
+		)}
+
+		<div class="relative z-10 min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-black/80 via-black/60 to-[var(--color-background-dark)] px-4">
+			<div class="max-w-4xl mx-auto text-center">
+				<h1 class="text-7xl md:text-9xl font-black italic tracking-tighter text-white uppercase leading-none drop-shadow-2xl mb-8">
+					Maintainer <span class="text-[var(--color-brand-primary)]">One</span>
+				</h1>
+				
+				<p class="text-xl md:text-2xl text-white/80 font-bold max-w-2xl mx-auto mb-12 drop-shadow-lg leading-relaxed">
+					The ultimate algorithmic programming arena. Code your team's logic. Watch them execute. Dominate the league.
+				</p>
+
+				<div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+					<a href="http://app.maintainer.one" class="w-full sm:w-auto px-8 py-4 bg-[var(--color-brand-primary)] hover:bg-emerald-400 text-black text-sm md:text-base font-black uppercase tracking-[0.2em] rounded-2xl shadow-[0_0_30px_rgba(5,150,105,0.4)] transition-all hover:scale-105 hover:shadow-[0_0_50px_rgba(5,150,105,0.6)]">
+						Enter the Arena
+					</a>
+					<a href="https://github.com/Maintainer-One/maintainer-one" class="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white text-sm md:text-base font-black uppercase tracking-[0.2em] rounded-2xl backdrop-blur-md border border-white/20 transition-all hover:scale-105">
+						View on GitHub
+					</a>
+				</div>
+			</div>
+		</div>
+
+	</body>
+</html>
