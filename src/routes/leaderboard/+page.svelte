@@ -10,6 +10,10 @@
 	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 
+	let allPlayers: any[] = $state([]);
+	let sortColumn = $state('totalCaptures');
+	let sortAscending = $state(false);
+
 	const DEFAULT_TICK_RATE = 750;
 	const K_FACTOR = 32;
 
@@ -97,6 +101,21 @@
 					team.statAwards = (stats as any).statAwards || [];
 				}
 			}
+
+			// Process seasonPlayerStats into an array
+			if ((resolvedStandingsResult as any).seasonPlayerStats) {
+				const playersRaw = Object.values((resolvedStandingsResult as any).seasonPlayerStats);
+				allPlayers = playersRaw.map((p: any) => {
+					const totalCaptures = (p.stats.expectedCaptures || 0) + (p.stats.contestedCaptures || 0) + (p.stats.stolenCaptures || 0);
+					const totalStuns = (p.stats.singleStuns || 0) + (p.stats.mutualStuns || 0);
+					return {
+						...p,
+						totalCaptures,
+						totalStuns
+					};
+				});
+				sortPlayers();
+			}
 		}
 
 		// Calculate ELO
@@ -145,6 +164,37 @@
 	function getTeamName(teamId: string) {
 		const team = teams.find(t => t.id === teamId);
 		return team ? team.name : 'Unknown';
+	}
+
+	function sortPlayers(col?: string) {
+		if (col) {
+			if (sortColumn === col) {
+				sortAscending = !sortAscending;
+			} else {
+				sortColumn = col;
+				sortAscending = false;
+			}
+		}
+		
+		allPlayers = [...allPlayers].sort((a, b) => {
+			let valA, valB;
+			
+			if (sortColumn === 'player') {
+				valA = `${getTeamName(a.teamId)} ${a.unitIndex}`;
+				valB = `${getTeamName(b.teamId)} ${b.unitIndex}`;
+			} else if (sortColumn === 'totalCaptures') {
+				valA = a.totalCaptures; valB = b.totalCaptures;
+			} else if (sortColumn === 'totalStuns') {
+				valA = a.totalStuns; valB = b.totalStuns;
+			} else {
+				valA = a.stats[sortColumn] || 0;
+				valB = b.stats[sortColumn] || 0;
+			}
+
+			if (valA < valB) return sortAscending ? -1 : 1;
+			if (valA > valB) return sortAscending ? 1 : -1;
+			return 0;
+		});
 	}
 </script>
 
@@ -272,6 +322,81 @@
 							</div>
 						</div>
 					{/each}
+				</div>
+			</section>
+		{/if}
+
+		<!-- Player Statistics Table -->
+		{#if allPlayers.length > 0}
+			<section class="space-y-6 mt-16">
+				<h2 class="text-lg font-black tracking-widest uppercase text-[var(--color-brand-secondary)] flex items-center gap-3">
+					<span class="w-8 h-[1px] bg-white/20"></span>
+					League Player Statistics
+					<span class="flex-1 h-[1px] bg-white/5"></span>
+				</h2>
+				
+				<div class="rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl overflow-hidden shadow-2xl overflow-x-auto">
+					<table class="w-full text-left border-collapse min-w-[1000px]">
+						<thead>
+							<tr class="border-b border-white/5 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/40">
+								<th class="p-4 pl-6 cursor-pointer hover:bg-white/5 transition-colors group" onclick={() => sortPlayers('player')}>
+									<div class="flex items-center gap-2">Player {#if sortColumn === 'player'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('squaresMoved')}>
+									<div class="flex items-center justify-center gap-2">Movement {#if sortColumn === 'squaresMoved'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('idleTicks')}>
+									<div class="flex items-center justify-center gap-2">Idle Ticks {#if sortColumn === 'idleTicks'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('totalStuns')}>
+									<div class="flex items-center justify-center gap-2">Total Stuns {#if sortColumn === 'totalStuns'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('singleStuns')}>
+									<div class="flex items-center justify-center gap-2">Single Stuns {#if sortColumn === 'singleStuns'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('mutualStuns')}>
+									<div class="flex items-center justify-center gap-2">Mutual Stuns {#if sortColumn === 'mutualStuns'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors text-[var(--color-brand-primary)]" onclick={() => sortPlayers('totalCaptures')}>
+									<div class="flex items-center justify-center gap-2">Total Captures {#if sortColumn === 'totalCaptures'}<span class="text-white"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('expectedCaptures')}>
+									<div class="flex items-center justify-center gap-2">Expected {#if sortColumn === 'expectedCaptures'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 text-center cursor-pointer hover:bg-white/5 transition-colors" onclick={() => sortPlayers('contestedCaptures')}>
+									<div class="flex items-center justify-center gap-2">Contested {#if sortColumn === 'contestedCaptures'}<span class="text-[var(--color-brand-primary)]"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+								<th class="p-4 pr-6 text-center cursor-pointer hover:bg-white/5 transition-colors text-rose-400" onclick={() => sortPlayers('stolenCaptures')}>
+									<div class="flex items-center justify-center gap-2">Stolen {#if sortColumn === 'stolenCaptures'}<span class="text-white"><svg class="h-4 w-4 transition-transform duration-200 {sortAscending ? 'rotate-180' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9l-7 7-7-7"/></svg></span>{/if}</div>
+								</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-white/5">
+							{#each allPlayers as p}
+								{@const color = getTeamColor(p.teamId)}
+								{@const teamName = getTeamName(p.teamId)}
+								<tr class="group hover:bg-white/5 transition-colors">
+									<td class="p-4 pl-6">
+										<div class="flex items-center gap-3">
+											<div class="h-8 w-8 rounded flex items-center justify-center font-black text-xs uppercase" style="background-color: {color}22; border: 1px solid {color}66; color: {color}">
+												{teamName.charAt(0)}{p.unitIndex}
+											</div>
+											<div class="font-bold text-white group-hover:text-[var(--color-brand-primary)] transition-colors">{teamName} Unit {p.unitIndex}</div>
+										</div>
+									</td>
+									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.squaresMoved || 0}</td>
+									<td class="p-4 text-center font-mono text-sm text-white/40">{p.stats.idleTicks || 0}</td>
+									<td class="p-4 text-center font-mono font-bold text-white text-md">{p.totalStuns}</td>
+									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.singleStuns || 0}</td>
+									<td class="p-4 text-center font-mono text-sm text-white/40">{p.stats.mutualStuns || 0}</td>
+									<td class="p-4 text-center font-mono font-black text-[var(--color-brand-primary)] text-xl">{p.totalCaptures}</td>
+									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.expectedCaptures || 0}</td>
+									<td class="p-4 text-center font-mono text-sm text-white/70">{p.stats.contestedCaptures || 0}</td>
+									<td class="p-4 pr-6 text-center font-mono font-bold text-rose-400 text-lg">{p.stats.stolenCaptures || 0}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 			</section>
 		{/if}

@@ -157,6 +157,6 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
         });
     }
     
-    return { standings, playerAwards };
+    return { standings, playerAwards, seasonPlayerStats };
 }
 
