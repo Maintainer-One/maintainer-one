@@ -758,13 +758,18 @@
 
 			<div class="space-y-2">
 				{#each seasons as season}
+					{@const nowTime = new Date().getTime()}
+					{@const startTime = new Date(season.start_date).getTime()}
+					{@const endTime = season.end_date ? new Date(season.end_date).getTime() : startTime + 14 * 24 * 60 * 60 * 1000}
+					{@const isCompleted = nowTime > endTime}
+					{@const isActive = nowTime >= startTime && nowTime <= endTime}
 					<div class="group relative">
 						<button 
 							onclick={() => {
 								selectedSeasonId = season.id;
 								loadMatches(season.id);
 							}}
-							class="w-full flex items-center justify-between p-4 rounded-xl border transition-all {selectedSeasonId === season.id ? 'bg-[var(--color-brand-primary)]/10 border-[var(--color-brand-primary)]/30 text-white' : 'bg-black/20 border-white/5 text-white/40 hover:bg-black/40'}"
+							class="w-full flex items-end justify-between p-4 rounded-xl border transition-all {selectedSeasonId === season.id ? 'bg-[var(--color-brand-primary)]/10 border-[var(--color-brand-primary)]/30 text-white' : 'bg-black/20 border-white/5 text-white/40 hover:bg-black/40'}"
 						>
 							<div class="flex flex-col items-start">
 								<span class="text-[10px] font-black uppercase tracking-widest">Season {season.season_number}</span>
@@ -776,21 +781,39 @@
 									<span class="text-[8px] font-black ml-1 bg-white/5 px-1 rounded">{season.game_slots?.length || season.game_density} SLOTS</span>
 								</div>
 							</div>
-							<div class="px-2 py-0.5 rounded bg-black/40 text-[8px] font-black uppercase tracking-widest">
-								{season.status}
+							<div class="px-2 py-0.5 rounded {isActive ? 'bg-emerald-500/20 text-emerald-400' : isCompleted ? 'bg-white/10 text-white/40' : 'bg-black/40 text-[var(--color-brand-primary)]'} text-[8px] font-black uppercase tracking-widest">
+								{isActive ? 'ACTIVE' : isCompleted ? 'COMPLETED' : 'UPCOMING'}
 							</div>
 						</button>
 						
-						<button 
-							onclick={(e) => {
-								e.stopPropagation();
-								deleteSeason(season.id);
-							}}
-							class="absolute top-2 right-2 p-1.5 rounded-lg bg-red-500/10 text-red-500/40 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-all z-10"
-							title="Delete Season"
-						>
-							<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-						</button>
+						<div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
+							<button 
+								onclick={(e) => {
+									e.stopPropagation();
+									newSeasonName = `${season.name} (Copy)`;
+									newSeasonStartDate = season.start_date.split('T')[0];
+									newSeasonEndDate = season.end_date ? season.end_date.split('T')[0] : season.start_date.split('T')[0];
+									newSeasonSlots = [...(season.game_slots || [])];
+									newSeasonCodeLockOffset = season.code_lock_offset_minutes || 30;
+									isCreatingSeason = true;
+									window.scrollTo({ top: 0, behavior: 'smooth' });
+								}}
+								class="p-1.5 rounded-lg bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]/40 hover:bg-[var(--color-brand-primary)] hover:text-black transition-all"
+								title="Use as Template"
+							>
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+							</button>
+							<button 
+								onclick={(e) => {
+									e.stopPropagation();
+									deleteSeason(season.id);
+								}}
+								class="p-1.5 rounded-lg bg-red-500/10 text-red-500/40 hover:bg-red-500 hover:text-white transition-all"
+								title="Delete Season"
+							>
+								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+							</button>
+						</div>
 					</div>
 				{/each}
 			</div>
