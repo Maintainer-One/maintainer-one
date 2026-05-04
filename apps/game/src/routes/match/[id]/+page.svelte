@@ -63,6 +63,7 @@
 				season_id,
 				seasons (season_number),
 				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
@@ -86,7 +87,7 @@
 
 		// Set play speed from config
 		// @ts-ignore
-		const config = match.leagues?.protocol_config || {};
+		const config = match.seasons?.protocol_config ?? match.leagues?.protocol_config ?? {};
 		playSpeed = config.tickRateMs || 750;
 
 		// @ts-ignore
@@ -109,7 +110,7 @@
 		const awayV = versions.find(v => v.id === awayVersionId)!;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, match.leagues.protocol_config, { A: match.home_team, B: match.away_team });
+		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, config, { A: match.home_team, B: match.away_team });
 		states = [initialState];
 		currentTick = 0;
 

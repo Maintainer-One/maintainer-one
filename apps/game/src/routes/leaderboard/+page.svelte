@@ -42,7 +42,8 @@
 			.from('matches')
 			.select(`
 				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status, stats, winner_id,
-				leagues (protocol_version, protocol_config)
+				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config)
 			`)
 			.in('status', ['simulated', 'simmed', 'played'])
 			.eq('season_id', activeSeason.id)
@@ -73,7 +74,7 @@
 
 		// 5. Calculate records and ELO
 		const pastMatches = matchesData.filter(m => {
-			const config = (m.leagues as any)?.protocol_config || {};
+			const config = (m.seasons as any)?.protocol_config ?? (m.leagues as any)?.protocol_config ?? {};
 			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const startTime = new Date(m.scheduled_time).getTime();
@@ -83,7 +84,7 @@
 
 		if (pastMatches.length > 0 || teamsData.length > 0) {
 			const protocolVersion = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_version || 'v1' : 'v1';
-			const config = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_config || {} : {};
+			const config = pastMatches.length > 0 ? ((pastMatches[0].seasons as any)?.protocol_config ?? (pastMatches[0].leagues as any)?.protocol_config ?? {}) : {};
 			const protocol = getProtocol(protocolVersion);
 			const resolvedStandingsResult = protocol.resolveStandings(config, pastMatches, teamsData);
 			

@@ -70,7 +70,8 @@
 			.from('matches')
 			.select(`
 				id, status, home_score, away_score, scheduled_time, home_team_id, away_team_id,
-				leagues (protocol_config)
+				leagues (protocol_config),
+				seasons (protocol_version, protocol_config)
 			`)
 			.eq('season_id', activeSeason.id)
 			.order('scheduled_time', { ascending: true });
@@ -95,7 +96,7 @@
 			if (!home || !away) return;
 
 			// Calculate dynamic broadcast window
-			const config = (m.leagues as any)?.protocol_config || {};
+			const config = (m.seasons as any)?.protocol_config ?? (m.leagues as any)?.protocol_config ?? {};
 			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			

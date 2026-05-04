@@ -16,7 +16,8 @@ export const nodes = [
 	() => import('./nodes/12'),
 	() => import('./nodes/13'),
 	() => import('./nodes/14'),
-	() => import('./nodes/15')
+	() => import('./nodes/15'),
+	() => import('./nodes/16')
 ];
 
 export const server_loads = [];
@@ -25,10 +26,11 @@ export const dictionary = {
 		"/": [2],
 		"/admin/authority": [12],
 		"/admin/league": [13],
+		"/admin/league/season/new": [14],
 		"/film-room": [6],
 		"/leaderboard": [5],
-		"/match/[id]": [14],
-		"/match/[id]/stats": [15],
+		"/match/[id]": [15],
+		"/match/[id]/stats": [16],
 		"/multiview": [4],
 		"/player/[teamId]/[unitIndex]": [3],
 		"/schedule": [11],

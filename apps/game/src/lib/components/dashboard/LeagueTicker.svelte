@@ -19,6 +19,7 @@
 				away_score,
 				scheduled_time,
 				leagues (protocol_config),
+				seasons (protocol_config),
 				home_team:teams!home_team_id (name),
 				away_team:teams!away_team_id (name)
 			`)
@@ -33,7 +34,7 @@
 
 		const nowTime = new Date().getTime();
 		const validMatches = (data || []).filter(m => {
-			const config = (m as any).leagues?.protocol_config || {};
+			const config = (m as any).seasons?.protocol_config ?? (m as any).leagues?.protocol_config ?? {};
 			const tickRate = config.tickRateMs || 750;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const startTime = new Date(m.scheduled_time).getTime();

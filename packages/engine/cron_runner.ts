@@ -20,6 +20,7 @@ async function simulateLockedMatches() {
         .select(`
             *,
             leagues (protocol_version, protocol_config),
+            seasons (protocol_version, protocol_config),
             home_team:teams!home_team_id (id, name, color, active_version_id),
             away_team:teams!away_team_id (id, name, color, active_version_id)
         `)
@@ -70,11 +71,11 @@ async function simulateLockedMatches() {
             const { finalState } = await simulateMatch(
                 Number(match.seed),
                 // @ts-ignore
-                match.leagues.protocol_version,
+                match.seasons?.protocol_version || match.leagues.protocol_version,
                 homeLogic,
                 awayLogic,
                 // @ts-ignore
-                match.leagues.protocol_config,
+                match.seasons?.protocol_config ?? match.leagues.protocol_config,
                 // @ts-ignore
                 { A: match.home_team, B: match.away_team }
             );

@@ -15,7 +15,7 @@
 		// 1. Try current season matches
 		let { data: matches, error } = await supabase
 			.from('matches')
-			.select('home_team_id, away_team_id, home_score, away_score, status, season_id, scheduled_time, leagues (protocol_config)')
+			.select('home_team_id, away_team_id, home_score, away_score, status, season_id, scheduled_time, leagues (protocol_config), seasons (protocol_config)')
 			.in('status', ['played', 'simulated'])
 			.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 			.eq('season_id', match.season_id)
@@ -32,7 +32,7 @@
 			if (seasons && seasons[0]) {
 				const { data: prevMatches } = await supabase
 					.from('matches')
-					.select('home_team_id, away_team_id, home_score, away_score, status, scheduled_time, leagues (protocol_config)')
+					.select('home_team_id, away_team_id, home_score, away_score, status, scheduled_time, leagues (protocol_config), seasons (protocol_config)')
 					.in('status', ['played', 'simulated'])
 					.or(`home_team_id.eq.${teamId},away_team_id.eq.${teamId}`)
 					.eq('season_id', seasons[0].id)
@@ -45,7 +45,7 @@
 
 		const nowTime = new Date().getTime();
 		const validMatches = matches.filter(m => {
-			const config = m.leagues?.protocol_config || match.leagues?.protocol_config || {};
+			const config = m.seasons?.protocol_config ?? m.leagues?.protocol_config ?? match.seasons?.protocol_config ?? match.leagues?.protocol_config ?? {};
 			const tickRate = config.tickRateMs || 750;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const startTime = new Date(m.scheduled_time).getTime();

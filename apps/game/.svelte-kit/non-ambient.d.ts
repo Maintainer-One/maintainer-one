@@ -29,7 +29,7 @@ declare module "$app/types" {
 	type MatcherParam<M> = M extends (param : string) => param is (infer U extends string) ? U : string;
 
 	export interface AppTypes {
-		RouteId(): "/" | "/admin" | "/admin/authority" | "/admin/league" | "/film-room" | "/leaderboard" | "/match" | "/match/[id]" | "/match/[id]/stats" | "/multiview" | "/player" | "/player/[teamId]" | "/player/[teamId]/[unitIndex]" | "/schedule" | "/team" | "/team/exhibition" | "/team/[id]" | "/team/[id]/dashboard" | "/team/[id]/test-runner";
+		RouteId(): "/" | "/admin" | "/admin/authority" | "/admin/league" | "/admin/league/season" | "/admin/league/season/new" | "/film-room" | "/leaderboard" | "/match" | "/match/[id]" | "/match/[id]/stats" | "/multiview" | "/player" | "/player/[teamId]" | "/player/[teamId]/[unitIndex]" | "/schedule" | "/team" | "/team/exhibition" | "/team/[id]" | "/team/[id]/dashboard" | "/team/[id]/test-runner";
 		RouteParams(): {
 			"/match/[id]": { id: string };
 			"/match/[id]/stats": { id: string };
@@ -44,6 +44,8 @@ declare module "$app/types" {
 			"/admin": Record<string, never>;
 			"/admin/authority": Record<string, never>;
 			"/admin/league": Record<string, never>;
+			"/admin/league/season": Record<string, never>;
+			"/admin/league/season/new": Record<string, never>;
 			"/film-room": Record<string, never>;
 			"/leaderboard": Record<string, never>;
 			"/match": { id?: string };
@@ -60,7 +62,7 @@ declare module "$app/types" {
 			"/team/[id]/dashboard": { id: string };
 			"/team/[id]/test-runner": { id: string }
 		};
-		Pathname(): "/" | "/admin/authority" | "/admin/league" | "/film-room" | "/leaderboard" | `/match/${string}` & {} | `/match/${string}/stats` & {} | "/multiview" | `/player/${string}/${string}` & {} | "/schedule" | "/team/exhibition" | `/team/${string}` & {} | `/team/${string}/dashboard` & {} | `/team/${string}/test-runner` & {};
+		Pathname(): "/" | "/admin/authority" | "/admin/league" | "/admin/league/season/new" | "/film-room" | "/leaderboard" | `/match/${string}` & {} | `/match/${string}/stats` & {} | "/multiview" | `/player/${string}/${string}` & {} | "/schedule" | "/team/exhibition" | `/team/${string}` & {} | `/team/${string}/dashboard` & {} | `/team/${string}/test-runner` & {};
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): "/robots.txt" | string & {};
 	}

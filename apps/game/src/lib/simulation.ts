@@ -21,8 +21,8 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 
 	const initialState = createInitialState(
 		Number(match.seed), 
-		match.leagues.protocol_version, 
-		match.leagues.protocol_config, 
+		match.seasons?.protocol_version || match.leagues.protocol_version, 
+		match.seasons?.protocol_config ?? match.leagues.protocol_config, 
 		{ A: match.home_team, B: match.away_team }
 	);
 

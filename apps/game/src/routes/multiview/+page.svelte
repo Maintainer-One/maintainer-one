@@ -9,6 +9,7 @@
 
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
+	import { replaceState } from '$app/navigation';
 
 	let activeSeason: any = $state(null);
 	let availableMatches = $state<any[]>([]);
@@ -35,7 +36,7 @@
 			} else {
 				currentUrl.searchParams.delete('m');
 			}
-			window.history.replaceState(history.state, '', currentUrl);
+			replaceState(currentUrl, page.state);
 		}
 	});
 
@@ -49,6 +50,7 @@
 				id, status, scheduled_time, seed,
 				home_code_version_id, away_code_version_id, home_override_version_id, away_override_version_id,
 				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
@@ -204,8 +206,8 @@
 					style="grid-template-columns: repeat(auto-fit, minmax({selectedMatches.length <= 4 ? '400px' : '300px'}, 1fr));"
 				>
 					{#each selectedMatches as match (match.id)}
-						{@const liveData = getLiveState(match.id, match.scheduled_time, match.leagues?.protocol_config)}
-						{@const playSpeed = match.leagues?.protocol_config?.tickRateMs || DEFAULT_TICK_RATE}
+						{@const liveData = getLiveState(match.id, match.scheduled_time, match.seasons?.protocol_config ?? match.leagues?.protocol_config)}
+						{@const playSpeed = match.seasons?.protocol_config?.tickRateMs ?? match.leagues?.protocol_config?.tickRateMs ?? DEFAULT_TICK_RATE}
 						{@const returnUrl = encodeURIComponent(`${base}/multiview?m=${Array.from(selectedMatchIds).join(',')}`)}
 						
 						<a 

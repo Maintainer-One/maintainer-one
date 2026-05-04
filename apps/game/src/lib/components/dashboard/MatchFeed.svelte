@@ -41,6 +41,7 @@
 				id, status, home_score, away_score, scheduled_time, seed,
 				home_code_version_id, away_code_version_id, home_override_version_id, away_override_version_id,
 				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
@@ -60,7 +61,7 @@
 		upcomingMatches = allMatches
 			.filter(m => {
 				const startTime = new Date(m.scheduled_time).getTime();
-				const config = m.leagues?.protocol_config || {};
+				const config = m.seasons?.protocol_config ?? m.leagues?.protocol_config ?? {};
 				const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
@@ -72,7 +73,7 @@
 		recentMatches = allMatches
 			.filter(m => {
 				const startTime = new Date(m.scheduled_time).getTime();
-				const config = m.leagues?.protocol_config || {};
+				const config = m.seasons?.protocol_config ?? m.leagues?.protocol_config ?? {};
 				const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 				const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 				const endTimeWithGrace = startTime + (leagueMaxTicks * tickRate) + GRACE_PERIOD_MS;
@@ -86,7 +87,7 @@
 		// Trigger background sims for Live matches
 		allMatches.forEach(m => {
 			const startTime = new Date(m.scheduled_time).getTime();
-			const config = m.leagues?.protocol_config || {};
+			const config = m.seasons?.protocol_config ?? m.leagues?.protocol_config ?? {};
 			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const endTime = startTime + (leagueMaxTicks * tickRate);
@@ -147,7 +148,7 @@
 		}
 
 		// Calculate dynamic max duration from league config
-		const config = match.leagues?.protocol_config || {};
+		const config = match.seasons?.protocol_config ?? match.leagues?.protocol_config ?? {};
 		const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
 		const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 

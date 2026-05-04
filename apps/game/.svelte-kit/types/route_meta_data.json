@@ -2,6 +2,7 @@
 	"/": [],
 	"/admin/authority": [],
 	"/admin/league": [],
+	"/admin/league/season/new": [],
 	"/film-room": [],
 	"/leaderboard": [],
 	"/match/[id]": [],

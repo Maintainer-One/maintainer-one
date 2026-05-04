@@ -38,12 +38,7 @@
 	let newPlayerName = $state('');
 	let newPlayerUnitIndex = $state('');
 	
-	let isCreatingSeason = $state(false);
-	let newSeasonName = $state('');
-	let newSeasonStartDate = $state(new Date().toISOString().split('T')[0]);
-	let newSeasonEndDate = $state(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-	let newSeasonSlots = $state(['12:00', '15:00']);
-	let newSeasonCodeLockOffset = $state(30);
+
 	let isGeneratingSchedule = $state(false);
 	let isSimulatingMatch = $state<string | null>(null);
 
@@ -146,70 +141,7 @@
 		}
 	}
 
-	async function createSeason() {
-		if (!newSeasonName || !newSeasonStartDate || !newSeasonEndDate) return;
-		
-		const parseLocalDate = (dateStr: string) => {
-			const [year, month, day] = dateStr.split('-').map(Number);
-			return new Date(year, month - 1, day);
-		};
 
-		const start = parseLocalDate(newSeasonStartDate);
-		const end = parseLocalDate(newSeasonEndDate);
-		end.setHours(23, 59, 59, 999);
-		
-		if (start > end) {
-			modal.alert('Error', 'Start date must be on or before end date');
-			return;
-		}
-
-		// Overlap check
-		const overlap = seasons.find(s => {
-			const sStart = new Date(s.start_date);
-			const sEnd = s.end_date ? new Date(s.end_date) : sStart; // Fallback if no end_date
-			return (start <= sEnd && end >= sStart);
-		});
-
-		if (overlap) {
-			modal.alert('Overlap Error', `This season overlaps with Season ${overlap.season_number} (${overlap.name})`);
-			return;
-		}
-
-		isCreatingSeason = true;
-		
-		// Get next season number
-		const nextNum = (seasons[0]?.season_number ?? 0) + 1;
-		
-		const { data: currentLeague } = await supabase.from('leagues').select('id').eq('id', selectedLeagueId).single();
-		if (!currentLeague) return;
-
-		const { data, error } = await supabase
-			.from('seasons')
-			.insert({
-				name: newSeasonName,
-				season_number: nextNum,
-				league_id: currentLeague.id,
-				status: 'pending',
-				start_date: start.toISOString(),
-				end_date: end.toISOString(),
-				game_density: newSeasonSlots.length,
-				game_slots: newSeasonSlots,
-				code_lock_offset_minutes: newSeasonCodeLockOffset
-			})
-			.select()
-			.single();
-
-		if (!error && data) {
-			newSeasonName = '';
-			await loadSeasons();
-			selectedSeasonId = data.id;
-			await loadMatches(data.id);
-			isCreatingSeason = false;
-		} else if (error) {
-			modal.alert('Error', error.message);
-		}
-		isCreatingSeason = false;
-	}
 
 	function calculateCodeLockTime(scheduledIso: string, offsetMinutes: number) {
 		const scheduled = new Date(scheduledIso);
@@ -257,18 +189,7 @@
 		}
 	}
 
-	function applyTimePreset(preset: 'hourly' | 'half-hourly') {
-		const slots = [];
-		if (preset === 'hourly') {
-			for (let i = 12; i <= 20; i++) slots.push(`${i.toString().padStart(2, '0')}:00`);
-		} else if (preset === 'half-hourly') {
-			for (let i = 12; i <= 16; i++) {
-				slots.push(`${i.toString().padStart(2, '0')}:00`);
-				if (i < 16) slots.push(`${i.toString().padStart(2, '0')}:30`);
-			}
-		}
-		newSeasonSlots = slots;
-	}
+
 
 	function toggleMatchSelection(matchId: string) {
 		const newSet = new Set(selectedMatchIds);
@@ -615,12 +536,12 @@
 				</div>
 			{/if}
 			{#if activeTab === 'schedule'}
-				<button 
-					onclick={() => isCreatingSeason = !isCreatingSeason}
+				<a 
+					href="{base}/admin/league/season/new?league={selectedLeagueId}"
 					class="rounded-xl border border-white/5 bg-black/40 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all"
 				>
 					+ New Season
-				</button>
+				</a>
 			{/if}
 		</div>
 	</header>
@@ -647,114 +568,6 @@
 		<aside class="space-y-6">
 			<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Seasons</h3>
 			
-			{#if isCreatingSeason}
-				<div class="p-6 rounded-2xl bg-[var(--color-brand-primary)]/5 border border-[var(--color-brand-primary)]/20 space-y-4" transition:slide>
-					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Name</label>
-						<input 
-							type="text" 
-							bind:value={newSeasonName} 
-							placeholder="Season Name (e.g. Spring 2026)"
-							class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-						/>
-					</div>
-
-					<div class="grid grid-cols-2 gap-4">
-						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Start Date</label>
-							<input 
-								type="date" 
-								bind:value={newSeasonStartDate} 
-								class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-							/>
-						</div>
-						<div class="space-y-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">End Date</label>
-							<input 
-								type="date" 
-								bind:value={newSeasonEndDate} 
-								class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-							/>
-						</div>
-					</div>
-
-					<div class="space-y-1">
-						<label class="text-[8px] font-black uppercase tracking-widest text-white/40 ml-1">Code Lock Offset (Minutes)</label>
-						<input 
-							type="number" 
-							bind:value={newSeasonCodeLockOffset} 
-							class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-						/>
-						<p class="text-[8px] text-white/40 ml-1 mt-1">Code will be locked this many minutes before the scheduled match time.</p>
-					</div>
-
-					<div class="space-y-2">
-						<div class="flex items-center justify-between ml-1">
-							<label class="text-[8px] font-black uppercase tracking-widest text-white/40">Daily Game Slots</label>
-							<div class="flex gap-2">
-								<button 
-									onclick={() => applyTimePreset('hourly')}
-									class="text-[8px] font-black uppercase tracking-widest text-white/40 hover:text-white"
-								>
-									Hourly 12-20
-								</button>
-								<button 
-									onclick={() => applyTimePreset('half-hourly')}
-									class="text-[8px] font-black uppercase tracking-widest text-white/40 hover:text-white"
-								>
-									30m 12-16
-								</button>
-								<button 
-									onclick={() => newSeasonSlots = [...newSeasonSlots, '18:00']}
-									class="text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline ml-2"
-								>
-									+ Add Slot
-								</button>
-							</div>
-						</div>
-						<div class="flex flex-wrap gap-2">
-							{#each newSeasonSlots as slot, i}
-								<div class="flex items-center gap-1 w-full sm:w-[150px] lg:w-full xl:w-[150px]">
-									<input 
-										type="time" 
-										bind:value={newSeasonSlots[i]} 
-										class="flex-1 bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50"
-									/>
-									<button 
-										onclick={() => newSeasonSlots = [...newSeasonSlots.slice(0, i+1), newSeasonSlots[i], ...newSeasonSlots.slice(i+1)]}
-										class="p-2 text-white/20 hover:text-white transition-colors"
-										title="Duplicate Slot"
-									>
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-									</button>
-									<button 
-										onclick={() => newSeasonSlots = newSeasonSlots.filter((_, idx) => idx !== i)}
-										class="p-2 text-white/20 hover:text-red-500 transition-colors"
-										title="Remove Slot"
-									>
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-									</button>
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<div class="flex gap-2 pt-2">
-						<button 
-							onclick={createSeason}
-							class="flex-1 rounded-xl bg-[var(--color-brand-primary)] py-3 text-[9px] font-black uppercase text-black"
-						>
-							Create
-						</button>
-						<button 
-							onclick={() => isCreatingSeason = false}
-							class="flex-1 rounded-xl bg-white/5 py-3 text-[9px] font-black uppercase text-white/40"
-						>
-							Cancel
-						</button>
-					</div>
-				</div>
-			{/if}
 
 			<div class="space-y-2">
 				{#each seasons as season}
@@ -787,22 +600,14 @@
 						</button>
 						
 						<div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
-							<button 
-								onclick={(e) => {
-									e.stopPropagation();
-									newSeasonName = `${season.name} (Copy)`;
-									newSeasonStartDate = season.start_date.split('T')[0];
-									newSeasonEndDate = season.end_date ? season.end_date.split('T')[0] : season.start_date.split('T')[0];
-									newSeasonSlots = [...(season.game_slots || [])];
-									newSeasonCodeLockOffset = season.code_lock_offset_minutes || 30;
-									isCreatingSeason = true;
-									window.scrollTo({ top: 0, behavior: 'smooth' });
-								}}
+							<a 
+								href="{base}/admin/league/season/new?league={selectedLeagueId}&template={season.id}"
+								onclick={(e) => e.stopPropagation()}
 								class="p-1.5 rounded-lg bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]/40 hover:bg-[var(--color-brand-primary)] hover:text-black transition-all"
 								title="Use as Template"
 							>
 								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-							</button>
+							</a>
 							<button 
 								onclick={(e) => {
 									e.stopPropagation();

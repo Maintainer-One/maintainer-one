@@ -101,6 +101,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				seed,
 				league_id,
 				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
@@ -137,12 +138,12 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		// Initialize from tick 0
 		// @ts-ignore
-		const config = match.leagues.protocol_config || {};
+		const config = match.seasons?.protocol_config ?? match.leagues.protocol_config ?? {};
 		baseTickRate = config.tickRateMs || 750;
 		playSpeed = baseTickRate;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.leagues.protocol_version, config, {
+		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, config, {
 			A: match.home_team,
 			B: match.away_team
 		});
