@@ -97,6 +97,9 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
     // Distribute Stat Points
     const statKeys = ['squaresMoved', 'idleTicks', 'singleStuns', 'mutualStuns', 'expectedCaptures', 'contestedCaptures', 'stolenCaptures'];
     
+    // We will collect player awards to return alongside standings
+    const playerAwards: Array<{ statName: string, formattedKey: string, type: 'Most' | 'Least', value: number, players: { teamId: string, unitIndex: string }[] }> = [];
+
     for (const key of statKeys) {
         let maxVal = -Infinity;
         let minVal = Infinity;
@@ -114,13 +117,30 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
         const maxTeams = new Set<string>();
         const minTeams = new Set<string>();
         
+        const maxPlayersList: { teamId: string, unitIndex: string }[] = [];
+        const minPlayersList: { teamId: string, unitIndex: string }[] = [];
+
         for (const playerKey in seasonPlayerStats) {
             const player = seasonPlayerStats[playerKey];
             const val = player.stats[key] || 0;
-            if (val === maxVal) maxTeams.add(player.teamId);
-            if (val === minVal) minTeams.add(player.teamId);
+            if (val === maxVal) {
+                maxTeams.add(player.teamId);
+                maxPlayersList.push({ teamId: player.teamId, unitIndex: player.unitIndex });
+            }
+            if (val === minVal) {
+                minTeams.add(player.teamId);
+                minPlayersList.push({ teamId: player.teamId, unitIndex: player.unitIndex });
+            }
         }
         
+        if (maxPlayersList.length > 0) {
+            playerAwards.push({ statName: key, formattedKey, type: 'Most', value: maxVal, players: maxPlayersList });
+        }
+        
+        if (minPlayersList.length > 0) {
+            playerAwards.push({ statName: key, formattedKey, type: 'Least', value: minVal, players: minPlayersList });
+        }
+
         maxTeams.forEach(teamId => {
             if (standings[teamId]) {
                 standings[teamId].points += 1;
@@ -137,5 +157,6 @@ export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any
         });
     }
     
-    return standings;
+    return { standings, playerAwards };
 }
+

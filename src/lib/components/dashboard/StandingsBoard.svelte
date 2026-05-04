@@ -80,7 +80,8 @@
 			const protocolVersion = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_version || 'v1' : 'v1';
 			const config = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_config || {} : {};
 			const protocol = getProtocol(protocolVersion);
-			const resolvedStandings = protocol.resolveStandings(config, pastMatches, teamsData);
+			const resolvedStandingsResult = protocol.resolveStandings(config, pastMatches, teamsData);
+			const resolvedStandings = resolvedStandingsResult.standings || resolvedStandingsResult;
 			
 			for (const [teamId, stats] of Object.entries(resolvedStandings)) {
 				const team = standingsMap.get(teamId);
@@ -140,7 +141,7 @@
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 			{activeSeason ? activeSeason.name : 'Standings'}
 		</h2>
-		<button class="text-sm text-[var(--color-brand-secondary)]/50 hover:text-[var(--color-brand-secondary)] transition-colors">View All</button>
+		<a href="/leaderboard" class="text-sm font-semibold tracking-wider uppercase text-[var(--color-brand-secondary)]/50 hover:text-[var(--color-brand-primary)] transition-colors">Full Leaderboard</a>
 	</div>
 
 	<div class="grid gap-3 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-1">

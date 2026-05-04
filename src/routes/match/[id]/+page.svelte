@@ -56,6 +56,7 @@
 		const { data: match, error } = await supabase
 			.from('matches')
 			.select(`
+				id,
 				seed,
 				league_id,
 				scheduled_time,
@@ -213,6 +214,15 @@
 			</div>
 
 			<div class="flex items-center gap-4">
+				{#if isCompleted}
+					<a 
+						href="{base}/match/{matchData?.id}/stats"
+						class="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/20 shadow-lg shadow-[var(--color-brand-primary)]/10"
+					>
+						<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+						View Final Stats
+					</a>
+				{/if}
 				<button 
 					onclick={() => showControlMap = !showControlMap}
 					class="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/5 bg-black/40 text-[9px] font-black uppercase tracking-widest {showControlMap ? 'text-[var(--color-brand-primary)]' : 'text-white/20'} transition-all hover:bg-black/60"

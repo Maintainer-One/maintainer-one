@@ -252,6 +252,9 @@
 				<a href="{base}/film-room?match={match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/5 py-2 rounded-lg">
 					Analyze
 				</a>
+				<a href="{base}/match/{match.id}/stats" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/5 py-2 rounded-lg border-l border-white/5">
+					Stats
+				</a>
 			{/if}
 		</div>
 		
