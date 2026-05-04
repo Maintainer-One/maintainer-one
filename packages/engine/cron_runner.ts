@@ -88,7 +88,16 @@ async function simulateLockedMatches() {
                     away_score: finalState.teams.B.score,
                     home_code_version_id: homeVersionId,
                     away_code_version_id: awayVersionId,
-                    winner_id: finalState.winner === 'A' ? match.home_team_id : (finalState.winner === 'B' ? match.away_team_id : null)
+                    winner_id: finalState.winner === 'A' ? match.home_team_id : (finalState.winner === 'B' ? match.away_team_id : null),
+                    stats: {
+                        home_team: finalState.teams.A.stats,
+                        away_team: finalState.teams.B.stats,
+                        players: finalState.players.map((p: any) => ({
+                            id: p.id,
+                            team: p.team,
+                            stats: p.stats
+                        }))
+                    }
                 })
                 .eq('id', match.id);
 

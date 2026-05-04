@@ -9,7 +9,7 @@ export interface ProtocolDefinition<ConfigType = any> {
 	
 	// --- LEAGUE MECHANICS ---
 	generateSchedule: (config: ConfigType, teams: any[], startDate: Date) => any[];
-	resolveStandings: (config: ConfigType, matches: any[]) => any;
+	resolveStandings: (config: ConfigType, matches: any[], teams?: any[]) => any;
 
 	// --- MATCH MECHANICS ---
 	createInitialState: (config: ConfigType, seed: number, teams?: { A: any, B: any }) => GameState;

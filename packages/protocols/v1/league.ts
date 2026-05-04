@@ -40,14 +40,24 @@ export function generateScheduleV1(config: V1Config, teams: { id: string }[], st
  * Calculates standings based on match results.
  * 3 points for win, 1 for tie, 0 for loss.
  */
-export function resolveStandingsV1(config: V1Config, matches: any[]) {
-    const standings: Record<string, { wins: number, losses: number, ties: number, points: number }> = {};
-    
+export function resolveStandingsV1(config: V1Config, matches: any[], teams?: any[]) {
+    const standings: Record<string, { wins: number, losses: number, ties: number, points: number, statPoints: number, statAwards: string[] }> = {};
+    const seasonPlayerStats: Record<string, any> = {};
+
+    if (teams) {
+        for (const t of teams) {
+            standings[t.id] = { wins: 0, losses: 0, ties: 0, points: 0, statPoints: 0, statAwards: [] };
+            for (let i = 1; i <= 3; i++) {
+                seasonPlayerStats[`${t.id}_${i}`] = { teamId: t.id, unitIndex: String(i), stats: {} };
+            }
+        }
+    }
+
     for (const match of matches) {
-        if (match.status !== 'simulated' && match.status !== 'published') continue;
+        if (match.status !== 'simulated' && match.status !== 'published' && match.status !== 'played' && match.status !== 'simmed') continue;
         
-        if (!standings[match.home_team_id]) standings[match.home_team_id] = { wins: 0, losses: 0, ties: 0, points: 0 };
-        if (!standings[match.away_team_id]) standings[match.away_team_id] = { wins: 0, losses: 0, ties: 0, points: 0 };
+        if (!standings[match.home_team_id]) standings[match.home_team_id] = { wins: 0, losses: 0, ties: 0, points: 0, statPoints: 0, statAwards: [] };
+        if (!standings[match.away_team_id]) standings[match.away_team_id] = { wins: 0, losses: 0, ties: 0, points: 0, statPoints: 0, statAwards: [] };
         
         if (match.winner_id === match.home_team_id) {
             standings[match.home_team_id].wins++;
@@ -64,6 +74,67 @@ export function resolveStandingsV1(config: V1Config, matches: any[]) {
             standings[match.away_team_id].ties++;
             standings[match.away_team_id].points += 1;
         }
+
+        // Aggregate stats per unit
+        if (match.stats && match.stats.players) {
+            for (const p of match.stats.players) {
+                const teamId = p.team === 'A' ? match.home_team_id : match.away_team_id;
+                // standardize unit id (e.g. 'a1' -> '1')
+                const unitIndex = p.id.replace(/^[ab]/, ''); 
+                const playerKey = `${teamId}_${unitIndex}`;
+                
+                if (!seasonPlayerStats[playerKey]) {
+                    seasonPlayerStats[playerKey] = { teamId, unitIndex, stats: {} };
+                }
+                
+                for (const statKey in p.stats) {
+                    seasonPlayerStats[playerKey].stats[statKey] = (seasonPlayerStats[playerKey].stats[statKey] || 0) + p.stats[statKey];
+                }
+            }
+        }
+    }
+
+    // Distribute Stat Points
+    const statKeys = ['squaresMoved', 'idleTicks', 'singleStuns', 'mutualStuns', 'expectedCaptures', 'contestedCaptures', 'stolenCaptures'];
+    
+    for (const key of statKeys) {
+        let maxVal = -Infinity;
+        let minVal = Infinity;
+        
+        // Find min/max season total across all players
+        for (const playerKey in seasonPlayerStats) {
+            const val = seasonPlayerStats[playerKey].stats[key] || 0;
+            if (val > maxVal) maxVal = val;
+            if (val < minVal) minVal = val;
+        }
+        
+        if (maxVal === -Infinity || minVal === Infinity) continue;
+
+        const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        const maxTeams = new Set<string>();
+        const minTeams = new Set<string>();
+        
+        for (const playerKey in seasonPlayerStats) {
+            const player = seasonPlayerStats[playerKey];
+            const val = player.stats[key] || 0;
+            if (val === maxVal) maxTeams.add(player.teamId);
+            if (val === minVal) minTeams.add(player.teamId);
+        }
+        
+        maxTeams.forEach(teamId => {
+            if (standings[teamId]) {
+                standings[teamId].points += 1;
+                standings[teamId].statPoints += 1;
+                standings[teamId].statAwards.push(`Most ${formattedKey}`);
+            }
+        });
+        minTeams.forEach(teamId => {
+            if (standings[teamId]) {
+                standings[teamId].points += 1;
+                standings[teamId].statPoints += 1;
+                standings[teamId].statAwards.push(`Least ${formattedKey}`);
+            }
+        });
     }
     
     return standings;

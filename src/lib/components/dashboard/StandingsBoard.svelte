@@ -2,6 +2,7 @@
 	import TeamCard from './TeamCard.svelte';
 	import { supabase, getActiveSeason } from '$lib/supabase';
 	import { onMount } from 'svelte';
+	import { getProtocol } from '../../../../packages/protocols/registry';
 
 	let teams: any[] = $state([]);
 	let activeSeason: any = $state(null);
@@ -35,8 +36,8 @@
 		const { data: matchesData, error: matchesError } = await supabase
 			.from('matches')
 			.select(`
-				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status,
-				leagues (protocol_config)
+				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status, stats, winner_id,
+				leagues (protocol_version, protocol_config)
 			`)
 			.in('status', ['simulated', 'simmed', 'played'])
 			.eq('season_id', activeSeason.id)
@@ -64,40 +65,42 @@
 		const nowTime = new Date().getTime();
 
 		// 5. Calculate records and ELO
-		// We only process matches that have fully finished their "Live" duration
-		matchesData.forEach(m => {
+		// Filter out live/unstarted matches
+		const pastMatches = matchesData.filter(m => {
+			const config = (m.leagues as any)?.protocol_config || {};
+			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
+			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
+			const startTime = new Date(m.scheduled_time).getTime();
+			const endTime = startTime + (leagueMaxTicks * tickRate);
+			return nowTime >= endTime;
+		});
+
+		// Resolve standings via Protocol
+		if (pastMatches.length > 0 || teamsData.length > 0) {
+			const protocolVersion = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_version || 'v1' : 'v1';
+			const config = pastMatches.length > 0 ? (pastMatches[0].leagues as any)?.protocol_config || {} : {};
+			const protocol = getProtocol(protocolVersion);
+			const resolvedStandings = protocol.resolveStandings(config, pastMatches, teamsData);
+			
+			for (const [teamId, stats] of Object.entries(resolvedStandings)) {
+				const team = standingsMap.get(teamId);
+				if (team) {
+					team.wins = (stats as any).wins;
+					team.losses = (stats as any).losses;
+					team.draws = (stats as any).ties; // resolveStandings uses 'ties'
+					team.points = (stats as any).points;
+					team.statPoints = (stats as any).statPoints || 0;
+					team.statAwards = (stats as any).statAwards || [];
+				}
+			}
+		}
+
+		// Calculate ELO
+		pastMatches.forEach(m => {
 			const home = standingsMap.get(m.home_team_id);
 			const away = standingsMap.get(m.away_team_id);
 			if (!home || !away) return;
 
-			// Calculate dynamic max duration from league config
-			// @ts-ignore
-			const config = m.leagues?.protocol_config || {};
-			const tickRate = config.tickRateMs || DEFAULT_TICK_RATE;
-			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
-
-			const startTime = new Date(m.scheduled_time).getTime();
-			const endTime = startTime + (leagueMaxTicks * tickRate);
-			
-			if (nowTime < endTime) return; // Still "Live" or not started
-
-			// Update Records
-			if (m.home_score > m.away_score) {
-				home.wins++;
-				home.points += 3;
-				away.losses++;
-			} else if (m.away_score > m.home_score) {
-				away.wins++;
-				away.points += 3;
-				home.losses++;
-			} else {
-				home.draws++;
-				away.draws++;
-				home.points += 1;
-				away.points += 1;
-			}
-
-			// Calculate ELO
 			const Ra = home.rating;
 			const Rb = away.rating;
 			const Ea = 1 / (1 + Math.pow(10, (Rb - Ra) / 400));
@@ -119,7 +122,7 @@
 				...t,
 				record: `${t.wins}-${t.losses}-${t.draws}`
 			}))
-			.sort((a, b) => b.points - a.points || b.rating - a.rating || b.wins - a.wins);
+			.sort((a, b) => b.points - a.points || b.wins - a.wins || b.rating - a.rating);
 
 		isLoading = false;
 	}

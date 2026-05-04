@@ -7,12 +7,18 @@
 		color = '#007FFF',
 		record = '0-0-0',
 		rating = '1000',
+		points = 0,
+		statPoints = 0,
+		statAwards = [],
 	} = $props<{
 		id: string;
 		name?: string;
 		color?: string;
 		record?: string;
 		rating?: string;
+		points?: number;
+		statPoints?: number;
+		statAwards?: string[];
 	}>();
 
 	// Derive a gradient using the primary color
@@ -21,7 +27,7 @@
 
 <a
 	href="{base}/team/{id}"
-	class="group relative block overflow-hidden rounded-xl border border-white/10 bg-glass transition-all hover:bg-white/10 hover:shadow-lg"
+	class="group relative block rounded-xl border border-white/10 bg-glass transition-all hover:bg-white/10 hover:shadow-lg"
 	style="border-left-width: 4px; {gradientStyle}"
 >
 	<div class="p-4">
@@ -36,8 +42,27 @@
 				<h3 class="text-lg font-bold tracking-tight text-white">{name}</h3>
 			</div>
 			<div class="text-right">
-				<div class="text-[9px] text-white/30 uppercase font-black tracking-[0.2em] mb-0.5">Rating</div>
-				<div class="font-mono text-lg font-black text-[var(--color-brand-primary)] leading-none">{rating}</div>
+				<div class="mb-2">
+					<div class="text-[9px] text-white/30 uppercase font-black tracking-[0.2em] mb-0.5">Points</div>
+					<div class="font-mono text-xl font-black text-[var(--color-brand-primary)] leading-none flex items-center justify-end gap-1">
+						<span>{points - statPoints}</span>
+						<span class="text-xs text-[var(--color-brand-primary)]/50">+</span>
+						<div class="group/tooltip relative flex items-center">
+							<span class="text-[var(--color-brand-primary)]/80 cursor-help border-b border-dashed border-[var(--color-brand-primary)]/30 leading-none">
+								{statPoints}
+							</span>
+							{#if statAwards.length > 0}
+								<div class="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-xs opacity-0 transition-opacity duration-75 group-hover/tooltip:opacity-100 z-50 bg-[#111] border border-white/10 rounded-lg p-2.5 shadow-2xl text-left text-xs font-bold text-white/90 whitespace-pre leading-relaxed tracking-wide font-sans">
+									{statAwards.join('\n')}
+								</div>
+							{/if}
+						</div>
+					</div>
+				</div>
+				<div>
+					<div class="text-[9px] text-white/30 uppercase font-black tracking-[0.2em] mb-0.5">Rating</div>
+					<div class="font-mono text-sm font-black text-white/60 leading-none">{rating}</div>
+				</div>
 			</div>
 		</div>
 
@@ -54,7 +79,7 @@
 	
 	<!-- Hover highlight effect -->
 	<div 
-		class="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none"
+		class="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none rounded-xl overflow-hidden"
 		style="background: radial-gradient(circle at center, {color} 0%, transparent 70%);"
 	></div>
 </a>
