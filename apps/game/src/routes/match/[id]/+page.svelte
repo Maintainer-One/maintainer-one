@@ -113,13 +113,16 @@
 		states = [initialState];
 		currentTick = 0;
 
+		const maxTicks = (config?.maxGameTicks || 100) + (config?.overtimeAllowed ? (config?.pointZoneMaxAge || 40) : 0) + 100;
+
 		if (simWorker) {
 			simWorker.postMessage({
 				type: 'SIMULATE_BRANCH',
-				startState: initialState,
+				startState: JSON.parse(JSON.stringify(initialState)),
 				alphaCompiled: homeV.compiled_code,
 				bravoCompiled: awayV.compiled_code,
-				maxTicks: 1000
+				maxTicks,
+				config: config ? JSON.parse(JSON.stringify(config)) : undefined
 			});
 		}
 	}

@@ -8,8 +8,6 @@ import { DeterministicRNG } from './random.ts';
  * Returns the final GameState.
  */
 
-const MAX_TICKS = 500;
-
 export async function simulateMatch(
 	seed: number,
 	protocolVersion: string,
@@ -25,9 +23,11 @@ export async function simulateMatch(
 	const sandboxRNG = new DeterministicRNG((state.rngState ^ 0xdeadbeef) >>> 0);
 	Math.random = () => sandboxRNG.next();
 
+	const maxTicks = (config?.maxGameTicks || 100) + (config?.overtimeAllowed ? (config?.pointZoneMaxAge || 40) : 0) + 100;
+
 	try {
 
-	for (let i = 0; i < MAX_TICKS; i++) {
+	for (let i = 0; i < maxTicks; i++) {
 		if (state.isFinished) break;
 
 		// 1. Generate SensedState for each team (strip hidden vars)

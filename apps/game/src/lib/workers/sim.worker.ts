@@ -9,7 +9,7 @@ const originalMathRandom = Math.random;
  */
 
 self.onmessage = async (e: MessageEvent) => {
-	const { type, startState, alphaCode, bravoCode, alphaCompiled, bravoCompiled, maxTicks = 500 } = e.data;
+	const { type, startState, alphaCode, bravoCode, alphaCompiled, bravoCompiled, maxTicks = 1000, config } = e.data;
 
 	if (type === 'SIMULATE_BRANCH') {
 		try {
@@ -49,7 +49,7 @@ self.onmessage = async (e: MessageEvent) => {
 
 				const combinedActions = [...teamAActions, ...teamBActions];
 
-				currentState = tick(currentState, combinedActions);
+				currentState = tick(currentState, combinedActions, config);
 				states.push(currentState);
 			}
 
@@ -105,7 +105,7 @@ self.onmessage = async (e: MessageEvent) => {
 					);
 
 					const combinedActions = [...teamAActions, ...teamBActions];
-					currentState = tick(currentState, combinedActions);
+					currentState = tick(currentState, combinedActions, config);
 					// For batch, we might not need every state, just the final one or specific intervals
 					// But let's keep the final state for now.
 				}

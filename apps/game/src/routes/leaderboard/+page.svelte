@@ -79,7 +79,7 @@
 			const leagueMaxTicks = (config.maxGameTicks ?? 100) + (config.overtimeAllowed ? (config.pointZoneMaxAge ?? 40) : 0);
 			const startTime = new Date(m.scheduled_time).getTime();
 			const endTime = startTime + (leagueMaxTicks * tickRate);
-			return (m.status === 'played' || m.status === 'simulated' || m.status === 'simmed' || nowTime >= endTime);
+			return (m.status === 'played' || m.status === 'simulated' || m.status === 'simmed') && nowTime >= endTime;
 		});
 
 		if (pastMatches.length > 0 || teamsData.length > 0) {

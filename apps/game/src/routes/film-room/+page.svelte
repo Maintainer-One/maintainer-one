@@ -23,6 +23,7 @@
 	let baseTickRate = $state(750);
 	let playSpeed = $state(750);
 	let playbackInterval: number | null = null;
+	let activeConfig = $state<any>(null);
 	
 	// UI State
 	let isLibraryOpen = $state(false);
@@ -136,28 +137,30 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		teamCodes.A = homeV.source_code;
 		teamCodes.B = awayV.source_code;
 
-		// Initialize from tick 0
 		// @ts-ignore
-		const config = match.seasons?.protocol_config ?? match.leagues.protocol_config ?? {};
-		baseTickRate = config.tickRateMs || 750;
+		activeConfig = match.seasons?.protocol_config ?? match.leagues.protocol_config ?? {};
+		baseTickRate = activeConfig.tickRateMs || 750;
 		playSpeed = baseTickRate;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, config, {
+		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, activeConfig, {
 			A: match.home_team,
 			B: match.away_team
 		});
 		states = [initialState];
 		currentTick = 0;
 
+		const maxTicks = (activeConfig?.maxGameTicks || 100) + (activeConfig?.overtimeAllowed ? (activeConfig?.pointZoneMaxAge || 40) : 0) + 100;
+
 		// Request simulation from worker using the COMPILED code for perfect determinism
 		if (simWorker) {
 			simWorker.postMessage({
 				type: 'SIMULATE_BRANCH',
-				startState: initialState,
+				startState: JSON.parse(JSON.stringify(initialState)),
 				alphaCompiled: homeV.compiled_code,
 				bravoCompiled: awayV.compiled_code,
-				maxTicks: 500
+				maxTicks,
+				config: activeConfig ? JSON.parse(JSON.stringify(activeConfig)) : undefined
 			});
 		}
 	}
@@ -338,12 +341,15 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			isSimulating = true;
 			branchTick = currentTick; // Mark the fork point
 			
+			const totalMaxTicks = (activeConfig?.maxGameTicks || 100) + (activeConfig?.overtimeAllowed ? (activeConfig?.pointZoneMaxAge || 40) : 0) + 100;
+			
 			simWorker.postMessage({
 				type: 'SIMULATE_BRANCH',
-				startState: $state.snapshot(states[currentTick]),
+				startState: JSON.parse(JSON.stringify($state.snapshot(states[currentTick]))),
 				alphaCode: teamCodes.A,
 				bravoCode: teamCodes.B,
-				maxTicks: 500 - currentTick
+				maxTicks: Math.max(0, totalMaxTicks - currentTick),
+				config: activeConfig ? JSON.parse(JSON.stringify(activeConfig)) : undefined
 			});
 		}, 500);
 	}

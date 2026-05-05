@@ -19,10 +19,13 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 	const homeV = versions.find(v => v.id === homeVersionId)!;
 	const awayV = versions.find(v => v.id === awayVersionId)!;
 
+	const config = match.seasons?.protocol_config ?? match.leagues.protocol_config;
+	const maxTicks = (config?.maxGameTicks || 100) + (config?.overtimeAllowed ? (config?.pointZoneMaxAge || 40) : 0) + 100;
+	
 	const initialState = createInitialState(
 		Number(match.seed), 
 		match.seasons?.protocol_version || match.leagues.protocol_version, 
-		match.seasons?.protocol_config ?? match.leagues.protocol_config, 
+		config, 
 		{ A: match.home_team, B: match.away_team }
 	);
 
@@ -36,10 +39,11 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 		};
 		worker.postMessage({
 			type: 'SIMULATE_BRANCH',
-			startState: initialState,
+			startState: JSON.parse(JSON.stringify(initialState)),
 			alphaCompiled: homeV.compiled_code,
 			bravoCompiled: awayV.compiled_code,
-			maxTicks: 1000
+			maxTicks,
+			config: config ? JSON.parse(JSON.stringify(config)) : undefined
 		});
 	});
 }
