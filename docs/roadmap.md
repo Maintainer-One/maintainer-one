@@ -58,6 +58,7 @@ o
 - [x] **Team Dashboard**: A `/team` dashboard for teams to manage their code versions (including naming versions) and assign specific override versions for upcoming matchups.
 - [x] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
 - [x] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
+- [ ] **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
 - [x] **Protocol V1 Scoring Update**: Update the V1 protocol to award points for the highest and lowest of each stat (e.g., the player most stunned and the player least stunned each earn their team a point). Points structure: Wins = 3, Draws = 1, Most/Least of each stat = 1, Losses = 0.
 - [x] **Game Lore**: Establish the foundational lore and narrative for the game.
 
@@ -78,6 +79,7 @@ _The goal is to formalize how the game evolves and how trust is built._
 - [ ] **TC39-Style Protocol RFCs**: Formalize the lifecycle for protocol and rule changes, modeled robustly on the TC39 process (Stage 0: Strawperson → Stage 4: Finished).
 - [ ] **Algorithm-Assisted Reputation**: Implement a reputation system for Contributors. Trust is built through successful logic deployments adopted by teams and positive community interactions (helpful comments).
 - [ ] **Discussion Boards**: Integrated community forums for fleshing out ideas, analyzing games, and debating RFCs.
+- [ ] **Scratchpad Management Screen**: A dedicated UI to manage, rename, and purge (e.g., older than X days) team-specific scratchpad logic drafts.
 
 ## Long-Term Vision
 

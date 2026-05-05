@@ -44,6 +44,17 @@
 	// Logic Editing State
 	let activeTab = $state<'A' | 'B' | 'REF'>('A');
 	let teamCodes = $state({ A: '', B: '' });
+	let teamIds = $state({ A: '', B: '' });
+	let teamVersions = $state({ A: [] as any[], B: [] as any[] });
+	let selectedVersionTypes = $state({ A: 'match', B: 'match' });
+	let isSwitcherOpen = $state({ A: false, B: false });
+	let loadedMatch = $state<any>(null);
+
+	// Custom Modal State
+	let isPublishModalOpen = $state(false);
+	let isScratchpadModalOpen = $state(false);
+	let modalInputName = $state('');
+	let modalSelectedOverwriteId = $state('');
 
 	const STARTER_CODE = `import type { PlayerAction, SensedState } from '$packages/engine/team_api.ts';
 
@@ -80,15 +91,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	return actions;
 };`;
 
-	// Sync scratchpad with state
-	$effect(() => {
-		const unsubscribe = scratchpad.subscribe(values => {
-			// Priority: Existing state > Scratchpad > Starter Code
-			if (!teamCodes.A) teamCodes.A = values.A || STARTER_CODE;
-			if (!teamCodes.B) teamCodes.B = values.B || STARTER_CODE;
-		});
-		return unsubscribe;
-	});
+	// Auto-sync removed for version switcher
 
 	// Removed loadReplay since we use loadMatchReplay exclusively now.
 
@@ -101,6 +104,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			.select(`
 				seed,
 				league_id,
+				home_code_version_id,
+				away_code_version_id,
 				leagues (protocol_version, protocol_config),
 				seasons (protocol_version, protocol_config),
 				home_team:teams!home_team_id (id, name, color, active_version_id),
@@ -116,26 +121,37 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		}
 
 		// @ts-ignore
-		const homeVersionId = match.home_team.active_version_id;
+		loadedMatch = match;
 		// @ts-ignore
-		const awayVersionId = match.away_team.active_version_id;
+		teamIds.A = match.home_team.id;
+		// @ts-ignore
+		teamIds.B = match.away_team.id;
 
-		const { data: versions, error: versionError } = await supabase
+		// Fetch historical versions for both teams
+		const { data: allVersions } = await supabase
 			.from('team_code_versions')
-			.select('id, source_code, compiled_code')
-			.in('id', [homeVersionId, awayVersionId]);
+			.select('id, team_id, version_number, source_code, compiled_code, created_at')
+			.in('team_id', [teamIds.A, teamIds.B])
+			.order('version_number', { ascending: false });
 
-		if (versionError || !versions || versions.length < 2) {
-			console.error('Error fetching versions:', versionError);
-			isSimulating = false;
-			return;
+		if (allVersions) {
+			teamVersions.A = allVersions.filter(v => v.team_id === teamIds.A);
+			teamVersions.B = allVersions.filter(v => v.team_id === teamIds.B);
 		}
 
-		const homeV = versions.find(v => v.id === homeVersionId)!;
-		const awayV = versions.find(v => v.id === awayVersionId)!;
+		// @ts-ignore
+		const matchHomeVersionId = match.home_code_version_id || match.home_team.active_version_id;
+		// @ts-ignore
+		const matchAwayVersionId = match.away_code_version_id || match.away_team.active_version_id;
 
-		teamCodes.A = homeV.source_code;
-		teamCodes.B = awayV.source_code;
+		const homeV = teamVersions.A.find(v => v.id === matchHomeVersionId) || teamVersions.A[0];
+		const awayV = teamVersions.B.find(v => v.id === matchAwayVersionId) || teamVersions.B[0];
+
+		if (homeV) teamCodes.A = homeV.source_code;
+		if (awayV) teamCodes.B = awayV.source_code;
+		
+		selectedVersionTypes.A = 'match';
+		selectedVersionTypes.B = 'match';
 
 		// @ts-ignore
 		activeConfig = match.seasons?.protocol_config ?? match.leagues.protocol_config ?? {};
@@ -219,18 +235,59 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		isResizing = false;
 	}
 
+	function selectVersion(team: 'A' | 'B', type: 'match' | 'scratch' | string, scratchId?: string) {
+		selectedVersionTypes[team] = scratchId || type;
+		isSwitcherOpen[team] = false;
+		
+		if (type === 'match') {
+			// @ts-ignore
+			const matchVerId = team === 'A' ? loadedMatch?.home_code_version_id : loadedMatch?.away_code_version_id;
+			const v = teamVersions[team].find(v => v.id === matchVerId) || teamVersions[team][0];
+			if (v) teamCodes[team] = v.source_code;
+		} else if (type === 'scratch' && scratchId) {
+			const s = ($scratchpad[teamIds[team]] || []).find(i => i.id === scratchId);
+			if (s) teamCodes[team] = s.code;
+		} else {
+			const v = teamVersions[team].find(v => v.id === type);
+			if (v) teamCodes[team] = v.source_code;
+		}
+		
+		requestSimulation();
+	}
+
 	function handleCodeChange(newCode: string) {
 		if (activeTab === 'REF') return;
 		teamCodes[activeTab] = newCode;
-		scratchpad.updateCode(activeTab, newCode);
-		requestSimulation();
+		
+		// If we are currently editing a scratchpad, sync it back to the store
+		const currentVersionType = selectedVersionTypes[activeTab];
+		if (currentVersionType !== 'match') {
+			const isPublished = teamVersions[activeTab].some(v => v.id === currentVersionType);
+			if (!isPublished) {
+				scratchpad.updateScratchpad(teamIds[activeTab], currentVersionType, newCode);
+			} else {
+				autosaveCode(newCode);
+			}
+		} else {
+			autosaveCode(newCode);
+		}
+	}
+
+	function autosaveCode(newCode: string) {
+		const teamId = teamIds[activeTab as 'A'|'B'];
+		let autosave = ($scratchpad[teamId] || []).find(s => s.name === 'Autosave');
+		if (!autosave) {
+			scratchpad.addScratchpad(teamId, 'Autosave', newCode);
+		} else {
+			scratchpad.updateScratchpad(teamId, autosave.id, newCode);
+		}
 	}
 
 	let currentLogicCode = $derived(activeTab === 'REF' ? '' : teamCodes[activeTab as 'A' | 'B']);
 
 	import { modal } from '$lib/stores/modal';
 
-	async function publishLogic() {
+	async function executePublish() {
 		if (activeTab === 'REF') return;
 		
 		const matchId = page.url.searchParams.get('match');
@@ -239,119 +296,137 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			return;
 		}
 
-		modal.confirm(
-			'Publish Logic', 
-			`Are you sure you want to publish this logic for Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'}? This will update the team's active code for future matches.`,
-			async () => {
-				isSimulating = true;
+		isPublishModalOpen = false;
+		isSimulating = true;
+		
+		try {
+			// 1. Get the team ID from the match
+			const { data: match, error: matchError } = await supabase
+				.from('matches')
+				.select(`
+					home_team_id,
+					away_team_id
+				`)
+				.eq('id', matchId)
+				.single();
+
+			if (matchError || !match) throw new Error('Could not find match team data');
+
+			const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
+			const code = teamCodes[activeTab];
+
+			// 2. Transpile
+			const cleanedCode = code
+				.replace(/import\s+[\s\S]*?;/g, '') // Remove imports
+				.replace(/export\s+type\s+[\s\S]*?;/g, '') // Remove export types
+				.replace(/export\s+interface\s+[\s\S]*?\{[\s\S]*?\}/g, '') // Remove export interfaces
+				.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '') // Naive TS type stripping
+				.replace(/export\s+const\s+([a-zA-Z0-9_]+)/g, 'const $1 = exports.$1') // Convert any export const
+				.replace(/export\s+function\s+([a-zA-Z0-9_]+)/g, 'exports.$1 = function $1') // Convert any export function
+				.replace(/export\s+default\s+/g, 'exports.default = ') // Remove export default
+				.replace(/\bexport\s+/g, '') // Final catch-all for any remaining exports
+				.trim();
+			
+			const compiledCode = `
+				const module = { exports: {} };
+				const exports = module.exports;
+				${cleanedCode};
 				
-				try {
-					// 1. Get the team ID from the match
-					const { data: match, error: matchError } = await supabase
-						.from('matches')
-						.select(`
-							home_team_id,
-							away_team_id
-						`)
-						.eq('id', matchId)
-						.single();
-
-					if (matchError || !match) throw new Error('Could not find match team data');
-
-					const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
-					const code = teamCodes[activeTab];
-
-					// 2. Transpile
-					const cleanedCode = code
-						.replace(/import\s+[\s\S]*?;/g, '') // Remove imports
-						.replace(/export\s+type\s+[\s\S]*?;/g, '') // Remove export types
-						.replace(/export\s+interface\s+[\s\S]*?\{[\s\S]*?\}/g, '') // Remove export interfaces
-						.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '') // Naive TS type stripping
-						.replace(/export\s+const\s+([a-zA-Z0-9_]+)/g, 'const $1 = exports.$1') // Convert any export const
-						.replace(/export\s+function\s+([a-zA-Z0-9_]+)/g, 'exports.$1 = function $1') // Convert any export function
-						.replace(/export\s+default\s+/g, 'exports.default = ') // Remove export default
-						.replace(/\bexport\s+/g, '') // Final catch-all for any remaining exports
-						.trim();
-					
-					const compiledCode = `
-						const module = { exports: {} };
-						const exports = module.exports;
-						${cleanedCode};
-						
-						let logic;
-						if (typeof teamLogic !== 'undefined') logic = teamLogic;
-						else if (typeof greedyLogic !== 'undefined') logic = greedyLogic;
-						else {
-							const keys = Object.keys(exports);
-							if (keys.length > 0) logic = exports[keys[0]];
-						}
-						
-						if (!logic) throw new Error("No logic function found.");
-						return logic(sense);
-					`;
-
-					// 3. Get next version number
-					const { data: versions, error: vError } = await supabase
-						.from('team_code_versions')
-						.select('version_number')
-						.eq('team_id', teamId)
-						.order('version_number', { ascending: false })
-						.limit(1);
-
-					const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
-
-					// 4. Insert new version
-					const { data: newV, error: insError } = await supabase
-						.from('team_code_versions')
-						.insert({
-							team_id: teamId,
-							version_number: nextVersion,
-							source_code: code,
-							compiled_code: compiledCode
-						})
-						.select()
-						.single();
-
-					if (insError) throw insError;
-
-					// 5. Update team's active version
-					const { error: updError } = await supabase
-						.from('teams')
-						.update({ active_version_id: newV.id })
-						.eq('id', teamId);
-
-					if (updError) throw updError;
-
-					modal.alert('Success', `Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
-				} catch (err: any) {
-					console.error('Publish Error:', err);
-					modal.alert('Error', `Failed to publish: ${err.message}`);
-				} finally {
-					isSimulating = false;
+				let logic;
+				if (typeof teamLogic !== 'undefined') logic = teamLogic;
+				else if (typeof greedyLogic !== 'undefined') logic = greedyLogic;
+				else {
+					const keys = Object.keys(exports);
+					if (keys.length > 0) logic = exports[keys[0]];
 				}
+				
+				if (!logic) throw new Error("No logic function found.");
+				return logic(sense);
+			`;
+
+			// 3. Get next version number
+			const { data: versions, error: vError } = await supabase
+				.from('team_code_versions')
+				.select('version_number')
+				.eq('team_id', teamId)
+				.order('version_number', { ascending: false })
+				.limit(1);
+
+			const nextVersion = (versions?.[0]?.version_number ?? 0) + 1;
+
+			// 4. Insert new version
+			const { data: newV, error: insError } = await supabase
+				.from('team_code_versions')
+				.insert({
+					team_id: teamId,
+					version_number: nextVersion,
+					source_code: code,
+					compiled_code: compiledCode,
+					name: modalInputName || null
+				})
+				.select()
+				.single();
+
+			if (insError) throw insError;
+
+			// 5. Update team's active version
+			const { error: updError } = await supabase
+				.from('teams')
+				.update({ active_version_id: newV.id })
+				.eq('id', teamId);
+
+			if (updError) throw updError;
+			
+			// 6. Refresh UI versions
+			const { data: allVersions } = await supabase
+				.from('team_code_versions')
+				.select('id, team_id, version_number, source_code, compiled_code, created_at, name')
+				.eq('team_id', teamId)
+				.order('version_number', { ascending: false });
+			if (allVersions) {
+				teamVersions[activeTab] = allVersions;
+				selectedVersionTypes[activeTab] = newV.id;
 			}
-		);
+
+			modal.alert('Success', `Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
+		} catch (err: any) {
+			console.error('Publish Error:', err);
+			modal.alert('Error', `Failed to publish: ${err.message}`);
+		} finally {
+			isSimulating = false;
+		}
+	}
+
+	function executeSaveScratchpad() {
+		if (activeTab === 'REF') return;
+		isScratchpadModalOpen = false;
+		const teamId = teamIds[activeTab];
+		if (modalSelectedOverwriteId) {
+			scratchpad.updateScratchpad(teamId, modalSelectedOverwriteId, teamCodes[activeTab], modalInputName || undefined);
+			selectedVersionTypes[activeTab] = modalSelectedOverwriteId;
+		} else {
+			const newId = scratchpad.addScratchpad(teamId, modalInputName || 'Untitled Draft', teamCodes[activeTab]);
+			selectedVersionTypes[activeTab] = newId;
+		}
 	}
 
 	function requestSimulation() {
 		if (simulationDebounceTimer) clearTimeout(simulationDebounceTimer);
+		if (!simWorker || states.length === 0) return;
 		
-		simulationDebounceTimer = window.setTimeout(() => {
-			if (!simWorker || states.length === 0) return;
-			isSimulating = true;
-			branchTick = currentTick; // Mark the fork point
-			
-			const totalMaxTicks = (activeConfig?.maxGameTicks || 100) + (activeConfig?.overtimeAllowed ? (activeConfig?.pointZoneMaxAge || 40) : 0) + 100;
-			
-			simWorker.postMessage({
-				type: 'SIMULATE_BRANCH',
-				startState: JSON.parse(JSON.stringify($state.snapshot(states[currentTick]))),
-				alphaCode: teamCodes.A,
-				bravoCode: teamCodes.B,
-				maxTicks: Math.max(0, totalMaxTicks - currentTick),
-				config: activeConfig ? JSON.parse(JSON.stringify(activeConfig)) : undefined
-			});
-		}, 500);
+		isSimulating = true;
+		branchTick = currentTick; // Mark the fork point
+		
+		const totalMaxTicks = (activeConfig?.maxGameTicks || 100) + (activeConfig?.overtimeAllowed ? (activeConfig?.pointZoneMaxAge || 40) : 0) + 100;
+		
+		simWorker.postMessage({
+			type: 'SIMULATE_BRANCH',
+			startState: JSON.parse(JSON.stringify($state.snapshot(states[currentTick]))),
+			alphaCode: teamCodes.A,
+			bravoCode: teamCodes.B,
+			maxTicks: Math.max(0, totalMaxTicks - currentTick),
+			config: activeConfig ? JSON.parse(JSON.stringify(activeConfig)) : undefined
+		});
 	}
 
 	onMount(async () => {
@@ -429,19 +504,41 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			<div class="mb-2 flex items-center justify-between">
 				<h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-brand-primary)]">Logic Editor</h2>
 				<div class="flex items-center gap-3">
-					{#if isSimulating}
-						<span class="flex items-center gap-1.5 text-[9px] font-bold text-[var(--color-brand-primary)]/70 uppercase">
-							<span class="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--color-brand-primary)]"></span>
-							Calculating...
-						</span>
-					{:else}
 						<button 
-							onclick={publishLogic}
-							class="rounded-lg bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-colors uppercase tracking-wider"
+							disabled={isSimulating}
+							onclick={() => {
+								if (activeTab === 'REF') return;
+								modalInputName = '';
+								modalSelectedOverwriteId = '';
+								isScratchpadModalOpen = true;
+							}}
+							class="rounded-lg bg-zinc-800/50 px-3 py-1 text-[10px] font-black text-white/50 hover:bg-white/10 hover:text-white transition-colors uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+						>
+							Save Draft
+						</button>
+						<button 
+							disabled={isSimulating}
+							onclick={requestSimulation}
+							class="flex items-center gap-1.5 rounded-lg bg-blue-500/10 px-3 py-1 text-[10px] font-black text-blue-400 hover:bg-blue-500/20 transition-colors uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
+						>
+							{#if isSimulating}
+								<span class="h-1.5 w-1.5 animate-ping rounded-full bg-blue-400"></span>
+								Calculating...
+							{:else}
+								Run Simulation
+							{/if}
+						</button>
+						<button 
+							disabled={isSimulating}
+							onclick={() => {
+								if (activeTab === 'REF') return;
+								modalInputName = '';
+								isPublishModalOpen = true;
+							}}
+							class="rounded-lg bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-colors uppercase tracking-wider disabled:opacity-50 disabled:pointer-events-none"
 						>
 							Publish
 						</button>
-					{/if}
 				</div>
 			</div>
 			{#if errorMessage}
@@ -450,30 +547,133 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				</div>
 			{/if}
 			<!-- Tabs -->
-			<div class="flex gap-6">
-					<button 
-						onclick={() => activeTab = 'A'}
-						class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'A' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
-						style={activeTab === 'A' ? `border-color: ${currentMatch?.home_team?.color || '#3b82f6'}` : ''}
+			<div class="flex gap-6 relative">
+				<button 
+					onclick={() => activeTab = 'A'}
+					class="group flex items-center gap-1.5 pb-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap {activeTab === 'A' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
+					style={activeTab === 'A' ? `border-color: ${loadedMatch?.home_team?.color || '#3b82f6'}` : ''}
+				>
+					{loadedMatch?.home_team?.name || 'Home'}
+					<span 
+						role="button"
+						tabindex="0"
+						onclick={(e) => { e.stopPropagation(); isSwitcherOpen.A = !isSwitcherOpen.A; isSwitcherOpen.B = false; }}
+						onkeydown={(e) => e.key === 'Enter' && (isSwitcherOpen.A = !isSwitcherOpen.A)}
+						class="opacity-40 transition-all hover:opacity-100 hover:scale-110"
+						aria-label="Switch Version"
 					>
-						{currentMatch?.home_team?.name || 'Home'}
-					</button>
-					<button 
-						onclick={() => activeTab = 'B'}
-						class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'B' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
-						style={activeTab === 'B' ? `border-color: ${currentMatch?.away_team?.color || '#f43f5e'}` : ''}
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down {isSwitcherOpen.A ? 'rotate-180' : ''}"><path d="m6 9 6 6 6-6"/></svg>
+					</span>
+				</button>
+				<button 
+					onclick={() => activeTab = 'B'}
+					class="group flex items-center gap-1.5 pb-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap {activeTab === 'B' ? 'border-b-2 text-white' : 'text-white/20 hover:text-white/40'}"
+					style={activeTab === 'B' ? `border-color: ${loadedMatch?.away_team?.color || '#f43f5e'}` : ''}
+				>
+					{loadedMatch?.away_team?.name || 'Away'}
+					<span 
+						role="button"
+						tabindex="0"
+						onclick={(e) => { e.stopPropagation(); isSwitcherOpen.B = !isSwitcherOpen.B; isSwitcherOpen.A = false; }}
+						onkeydown={(e) => e.key === 'Enter' && (isSwitcherOpen.B = !isSwitcherOpen.B)}
+						class="opacity-40 transition-all hover:opacity-100 hover:scale-110"
+						aria-label="Switch Version"
 					>
-						{currentMatch?.away_team?.name || 'Away'}
-					</button>
+						<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down {isSwitcherOpen.B ? 'rotate-180' : ''}"><path d="m6 9 6 6 6-6"/></svg>
+					</span>
+				</button>
 				<button 
 					onclick={() => activeTab = 'REF'}
-					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all {activeTab === 'REF' ? 'border-b-2 border-[var(--color-brand-primary)] text-[var(--color-brand-primary)]' : 'text-white/20 hover:text-white/40'}"
+					class="pb-2 text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap {activeTab === 'REF' ? 'border-b-2 border-emerald-500 text-white' : 'text-white/20 hover:text-white/40'}"
 				>
-					Reference
+					REFERENCE
 				</button>
+
+				<!-- Dropdowns -->
+				{#each ['A', 'B'] as teamKey}
+					{#if isSwitcherOpen[teamKey as 'A' | 'B']}
+						<!-- Click outside to dismiss -->
+						<div 
+							class="fixed inset-0 z-40" 
+							onclick={() => { isSwitcherOpen.A = false; isSwitcherOpen.B = false; }}
+							role="presentation"
+						></div>
+
+						{@const isA = teamKey === 'A'}
+						{@const teamId = teamIds[teamKey as 'A' | 'B']}
+						{@const versions = teamVersions[teamKey as 'A' | 'B']}
+						{@const currentSelection = selectedVersionTypes[teamKey as 'A' | 'B']}
+						{@const teamScratchpads = $scratchpad[teamId] || []}
+						<div class="absolute top-10 {isA ? 'left-0' : 'left-32'} z-50 w-72 rounded-xl border border-white/10 bg-zinc-950/95 p-2 shadow-2xl backdrop-blur-xl">
+							<div class="mb-2 px-2 text-[8px] font-black uppercase tracking-widest text-white/30">Match Logic</div>
+							<button 
+								onclick={() => selectVersion(teamKey as 'A' | 'B', 'match')}
+								class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors {currentSelection === 'match' ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/70 hover:bg-white/5'}"
+							>
+								<span>Official Match Logic</span>
+								{#if currentSelection === 'match'}
+									<div class="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+								{/if}
+							</button>
+							
+							{#if versions.length > 0}
+								<div class="mb-2 mt-4 px-2 text-[8px] font-black uppercase tracking-widest text-white/30">Published History</div>
+								<div class="flex max-h-32 flex-col gap-1 overflow-y-auto pr-1">
+									{#each versions as v}
+										<button 
+											onclick={() => selectVersion(teamKey as 'A' | 'B', v.id)}
+											class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs transition-colors {currentSelection === v.id ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'}"
+										>
+											<span>Version {v.version_number}</span>
+											<span class="text-[9px] text-white/30">{new Date(v.created_at).toLocaleDateString()}</span>
+										</button>
+									{/each}
+								</div>
+							{/if}
+
+							<div class="mb-2 mt-4 flex items-center justify-between px-2">
+								<span class="text-[8px] font-black uppercase tracking-widest text-white/30">Local Scratchpads</span>
+							</div>
+							<div class="flex max-h-32 flex-col gap-1 overflow-y-auto pr-1 mb-2">
+								{#each teamScratchpads as s}
+									<div class="group flex w-full items-center rounded-lg {currentSelection === s.id ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5'}">
+										<button 
+											onclick={() => selectVersion(teamKey as 'A' | 'B', 'scratch', s.id)}
+											class="flex-1 px-3 py-2 text-left text-xs truncate"
+										>
+											{s.name}
+										</button>
+										<button 
+											onclick={(e) => { e.stopPropagation(); scratchpad.deleteScratchpad(teamId, s.id); }}
+											class="px-2 py-2 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all text-white/30"
+											aria-label="Delete scratchpad"
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+										</button>
+									</div>
+								{/each}
+							</div>
+							<button 
+								onclick={() => {
+									const name = prompt('Name for new scratchpad:', `Draft ${new Date().toLocaleDateString()}`);
+									if (name) {
+										scratchpad.addScratchpad(teamId, name, teamCodes[teamKey as 'A' | 'B']);
+										const newScratchpads = $scratchpad[teamId] || [];
+										if (newScratchpads.length > 0) {
+											selectVersion(teamKey as 'A' | 'B', 'scratch', newScratchpads[newScratchpads.length - 1].id);
+										}
+									}
+								}}
+								class="w-full rounded-lg border border-dashed border-white/10 p-2 text-[10px] font-bold uppercase tracking-widest text-white/40 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white/70"
+							>
+								+ New Scratchpad
+							</button>
+						</div>
+					{/if}
+				{/each}
 			</div>
 		</header>
-		<div class="flex-1 overflow-y-auto no-scrollbar p-4">
+		<div class="flex-1 overflow-y-auto no-scrollbar flex flex-col p-4">
 			{#if activeTab === 'REF'}
 				<!-- Protocol Reference Tab Content -->
 				<div class="space-y-8 p-2">
@@ -524,9 +724,13 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					</section>
 				</div>
 			{:else}
-				{#if browser && Editor}
-					<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
-				{/if}
+				<div class="flex-1 w-full bg-[#1e1e1e] relative min-h-0 overflow-hidden rounded-xl border border-white/5 shadow-inner">
+					{#if browser && Editor}
+						{#key activeTab}
+							<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+						{/key}
+					{/if}
+				</div>
 			{/if}
 		</div>
 		<footer class="border-t border-white/5 p-4 text-[10px] text-white/20 font-medium italic">
@@ -764,6 +968,85 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		</div>
 	</aside>
 </div>
+
+<!-- Publish Modal -->
+{#if isPublishModalOpen}
+	<div class="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/40">
+		<div class="absolute inset-0" onclick={() => isPublishModalOpen = false}></div>
+		<div class="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0a0a0c] p-8 shadow-[0_0_80px_rgba(0,0,0,0.5)]">
+			<div class="relative z-10 space-y-6">
+				<header>
+					<h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--color-brand-primary)] mb-2">Publish Logic</h2>
+					<p class="text-sm font-medium text-white/70 leading-relaxed mb-4">
+						Publishing will create a permanent new version for Team {activeTab === 'A' ? 'Alpha' : 'Bravo'}.
+					</p>
+					<label class="block text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">Version Name (Optional)</label>
+					<input 
+						type="text" 
+						bind:value={modalInputName}
+						placeholder="e.g. Aggressive Push V2"
+						class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold text-white placeholder-white/20 outline-none focus:border-[var(--color-brand-primary)] focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+					/>
+				</header>
+				<footer class="flex items-center justify-end gap-3 pt-4">
+					<button onclick={() => isPublishModalOpen = false} class="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">Cancel</button>
+					<button onclick={executePublish} class="px-8 py-3 rounded-2xl bg-[var(--color-brand-primary)] text-[var(--color-background-dark)] text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">Publish</button>
+				</footer>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Save Scratchpad Modal -->
+{#if isScratchpadModalOpen}
+	<div class="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/40">
+		<div class="absolute inset-0" onclick={() => isScratchpadModalOpen = false}></div>
+		<div class="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-white/10 bg-[#0a0a0c] p-8 shadow-[0_0_80px_rgba(0,0,0,0.5)]">
+			<div class="relative z-10 space-y-6">
+				<header>
+					<h2 class="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--color-brand-primary)] mb-2">Save Scratchpad</h2>
+					
+					<div class="space-y-4">
+						<div>
+							<label class="block text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">Save as New Draft</label>
+							<input 
+								type="text" 
+								bind:value={modalInputName}
+								oninput={() => modalSelectedOverwriteId = ''}
+								placeholder="Enter draft name..."
+								class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold text-white placeholder-white/20 outline-none focus:border-[var(--color-brand-primary)] focus:ring-1 focus:ring-[var(--color-brand-primary)]"
+							/>
+						</div>
+						
+						<div class="relative flex items-center py-2">
+							<div class="flex-grow border-t border-white/10"></div>
+							<span class="flex-shrink-0 mx-4 text-[10px] font-black uppercase text-white/20">OR</span>
+							<div class="flex-grow border-t border-white/10"></div>
+						</div>
+
+						<div>
+							<label class="block text-[10px] font-black uppercase tracking-[0.2em] text-white/30 mb-2">Overwrite Existing</label>
+							<select 
+								bind:value={modalSelectedOverwriteId}
+								onchange={() => modalInputName = ''}
+								class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-sm font-bold text-white outline-none focus:border-[var(--color-brand-primary)] focus:ring-1 focus:ring-[var(--color-brand-primary)] appearance-none"
+							>
+								<option value="">-- Select draft to overwrite --</option>
+								{#each ($scratchpad[teamIds[activeTab]] || []) as draft}
+									<option value={draft.id}>{draft.name}</option>
+								{/each}
+							</select>
+						</div>
+					</div>
+				</header>
+				<footer class="flex items-center justify-end gap-3 pt-4">
+					<button onclick={() => isScratchpadModalOpen = false} class="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white hover:bg-white/10 transition-all">Cancel</button>
+					<button onclick={executeSaveScratchpad} class="px-8 py-3 rounded-2xl bg-[var(--color-brand-primary)] text-[var(--color-background-dark)] text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">Save</button>
+				</footer>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <style>
 	input[type='range']::-webkit-slider-thumb {

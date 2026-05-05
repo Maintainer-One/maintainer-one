@@ -1,24 +1,28 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
+export interface ScratchpadItem {
+	id: string;
+	name: string;
+	code: string;
+}
+
+export type ScratchpadState = Record<string, ScratchpadItem[]>;
+
 /**
- * A simple persistence-backed store for the team logic scratchpad.
- * Prevents code loss on page refresh.
+ * A persistence-backed store for team-specific scratchpads.
+ * Allows multiple named code drafts per team.
  */
 function createScratchpad() {
-	const initialValues = {
-		A: '',
-		B: ''
-	};
+	const initialValues: ScratchpadState = {};
 
 	// Initialize from localStorage if in browser
 	if (browser) {
-		const saved = localStorage.getItem('m1_scratchpad');
+		const saved = localStorage.getItem('m1_scratchpad_v2');
 		if (saved) {
 			try {
 				const parsed = JSON.parse(saved);
-				initialValues.A = parsed.A || '';
-				initialValues.B = parsed.B || '';
+				Object.assign(initialValues, parsed);
 			} catch (e) {
 				console.error('Failed to parse scratchpad from localStorage', e);
 			}
@@ -27,22 +31,71 @@ function createScratchpad() {
 
 	const { subscribe, set, update } = writable(initialValues);
 
+	const saveToLocalStorage = (state: ScratchpadState) => {
+		if (browser) {
+			localStorage.setItem('m1_scratchpad_v2', JSON.stringify(state));
+		}
+	};
+
 	return {
 		subscribe,
-		updateCode: (team: 'A' | 'B', code: string) => {
+		getScratchpads: (teamId: string, state: ScratchpadState) => {
+			return state[teamId] || [];
+		},
+		addScratchpad: (teamId: string, name: string, code: string) => {
 			update(s => {
-				const newState = { ...s, [team]: code };
-				if (browser) {
-					localStorage.setItem('m1_scratchpad', JSON.stringify(newState));
-				}
+				const teamScratchpads = s[teamId] || [];
+				const newItem: ScratchpadItem = {
+					id: crypto.randomUUID(),
+					name,
+					code
+				};
+				const newState = { ...s, [teamId]: [...teamScratchpads, newItem] };
+				saveToLocalStorage(newState);
+				return newState;
+			});
+		},
+		updateScratchpad: (teamId: string, scratchId: string, code: string) => {
+			update(s => {
+				const teamScratchpads = s[teamId] || [];
+				const newState = {
+					...s,
+					[teamId]: teamScratchpads.map(item => 
+						item.id === scratchId ? { ...item, code } : item
+					)
+				};
+				saveToLocalStorage(newState);
+				return newState;
+			});
+		},
+		renameScratchpad: (teamId: string, scratchId: string, newName: string) => {
+			update(s => {
+				const teamScratchpads = s[teamId] || [];
+				const newState = {
+					...s,
+					[teamId]: teamScratchpads.map(item => 
+						item.id === scratchId ? { ...item, name: newName } : item
+					)
+				};
+				saveToLocalStorage(newState);
+				return newState;
+			});
+		},
+		deleteScratchpad: (teamId: string, scratchId: string) => {
+			update(s => {
+				const teamScratchpads = s[teamId] || [];
+				const newState = {
+					...s,
+					[teamId]: teamScratchpads.filter(item => item.id !== scratchId)
+				};
+				saveToLocalStorage(newState);
 				return newState;
 			});
 		},
 		reset: () => {
-			const empty = { A: '', B: '' };
-			set(empty);
+			set({});
 			if (browser) {
-				localStorage.removeItem('m1_scratchpad');
+				localStorage.removeItem('m1_scratchpad_v2');
 			}
 		}
 	};
