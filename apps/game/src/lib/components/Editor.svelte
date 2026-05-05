@@ -25,7 +25,7 @@
 				oneDark,
 				EditorView.lineWrapping,
 				EditorView.updateListener.of((update) => {
-					if (update.docChanged && onCodeChange) {
+					if (update.docChanged && onCodeChange && !isSettingValue) {
 						onCodeChange(update.state.doc.toString());
 					}
 				})
@@ -42,12 +42,16 @@
 		};
 	});
 
+	let isSettingValue = false;
+
 	// React to code changes from parent
 	$effect(() => {
 		if (view && code !== view.state.doc.toString()) {
+			isSettingValue = true;
 			view.dispatch({
 				changes: { from: 0, to: view.state.doc.length, insert: code }
 			});
+			isSettingValue = false;
 		}
 	});
 </script>

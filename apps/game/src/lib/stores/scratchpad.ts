@@ -43,10 +43,11 @@ function createScratchpad() {
 			return state[teamId] || [];
 		},
 		addScratchpad: (teamId: string, name: string, code: string) => {
+			const newId = crypto.randomUUID();
 			update(s => {
 				const teamScratchpads = s[teamId] || [];
 				const newItem: ScratchpadItem = {
-					id: crypto.randomUUID(),
+					id: newId,
 					name,
 					code
 				};
@@ -54,6 +55,7 @@ function createScratchpad() {
 				saveToLocalStorage(newState);
 				return newState;
 			});
+			return newId;
 		},
 		updateScratchpad: (teamId: string, scratchId: string, code: string) => {
 			update(s => {

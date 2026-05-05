@@ -321,6 +321,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				.replace(/export\s+type\s+[\s\S]*?;/g, '') // Remove export types
 				.replace(/export\s+interface\s+[\s\S]*?\{[\s\S]*?\}/g, '') // Remove export interfaces
 				.replace(/:\s*[A-Z][a-zA-Z0-9<>[\]]*/g, '') // Naive TS type stripping
+				.replace(/:\s*(string|number|boolean|any|void|unknown|never)[\s\[\]]*(?=\s*[,)])/g, '') // Strip primitive types
+				.replace(/:\s*(["'][^"']*["']\s*\|\s*)+["'][^"']*["'](?=\s*[,)])/g, '') // Strip string union literals
 				.replace(/export\s+const\s+([a-zA-Z0-9_]+)/g, 'const $1 = exports.$1') // Convert any export const
 				.replace(/export\s+function\s+([a-zA-Z0-9_]+)/g, 'exports.$1 = function $1') // Convert any export function
 				.replace(/export\s+default\s+/g, 'exports.default = ') // Remove export default

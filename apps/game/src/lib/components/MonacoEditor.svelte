@@ -77,6 +77,7 @@
 			});
 
 			editor.onDidChangeModelContent(() => {
+				if (isSettingValue) return;
 				if (onCodeChange) {
 					onCodeChange(editor.getValue());
 				}
@@ -84,10 +85,14 @@
 		}
 	});
 
+	let isSettingValue = false;
+
 	// React to external code changes
 	$effect(() => {
 		if (editor && code !== editor.getValue()) {
+			isSettingValue = true;
 			editor.setValue(code);
+			isSettingValue = false;
 		}
 	});
 
