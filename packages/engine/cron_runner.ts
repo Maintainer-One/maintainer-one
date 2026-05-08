@@ -19,6 +19,7 @@ async function simulateLockedMatches() {
         .from('matches')
         .select(`
             *,
+            match_secrets (secret_seed),
             leagues (protocol_version, protocol_config),
             seasons (protocol_version, protocol_config),
             home_team:teams!home_team_id (id, name, color, active_version_id),
@@ -69,7 +70,7 @@ async function simulateLockedMatches() {
 
             // 3. Run Simulation
             const { finalState } = await simulateMatch(
-                Number(match.seed),
+                Number(match.match_secrets?.secret_seed ?? 0),
                 // @ts-ignore
                 match.seasons?.protocol_version || match.leagues.protocol_version,
                 homeLogic,
@@ -118,7 +119,7 @@ async function broadcastPlayedMatches() {
     // Transition matches from 'simmed' to 'played' when scheduled_time arrives
     const { data: matches, error } = await supabase
         .from('matches')
-        .select('id')
+        .select('id, match_secrets (secret_seed)')
         .eq('status', 'simmed')
         .lte('scheduled_time', new Date().toISOString());
 
@@ -132,7 +133,10 @@ async function broadcastPlayedMatches() {
     for (const match of matches) {
         const { error: updateError } = await supabase
             .from('matches')
-            .update({ status: 'played' })
+            .update({ 
+                status: 'played',
+                public_seed: match.match_secrets?.secret_seed 
+            })
             .eq('id', match.id);
 
         if (updateError) {

@@ -21,8 +21,12 @@
 	let showControlMap = $state(true);
 
 	let matchData = $state<any | null>(null);
-	let isPreview = $state(false);
 	let currentTime = $state(Date.now());
+	
+	const isPreview = $derived.by(() => {
+		if (!matchData) return true;
+		return currentTime < new Date(matchData.scheduled_time).getTime() || matchData.public_seed === null;
+	});
 
 	const isLive = $derived.by(() => {
 		if (!matchData || states.length === 0) return false;
@@ -46,6 +50,18 @@
 			const liveTick = Math.floor(elapsed / playSpeed);
 			if (currentTick !== Math.min(liveTick, states.length - 1)) {
 				currentTick = Math.min(liveTick, states.length - 1);
+			}
+		}
+	});
+
+	// Poll for seed reveal if we are past scheduled time but still in preview
+	let lastPollTime = 0;
+	$effect(() => {
+		const now = currentTime;
+		if (matchData && isPreview && now >= new Date(matchData.scheduled_time).getTime() && !isSimulating) {
+			if (now - lastPollTime > 5000) {
+				lastPollTime = now;
+				loadMatch(matchData.id);
 			}
 		}
 	});
@@ -77,7 +93,6 @@
 
 		// @ts-ignore
 		matchData = match;
-		isPreview = new Date() < new Date(match.scheduled_time) || match.public_seed === null;
 
 		if (isPreview) {
 			isSimulating = false;
@@ -237,8 +252,12 @@
 			</div>
 		</header>
 
-		{#if isPreview}
+		{#if isPreview && matchData}
 			<MatchPreview match={matchData} onCountdownComplete={() => loadMatch(matchData.id)} />
+		{:else if isPreview}
+			<div class="flex flex-1 items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm animate-pulse">
+				Synchronizing Arena Data...
+			</div>
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
 				<div class="flex-1 w-full max-w-4xl min-h-0 p-4">
