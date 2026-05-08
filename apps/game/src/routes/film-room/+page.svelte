@@ -102,7 +102,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		const { data: match, error } = await supabase
 			.from('matches')
 			.select(`
-				seed,
+				public_seed,
 				league_id,
 				home_code_version_id,
 				away_code_version_id,
@@ -159,7 +159,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		playSpeed = baseTickRate;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, activeConfig, {
+		const initialState = createInitialState(Number(match.public_seed), match.seasons?.protocol_version || match.leagues.protocol_version, activeConfig, {
 			A: match.home_team,
 			B: match.away_team
 		});

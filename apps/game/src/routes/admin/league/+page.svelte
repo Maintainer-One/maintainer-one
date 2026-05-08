@@ -130,6 +130,7 @@
 				status,
 				home_score,
 				away_score,
+				public_seed,
 				home_team:teams!home_team_id (name, color),
 				away_team:teams!away_team_id (name, color)
 			`)
@@ -373,7 +374,6 @@
 
 			// 4. Create matches in Supabase with slot-based timing
 			const slots = season.game_slots || ['12:00', '15:00'];
-			const matchInserts = [];
 			let matchIdx = 0;
 			let dayOffset = 0;
 
@@ -389,23 +389,37 @@
 
 					const m = matchUps[matchIdx];
 					const scheduledIso = scheduledTime.toISOString();
-					matchInserts.push({
-						league_id: leagueId,
-						season_id: selectedSeasonId,
-						home_team_id: m.home,
-						away_team_id: m.away,
-						status: 'scheduled',
-						seed: Math.floor(Math.random() * 1000000),
-						scheduled_time: scheduledIso,
-						code_lock_time: calculateCodeLockTime(scheduledIso, season.code_lock_offset_minutes || 30)
-					});
+					const seed = Math.floor(Math.random() * 1000000);
+					
+					const { data: createdMatch, error: matchError } = await supabase
+						.from('matches')
+						.insert({
+							league_id: leagueId,
+							season_id: selectedSeasonId,
+							home_team_id: m.home,
+							away_team_id: m.away,
+							status: 'scheduled',
+							scheduled_time: scheduledIso,
+							code_lock_time: calculateCodeLockTime(scheduledIso, season.code_lock_offset_minutes || 30)
+						})
+						.select()
+						.single();
+					
+					if (matchError) throw matchError;
+
+					const { error: secretError } = await supabase
+						.from('match_secrets')
+						.insert({
+							match_id: createdMatch.id,
+							secret_seed: seed
+						});
+					
+					if (secretError) throw secretError;
 					matchIdx++;
 				}
 				dayOffset++;
 			}
 
-			const { error } = await supabase.from('matches').insert(matchInserts);
-			if (error) throw error;
 
 			await loadMatches(selectedSeasonId);
 			modal.alert('Success', `Schedule generated! ${matchUps.length} matches across ${numRepeats} full round-robins.`);
@@ -426,7 +440,7 @@
 				.from('matches')
 				.select(`
 					id,
-					seed,
+					public_seed,
 					league_id,
 					home_override_version_id,
 					away_override_version_id,
@@ -439,7 +453,17 @@
 
 			if (error || !match) throw error;
 
-			const states = await runSimulation(match);
+			// Also fetch the secret seed
+			const { data: secretData } = await supabase
+				.from('match_secrets')
+				.select('secret_seed')
+				.eq('match_id', matchId)
+				.single();
+			
+			const seed = secretData?.secret_seed || match.public_seed;
+			if (!seed) throw new Error('No seed found for match');
+
+			const states = await runSimulation({ ...match, seed });
 			const finalState = states[states.length - 1];
 
 			const { error: updError } = await supabase

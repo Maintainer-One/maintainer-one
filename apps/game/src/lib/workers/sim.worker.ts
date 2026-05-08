@@ -16,9 +16,10 @@ self.onmessage = async (e: MessageEvent) => {
 			const alphaLogic = alphaCompiled ? loadCompiled(alphaCompiled) : createLogic(alphaCode);
 			const bravoLogic = bravoCompiled ? loadCompiled(bravoCompiled) : createLogic(bravoCode);
 
-			// Sandbox Math.random for deterministic team logic
-			const sandboxRNG = new DeterministicRNG((startState.rngState ^ 0xdeadbeef) >>> 0);
-			self.Math.random = () => sandboxRNG.next();
+			// Isolated PRNGs for each team to prevent entropy stealing
+			// We load from startState to ensure branching is perfectly deterministic
+			const teamA_RNG = new DeterministicRNG(startState.rngStateA ?? (startState.rngState ^ 0xAAAAAAAA) >>> 0);
+			const teamB_RNG = new DeterministicRNG(startState.rngStateB ?? (startState.rngState ^ 0xBBBBBBBB) >>> 0);
 
 			const states: GameState[] = [startState];
 			let currentState = startState;
@@ -37,7 +38,10 @@ self.onmessage = async (e: MessageEvent) => {
 					pointZone: visibleZones[0]
 				};
 				
+				self.Math.random = () => teamA_RNG.next();
 				const alphaActions: PlayerAction[] = alphaLogic(sense) || [];
+				
+				self.Math.random = () => teamB_RNG.next();
 				const bravoActions: PlayerAction[] = bravoLogic(sense) || [];
 
 				const teamAActions = alphaActions.filter(a => 
@@ -50,6 +54,9 @@ self.onmessage = async (e: MessageEvent) => {
 				const combinedActions = [...teamAActions, ...teamBActions];
 
 				currentState = tick(currentState, combinedActions, config);
+				// Persist siloed RNG states for branching determinism
+				currentState.rngStateA = teamA_RNG.getState();
+				currentState.rngStateB = teamB_RNG.getState();
 				states.push(currentState);
 			}
 
@@ -74,9 +81,9 @@ self.onmessage = async (e: MessageEvent) => {
 				const { createInitialState } = await import('$packages/engine/core');
 				let currentState = createInitialState(seed, protocolVersion, config, teamData);
 				
-				// Sandbox Math.random per match
-				const sandboxRNG = new DeterministicRNG((seed ^ 0xdeadbeef) >>> 0);
-				self.Math.random = () => sandboxRNG.next();
+				// Isolated PRNGs for each team to prevent entropy stealing
+				const teamA_RNG = new DeterministicRNG(currentState.rngStateA ?? (seed ^ 0xAAAAAAAA) >>> 0);
+				const teamB_RNG = new DeterministicRNG(currentState.rngStateB ?? (seed ^ 0xBBBBBBBB) >>> 0);
 				
 				const states: GameState[] = [currentState];
 
@@ -94,7 +101,10 @@ self.onmessage = async (e: MessageEvent) => {
 						pointZone: visibleZones[0]
 					};
 					
+					self.Math.random = () => teamA_RNG.next();
 					const alphaActions: PlayerAction[] = alphaLogic(sense) || [];
+					
+					self.Math.random = () => teamB_RNG.next();
 					const bravoActions: PlayerAction[] = bravoLogic(sense) || [];
 
 					const teamAActions = alphaActions.filter(a => 
@@ -106,6 +116,9 @@ self.onmessage = async (e: MessageEvent) => {
 
 					const combinedActions = [...teamAActions, ...teamBActions];
 					currentState = tick(currentState, combinedActions, config);
+					// Persist siloed RNG states
+					currentState.rngStateA = teamA_RNG.getState();
+					currentState.rngStateB = teamB_RNG.getState();
 					// For batch, we might not need every state, just the final one or specific intervals
 					// But let's keep the final state for now.
 				}

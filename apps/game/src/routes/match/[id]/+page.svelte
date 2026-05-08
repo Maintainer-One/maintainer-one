@@ -57,9 +57,9 @@
 			.from('matches')
 			.select(`
 				id,
-				seed,
-				league_id,
+				public_seed,
 				scheduled_time,
+				league_id,
 				season_id,
 				leagues (protocol_version, protocol_config),
 				seasons (season_number, protocol_version, protocol_config),
@@ -77,7 +77,7 @@
 
 		// @ts-ignore
 		matchData = match;
-		isPreview = new Date() < new Date(match.scheduled_time);
+		isPreview = new Date() < new Date(match.scheduled_time) || match.public_seed === null;
 
 		if (isPreview) {
 			isSimulating = false;
@@ -109,7 +109,7 @@
 		const awayV = versions.find(v => v.id === awayVersionId)!;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.seed), match.seasons?.protocol_version || match.leagues.protocol_version, config, { A: match.home_team, B: match.away_team });
+		const initialState = createInitialState(Number(match.public_seed), match.seasons?.protocol_version || match.leagues.protocol_version, config, { A: match.home_team, B: match.away_team });
 		states = [initialState];
 		currentTick = 0;
 

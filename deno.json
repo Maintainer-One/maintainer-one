@@ -10,7 +10,9 @@
 		"fmt": "deno fmt && deno run -A npm:prettier --write .",
 		"e2e": "cd apps/game && npx playwright test",
 		"sim": "deno run -A packages/engine/match_runner.ts",
-		"cron": "deno run -A packages/engine/cron_runner.ts"
+		"cron": "deno run -A packages/engine/cron_runner.ts",
+		"supabase": "deno run -A scripts/supabase_managed.ts",
+		"seed": "deno run -A scripts/bootstrap_inaugural.ts"
 	},
 	"compilerOptions": {
 		"allowJs": true,

@@ -20,15 +20,15 @@ export interface V1Config {
 export const defaultV1Config: V1Config = {
     seasonLengthDays: 7,
     teamCount: 6,
-    gamesPerSeason: 10,
+    gamesPerSeason: 15, // 5 games per round * 3 rounds (one round robin round)
     pointZoneSpawnRate: 10,
     maxPointZones: 1,
     pointZoneValue: 0, // Age-based scoring
     pointZoneForesight: 0,
-    pointZoneMinAge: 20,
-    pointZoneMaxAge: 40,
+    pointZoneMinAge: 10,
+    pointZoneMaxAge: 20,
     stunPenaltyTicks: 3,
-    maxGameTicks: 100,
+    maxGameTicks: 300,
     overtimeAllowed: true,
-    tickRateMs: 750
+    tickRateMs: 800
 };

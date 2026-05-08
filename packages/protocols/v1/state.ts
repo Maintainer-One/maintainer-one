@@ -68,6 +68,8 @@ export function createInitialStateV1(config: V1Config, seed: number, teams?: { A
         pointZones: [],
         nextZoneSpawnTick: config.pointZoneSpawnRate,
         rngState: rng.getState(),
+        rngStateA: (seed ^ 0xAAAAAAAA) >>> 0,
+        rngStateB: (seed ^ 0xBBBBBBBB) >>> 0,
         controlMap: calculateInitialControlMap([
             { id: 'a1', team: 'A', position: { x: 0, y: 2 } },
             { id: 'a2', team: 'A', position: { x: 0, y: 5 } },

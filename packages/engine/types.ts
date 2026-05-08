@@ -74,6 +74,8 @@ export type GameState = {
 	pointZones: PointZone[];
 	nextZoneSpawnTick: number | null;
 	rngState: number; // The seed/state for the next random call
+	rngStateA?: number; // Siloed PRNG state for Team A
+	rngStateB?: number; // Siloed PRNG state for Team B
 	isFinished: boolean;
 	winner: TeamID | null;
 	controlMap?: (TeamID | 'CONTESTED' | null)[][];

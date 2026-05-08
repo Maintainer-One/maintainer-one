@@ -15,10 +15,10 @@
     "@astrojs/svelte": "^8.1.0",
     "@supabase/supabase-js": "^2.105.3",
     "@tailwindcss/postcss": "^4.2.4",
-    "astro": "^6.2.2",
+    "astro": "^6.3.1",
     "postcss": "^8.5.14",
     "svelte": "^5.55.5",
     "tailwindcss": "^4.2.4",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

@@ -47,7 +47,7 @@
 		const { data, error } = await supabase
 			.from('matches')
 			.select(`
-				id, status, scheduled_time, seed,
+				id, status, scheduled_time, public_seed,
 				home_code_version_id, away_code_version_id, home_override_version_id, away_override_version_id,
 				leagues (protocol_version, protocol_config),
 				seasons (protocol_version, protocol_config),

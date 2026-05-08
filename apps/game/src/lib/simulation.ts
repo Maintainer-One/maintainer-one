@@ -23,7 +23,7 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 	const maxTicks = (config?.maxGameTicks || 100) + (config?.overtimeAllowed ? (config?.pointZoneMaxAge || 40) : 0) + 100;
 	
 	const initialState = createInitialState(
-		Number(match.seed), 
+		Number(match.seed ?? match.public_seed), 
 		match.seasons?.protocol_version || match.leagues.protocol_version, 
 		config, 
 		{ A: match.home_team, B: match.away_team }
