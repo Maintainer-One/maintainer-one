@@ -143,15 +143,15 @@
 			</a>
 			<a 
 				href="{base}/film-room" 
-				class="px-6 py-3 bg-[var(--color-brand-secondary)] text-[var(--color-background-dark)] font-black rounded-xl shadow-lg shadow-black/20 hover:scale-105 transition-all text-sm uppercase tracking-tighter"
+				class="px-6 py-2.5 bg-[var(--color-brand-secondary)] text-[var(--color-background-dark)] font-black rounded-xl shadow-lg shadow-black/20 hover:scale-105 transition-all text-sm uppercase tracking-tighter"
 			>
 				Film Room
 			</a>
 			<a 
 				href="{base}/multiview" 
-				class="px-6 py-3 bg-rose-500 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 hover:scale-105 transition-all text-sm uppercase tracking-tighter flex items-center gap-2"
+				class="px-6 py-2.5 bg-rose-500 text-white font-black rounded-xl shadow-lg shadow-rose-500/20 hover:scale-105 transition-all text-sm uppercase tracking-tighter flex items-center gap-2"
 			>
-				<span class="h-2 w-2 rounded-full bg-white animate-pulse"></span>
+				<span class="h-2 w-2 rounded-xl bg-white animate-pulse"></span>
 				Multiview
 			</a>
 			<div class="relative group">
