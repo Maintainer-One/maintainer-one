@@ -74,7 +74,7 @@
 					</h2>
 					<p class="mt-4 max-w-md text-lg font-medium leading-relaxed text-white/50">
 						Dominating the season with a final record of <span class="text-white">{winner?.record}</span>. 
-						Their protocol proved superior for Protocol One.
+						Their logic proved superior for Protocol One.
 					</p>
 				</div>
 

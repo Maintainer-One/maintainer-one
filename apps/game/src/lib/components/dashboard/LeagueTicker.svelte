@@ -12,7 +12,7 @@
 		if (!activeSeason) {
 			internalSeason = await getActiveSeason();
 			if (!internalSeason) {
-				events = ["Welcome to Maintainer One.", "Teams are refining their protocols.", "Check the schedule for upcoming matches."];
+				events = ["Welcome to Maintainer One.", "Teams are refining their logic.", "Check the schedule for upcoming matches."];
 				return;
 			}
 			return; // Effect will trigger re-fetch
@@ -83,7 +83,7 @@
 			} else {
 				events = [
 					`${activeSeason.name} is approaching!`,
-					"Teams are refining their protocols.",
+					"Teams are refining their logic.",
 					"Check the schedule for upcoming match times."
 				];
 			}
