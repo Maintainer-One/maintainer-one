@@ -17,7 +17,7 @@
 	}
 </script>
 
-<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden" data-component="ReplayGrid">
+<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
 	
 	<!-- Background Elements (Clipped to border radius) -->
 	<div class="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
@@ -127,7 +127,7 @@
 
     <!-- Victory Overlay -->
     {#if state.isFinished}
-        <div class="absolute inset-0 flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50">
+        <div class="absolute inset-[-5px] flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50 rounded-3xl overflow-hidden">
             <div class="rounded-[2rem] border border-[var(--color-brand-primary)]/30 bg-black/40 p-12 text-center shadow-[0_0_50px_rgba(5,150,105,0.2)] backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]">
                 <div class="mb-4 inline-block rounded-full bg-[var(--color-brand-primary)]/10 px-4 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">
                     Match Concluded

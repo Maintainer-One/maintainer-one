@@ -306,36 +306,36 @@
 
 							<!-- Game Render -->
 							<div class="flex-1 w-full relative bg-black/20 flex items-center justify-center p-6 pt-2">
-								{#if liveData && liveData.state}
-									<div class="w-full aspect-square pointer-events-none max-h-full">
+								<div class="w-full aspect-square flex items-center justify-center pointer-events-none max-h-full">
+									{#if liveData && liveData.state}
 										<ReplayGrid state={liveData.state} {playSpeed} showControlMap={false} />
-									</div>
-								{:else if liveData?.isPreview}
-									<div class="flex flex-col items-center gap-8 text-center" in:fade>
-										<div class="flex items-center gap-12">
-											<div class="flex flex-col items-center gap-3">
-												<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-16" />
-												<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.home_team.name}</div>
+									{:else if liveData?.isPreview}
+										<div class="flex flex-col items-center gap-8 text-center" in:fade>
+											<div class="flex items-center gap-12">
+												<div class="flex flex-col items-center gap-3">
+													<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-16" />
+													<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.home_team.name}</div>
+												</div>
+												<div class="text-2xl font-black text-white/10 tracking-tighter italic">VS</div>
+												<div class="flex flex-col items-center gap-3">
+													<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-16" />
+													<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.away_team.name}</div>
+												</div>
 											</div>
-											<div class="text-2xl font-black text-white/10 tracking-tighter italic">VS</div>
-											<div class="flex flex-col items-center gap-3">
-												<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-16" />
-												<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.away_team.name}</div>
+											<div class="space-y-1">
+												<div class="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">Match Preview</div>
+												<div class="text-2xl font-black text-white tabular-nums tracking-tight">
+													{liveData.status.replace('Starts in ', '')}
+												</div>
 											</div>
 										</div>
-										<div class="space-y-1">
-											<div class="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">Match Preview</div>
-											<div class="text-2xl font-black text-white tabular-nums tracking-tight">
-												{liveData.status.replace('Starts in ', '')}
-											</div>
+									{:else}
+										<div class="flex flex-col items-center gap-4">
+											<div class="h-12 w-12 rounded-full border-4 border-white/5 border-t-[var(--color-brand-primary)] animate-spin"></div>
+											<div class="text-[10px] font-black uppercase tracking-widest text-white/20">Preparing Simulation...</div>
 										</div>
-									</div>
-								{:else}
-									<div class="flex flex-col items-center gap-4">
-										<div class="h-12 w-12 rounded-full border-4 border-white/5 border-t-[var(--color-brand-primary)] animate-spin"></div>
-										<div class="text-[10px] font-black uppercase tracking-widest text-white/20">Preparing Simulation...</div>
-									</div>
-								{/if}
+									{/if}
+								</div>
 							</div>
 							
 							<!-- Hover Overlay -->
