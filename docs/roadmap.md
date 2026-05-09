@@ -26,12 +26,12 @@ _Note: The platform is open-source. Anyone can spin up their own server to act a
 - **Simulation Engine**: Core deterministic Deno simulation engine (`packages/engine`).
 - **Phase 1 (DX Focus)**: Hybrid IDE architecture (Monaco/CodeMirror), browser-side simulation, and advanced playback controls.
 - **Phase 2 (League Dashboard)**: Foundational UI for "The Big Board", team identity, and live event ticking.
-- **Phase 3 (Inaugural Season)**: Full season simulation infrastructure complete.
+- **Phase 3 (Test Season)**: Full season simulation infrastructure complete.
   - **Protocol Versioning Engine**: Decoupled engine from rule-sets with a registry pattern.
   - **Automated Season Runner**: `Deno.cron` ready runner for scheduled matches.
   - **Code-Locked Determinism**: Database-backed version control for team logic ensuring perfect replays.
-  - **Inaugural Bootstrap**: 6 varied team logic variations (Azure, Beige, Cobalt, etc.) seeded with a full round-robin schedule.
-- **Phase 4 (Inaugural Dashboard)**: Live Command Center and deterministic match viewer complete.
+  - **Test Bootstrap**: 6 varied team logic variations (Azure, Beige, Cobalt, etc.) seeded with a full round-robin schedule.
+- **Phase 4 (Test Dashboard)**: Live Command Center and deterministic match viewer complete.
   - **Live Standings & Feed**: Real-time integration with Supabase matches and teams.
   - **Diverse Identity**: Implementation of the Amber, Beige, Crimson, Denim, Emerald, Fuchsia (ABCDEF) color palette.
   - **Replay Determinism**: Browser-side re-simulation using database seeds and code versions.

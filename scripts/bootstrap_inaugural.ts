@@ -13,7 +13,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function bootstrap() {
-    console.log("🌱 Bootstrapping Inaugural Season...");
+    console.log("🌱 Bootstrapping Test Season...");
 
     // 0. Cleanup existing Inaugural data to ensure a fresh schedule
     console.log("🧹 Cleaning up old Inaugural data...");
@@ -156,7 +156,7 @@ async function bootstrap() {
         .insert({
             league_id: league.id,
             season_number: 1,
-            name: 'Inaugural Season',
+            name: 'Test Season',
             status: 'active',
             protocol_version: 'v1',
             protocol_config: { 
