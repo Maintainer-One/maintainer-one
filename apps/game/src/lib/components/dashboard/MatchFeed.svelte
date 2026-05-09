@@ -215,8 +215,6 @@
 						teamName={match.home_team.name} 
 						color={match.home_team.color} 
 						size="size-12" 
-						logoIconUrl={match.home_team.logo_icon_url}
-						logoUrl={match.home_team.logo_url}
 						class="drop-shadow-[0_0_8px_{match.home_team.color}66]"
 					/>
 				</div>
@@ -253,8 +251,6 @@
 						teamName={match.away_team.name} 
 						color={match.away_team.color} 
 						size="size-12" 
-						logoIconUrl={match.away_team.logo_icon_url}
-						logoUrl={match.away_team.logo_url}
 						class="drop-shadow-[0_0_8px_{match.away_team.color}66]"
 					/>
 				</div>

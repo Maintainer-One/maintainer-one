@@ -12,7 +12,6 @@
 		statPoints = 0,
 		statAwards = [],
 		logo_url = null,
-		logo_icon_url = null,
 	} = $props<{
 		id: string;
 		name?: string;
@@ -23,7 +22,6 @@
 		statPoints?: number;
 		statAwards?: string[];
 		logo_url?: string | null;
-		logo_icon_url?: string | null;
 	}>();
 
 	// Derive a gradient using the primary color
@@ -46,8 +44,6 @@
 						teamName={name} 
 						{color} 
 						size="size-16" 
-						logoUrl={logo_url} 
-						logoIconUrl={logo_icon_url}
 						class="drop-shadow-[0_0_15px_{color}88]" 
 					/>
 				</div>

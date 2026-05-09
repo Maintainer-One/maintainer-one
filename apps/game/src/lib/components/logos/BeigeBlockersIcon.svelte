@@ -1,0 +1,20 @@
+<script lang="ts">
+	let { size = 'size-12', color = '#F5F5DC', class: className = '' } = $props<{
+		size?: string;
+		color?: string;
+		class?: string;
+	}>();
+</script>
+
+<svg 
+	xmlns="http://www.w3.org/2000/svg" 
+	viewBox="0 0 89 98.2" 
+	class="{size} {className}"
+>
+	<!-- Final Inkscape "Brickwork B" -->
+	<path 
+		fill={color} 
+		d="M37.4 275.2h18.3v19.5H37.4zm24.4 0H102v19.5H61.8Zm46.4 0h18.2v7.2l-12.3 12.3h-6ZM37.4 249h41.2l.3 19.8H37.4zm47.6 0h29l12.4 12.3v7.5H85.1Zm-47.4-26.4h18.2l.2 20H37.4zm24.2-.2 39 .2 1.3.2v19.8H61.8Zm46.4 0 18 .2.2 7.6-12.3 12.4H108zm-70.5-6-.3-20 41.5.2v19.9zm47.3-.1v-19.7l28.7-.1 12.7 12.6-.2 7.4z" 
+		transform="translate(-37.4 -196.5)"
+	/>
+</svg>

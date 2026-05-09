@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
-	import BrandLogo from '$lib/components/BrandLogo.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 
 	let { season, winner, playerAwards, teams } = $props<{
 		season: any;
@@ -72,11 +72,12 @@
 			<div class="relative flex size-48 items-center justify-center rounded-3xl bg-white/5 p-8 shadow-inner md:size-64">
 				<div class="absolute inset-0 animate-pulse rounded-full bg-[var(--team-color)]/20 blur-[60px]"></div>
 				<div class="relative z-10 transition-all duration-700 hover:scale-110">
-					{#if winner?.logo_url}
-						<img 
-							src={winner.logo_url} 
-							alt={winner.name} 
-							class="size-32 md:size-48 object-contain drop-shadow-[0_0_20px_var(--team-color)]" 
+					{#if winner}
+						<TeamIcon 
+							teamName={winner.name} 
+							color={winner.color} 
+							size="size-32 md:size-48" 
+							class="drop-shadow-[0_0_20px_var(--team-color)]" 
 						/>
 					{:else}
 						<BrandLogo size="size-32 md:size-48" />
