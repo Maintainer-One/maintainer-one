@@ -4,7 +4,7 @@ import { loadLogicFromString } from './logic_loader.ts';
 import "jsr:@std/dotenv/load";
 
 const supabaseUrl = Deno.env.get("PUBLIC_SUPABASE_URL");
-const supabaseKey = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY");
+const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
 if (!supabaseUrl || !supabaseKey) {
     console.error("Missing Supabase environment variables.");
@@ -69,8 +69,14 @@ async function simulateLockedMatches() {
             const awayLogic = loadLogicFromString(awayCode);
 
             // 3. Run Simulation
+            const seed = match.match_secrets?.secret_seed;
+            if (seed === undefined || seed === null) {
+                console.error(`❌ Skipping match ${match.id}: No secret seed found in match_secrets.`);
+                continue;
+            }
+
             const { finalState } = await simulateMatch(
-                Number(match.match_secrets?.secret_seed ?? 0),
+                Number(seed),
                 // @ts-ignore
                 match.seasons?.protocol_version || match.leagues.protocol_version,
                 homeLogic,
@@ -129,13 +135,18 @@ async function broadcastPlayedMatches() {
     }
 
     if (!matches || matches.length === 0) return;
-
     for (const match of matches) {
+        const seed = match.match_secrets?.secret_seed;
+        if (seed === undefined || seed === null) {
+            console.error(`⚠️ Cannot broadcast match ${match.id}: Secret seed not found.`);
+            continue;
+        }
+
         const { error: updateError } = await supabase
             .from('matches')
             .update({ 
                 status: 'played',
-                public_seed: match.match_secrets?.secret_seed 
+                public_seed: seed
             })
             .eq('id', match.id);
 

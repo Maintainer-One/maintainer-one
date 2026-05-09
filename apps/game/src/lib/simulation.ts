@@ -22,8 +22,13 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 	const config = match.seasons?.protocol_config ?? match.leagues.protocol_config;
 	const maxTicks = (config?.maxGameTicks || 100) + (config?.overtimeAllowed ? (config?.pointZoneMaxAge || 40) : 0) + 100;
 	
+	const seed = match.seed ?? match.public_seed;
+	if (seed === undefined || seed === null) {
+		throw new Error('Match seed not revealed yet');
+	}
+
 	const initialState = createInitialState(
-		Number(match.seed ?? match.public_seed), 
+		Number(seed), 
 		match.seasons?.protocol_version || match.leagues.protocol_version, 
 		config, 
 		{ A: match.home_team, B: match.away_team }

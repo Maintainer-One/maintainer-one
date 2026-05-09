@@ -23,22 +23,31 @@
 	let matchData = $state<any | null>(null);
 	let currentTime = $state(Date.now());
 	
+	const isPastStartTime = $derived.by(() => {
+		if (!matchData) return false;
+		return currentTime >= new Date(matchData.scheduled_time).getTime();
+	});
+
 	const isPreview = $derived.by(() => {
 		if (!matchData) return true;
-		return currentTime < new Date(matchData.scheduled_time).getTime() || matchData.public_seed === null;
+		return !isPastStartTime;
+	});
+
+	const isAwaitingSeed = $derived.by(() => {
+		return isPastStartTime && matchData?.public_seed === null;
 	});
 
 	const isLive = $derived.by(() => {
 		if (!matchData || states.length === 0) return false;
 		const startTime = new Date(matchData.scheduled_time).getTime();
-		const endTime = startTime + ((states.length - 1) * playSpeed);
+		const endTime = startTime + (states.length * playSpeed);
 		return currentTime >= startTime && currentTime < endTime;
 	});
 
 	const isCompleted = $derived.by(() => {
 		if (!matchData || states.length === 0) return false;
 		const startTime = new Date(matchData.scheduled_time).getTime();
-		const endTime = startTime + ((states.length - 1) * playSpeed);
+		const endTime = startTime + (states.length * playSpeed);
 		return currentTime >= endTime;
 	});
 
@@ -94,7 +103,8 @@
 		// @ts-ignore
 		matchData = match;
 
-		if (isPreview) {
+		if (matchData.public_seed === null) {
+			console.log('Match is past scheduled time but public_seed is not yet revealed.');
 			isSimulating = false;
 			return;
 		}
@@ -254,9 +264,19 @@
 
 		{#if isPreview && matchData}
 			<MatchPreview match={matchData} onCountdownComplete={() => loadMatch(matchData.id)} />
-		{:else if isPreview}
-			<div class="flex flex-1 items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm animate-pulse">
-				Synchronizing Arena Data...
+		{:else if isPreview || isAwaitingSeed}
+			<div class="flex flex-1 flex-col items-center justify-center gap-6">
+				<div class="flex items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm animate-pulse">
+					{isAwaitingSeed ? 'Technical Difficulties - Awaiting Arena Feed...' : 'Synchronizing Arena Data...'}
+				</div>
+				{#if isAwaitingSeed}
+					<button 
+						onclick={() => loadMatch(matchData.id)}
+						class="px-4 py-2 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:bg-white/10 hover:text-white transition-all"
+					>
+						Retry Connection
+					</button>
+				{/if}
 			</div>
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">

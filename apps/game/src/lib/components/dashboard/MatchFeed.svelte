@@ -93,11 +93,16 @@
 			const endTime = startTime + (leagueMaxTicks * tickRate);
 			
 			if ((m.status === 'simulated' || m.status === 'simmed' || m.status === 'played') && nowTime >= startTime && nowTime < endTime && !matchSims[m.id] && !simulatingMatches.has(m.id)) {
-				simulatingMatches.add(m.id);
-				runSimulation(m).then(states => {
-					matchSims[m.id] = states;
-					simulatingMatches.delete(m.id);
-				});
+				if (m.public_seed !== null && m.public_seed !== undefined) {
+					simulatingMatches.add(m.id);
+					runSimulation(m).then(states => {
+						matchSims[m.id] = states;
+						simulatingMatches.delete(m.id);
+					}).catch(err => {
+						console.error(`Simulation failed for match ${m.id}:`, err);
+						simulatingMatches.delete(m.id);
+					});
+				}
 			}
 		});
 	}
@@ -157,6 +162,9 @@
 		const currentTick = Math.floor((nowTime - targetTime) / tickRate);
 
 		if (currentTick < actualMaxTicks) {
+			if (match.public_seed === null || match.public_seed === undefined) {
+				return { label: 'TECHNICAL DIFFICULTIES', type: 'delayed' };
+			}
 			return { label: `LIVE - TICK ${currentTick}`, type: 'live', tick: currentTick };
 		}
 
