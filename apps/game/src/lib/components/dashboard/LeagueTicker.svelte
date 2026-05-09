@@ -3,14 +3,21 @@
 	import { onMount } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
+	let { season = null }: { season?: any } = $props();
 	let events: string[] = $state([]);
+	let internalSeason = $state<any>(null);
+	let activeSeason = $derived(season || internalSeason);
 
 	async function fetchRecentEvents() {
-		const activeSeason = await getActiveSeason();
 		if (!activeSeason) {
-			events = ["Inaugural Season is live!", "Teams are preparing for their first matches.", "Spectators welcome in the Film Room."];
-			return;
+			internalSeason = await getActiveSeason();
+			if (!internalSeason) {
+				events = ["Welcome to Maintainer One.", "Teams are refining their protocols.", "Check the schedule for upcoming matches."];
+				return;
+			}
+			return; // Effect will trigger re-fetch
 		}
+
 
 		const { data, error } = await supabase
 			.from('matches')
@@ -48,18 +55,34 @@
 			return `${home?.name || 'Unknown'} ${m.home_score} - ${m.away_score} ${away?.name || 'Unknown'}`;
 		});
 
+		const isPast = activeSeason.end_date && new Date(activeSeason.end_date).getTime() < nowTime;
+
 		if (events.length === 0) {
-			events = [
-				activeSeason ? `${activeSeason.name} is approaching!` : "Welcome to Maintainer One.",
-				"Teams are refining their protocols.",
-				"Check the schedule for upcoming match times."
-			];
+			if (isPast) {
+				events = [
+					`${activeSeason.name} has concluded!`,
+					"Review the matches in the Film Room.",
+					"Prepare your protocols for the next season."
+				];
+			} else {
+				events = [
+					`${activeSeason.name} is approaching!`,
+					"Teams are refining their protocols.",
+					"Check the schedule for upcoming match times."
+				];
+			}
 		}
 	}
+
 
 	onMount(() => {
 		fetchRecentEvents();
 	});
+
+	$effect(() => {
+		if (activeSeason) fetchRecentEvents();
+	});
+
 </script>
 
 <div class="relative flex overflow-x-hidden border-b border-white/10 bg-black/40 py-2 text-sm">

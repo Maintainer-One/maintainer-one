@@ -8,13 +8,27 @@
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
 	let featuredMatch = $state<any>(null);
-	let activeSeason = $state<any>(null);
+	let allSeasons = $state<any[]>([]);
+	let selectedSeasonId = $state<string | null>(null);
+	let selectedSeason = $derived(allSeasons.find(s => s.id === selectedSeasonId));
 
 	async function fetchDashboardData() {
-		activeSeason = await getActiveSeason();
-		if (!activeSeason) return;
+		const { data: seasons } = await supabase
+			.from('seasons')
+			.select('*')
+			.order('start_date', { ascending: false });
+		
+		allSeasons = seasons || [];
 
-		// Fetch a featured match: prefer one that is played/simulated, otherwise next upcoming
+		const active = await getActiveSeason();
+		if (active) {
+			selectedSeasonId = active.id;
+		} else if (allSeasons.length > 0) {
+			selectedSeasonId = allSeasons[0].id;
+		}
+	}
+
+	async function fetchFeaturedMatch(seasonId: string) {
 		const { data } = await supabase
 			.from('matches')
 			.select(`
@@ -23,15 +37,19 @@
 				home_team:teams!home_team_id (name, color),
 				away_team:teams!away_team_id (id, name, color)
 			`)
-			.eq('season_id', activeSeason.id)
-			.in('status', ['played', 'simmed', 'simulated', 'scheduled'])
-			// Custom ordering logic: we want completed matches at the top if they just finished
+			.eq('season_id', seasonId)
+			.in('status', ['played', 'simmed', 'simulated', 'scheduled', 'live'])
 			.order('scheduled_time', { ascending: false }) 
 			.limit(1)
 			.maybeSingle();
 		
 		featuredMatch = data;
 	}
+
+	$effect(() => {
+		if (selectedSeasonId) fetchFeaturedMatch(selectedSeasonId);
+	});
+
 
 	onMount(() => {
 		fetchDashboardData();
@@ -43,7 +61,7 @@
 </svelte:head>
 
 <!-- Global League Ticker at the very top -->
-<LeagueTicker />
+<LeagueTicker season={selectedSeason} />
 
 <main
 	data-component="dashboard"
@@ -59,9 +77,25 @@
 						CENTER
 					</span>
 				</h1>
-				<p class="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em] mt-1">Live Dashboard</p>
+				<div class="flex items-center gap-2 mt-1">
+					<p class="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em]">Live Dashboard</p>
+					{#if allSeasons.length > 0}
+						<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
+							<span class="text-[9px] font-black uppercase text-white/30 tracking-widest">Season</span>
+							<select 
+								bind:value={selectedSeasonId}
+								class="bg-transparent text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] border-none p-0 cursor-pointer focus:ring-0"
+							>
+								{#each allSeasons as s}
+									<option value={s.id} class="bg-[#111]">{s.name}</option>
+								{/each}
+							</select>
+						</div>
+					{/if}
+				</div>
 			</div>
 		</div>
+
 
 		<div class="flex items-center gap-3">
 			<a 
@@ -115,9 +149,10 @@
 		<!-- Left Column: Big Board / Standings (Takes 4 cols on large screens) -->
 		<div class="lg:col-span-4 xl:col-span-3">
 			<div class="sticky top-8">
-				<StandingsBoard />
+				<StandingsBoard season={selectedSeason} />
 			</div>
 		</div>
+
 
 		<!-- Right Column: Match Feeds and Activity (Takes 8 cols) -->
 		<div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
@@ -142,9 +177,10 @@
 						{/if}
 					</h2>
 					<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
-						{activeSeason ? `Currently following ${activeSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
+						{selectedSeason ? `Currently viewing ${selectedSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
 					</p>
 				</div>
+
 				
 				{#if featuredMatch}
 					<a 
@@ -167,7 +203,8 @@
 			</div>
 
 			<!-- Match Feed List -->
-			<MatchFeed />
+			<MatchFeed season={selectedSeason} />
+
 		</div>
 	</div>
 </main>

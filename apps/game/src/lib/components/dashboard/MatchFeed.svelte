@@ -7,9 +7,9 @@
 
 	import { runSimulation } from '$lib/simulation';
 
+	let { season = null }: { season?: any } = $props();
 	let upcomingMatches = $state<any[]>([]);
 	let recentMatches = $state<any[]>([]);
-	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 	let now = $state(new Date());
 
@@ -26,9 +26,7 @@
 	const GRACE_PERIOD_MS = 5 * 60 * 1000;
 
 	async function fetchMatches() {
-		
-		activeSeason = await getActiveSeason();
-		if (!activeSeason) {
+		if (!season) {
 			upcomingMatches = [];
 			recentMatches = [];
 			isLoading = false;
@@ -45,7 +43,7 @@
 				home_team:teams!home_team_id (id, name, color, active_version_id),
 				away_team:teams!away_team_id (id, name, color, active_version_id)
 			`)
-			.eq('season_id', activeSeason.id)
+			.eq('season_id', season.id)
 			.order('scheduled_time', { ascending: true });
 
 		if (error) {
@@ -111,7 +109,7 @@
 		const stored = localStorage.getItem('hideSpoilers');
 		if (stored !== null) hideSpoilers = JSON.parse(stored);
 
-		fetchMatches();
+		if (season) fetchMatches();
 		const interval = setInterval(() => {
 			now = new Date();
 			// Re-fetch matches occasionally or just update the local filtering?
@@ -124,6 +122,10 @@
 			clearInterval(interval);
 			clearInterval(refreshInterval);
 		};
+	});
+
+	$effect(() => {
+		if (season) fetchMatches();
 	});
 
 	$effect(() => {

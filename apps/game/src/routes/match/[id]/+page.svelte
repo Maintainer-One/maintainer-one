@@ -212,14 +212,40 @@
 <div class="flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 font-sans selection:bg-[var(--color-brand-primary)]/30">
 	<!-- Left Panel: Pitch -->
 	<main class="flex flex-1 flex-col p-6 lg:p-10 relative overflow-hidden">
-		<header class="mb-8 flex items-center justify-between">
-			<div class="flex items-center gap-6">
+		<header class="mb-8 flex items-center justify-between min-h-[64px]">
+			<div class="flex-1 flex items-center justify-start">
 				<a href="{returnToUrl}" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:text-[var(--color-brand-primary)] shadow-lg backdrop-blur-md">
 					<svg class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
 				</a>
-				
-				<div class="flex items-center gap-4 bg-black/40 rounded-2xl border border-white/5 px-6 py-3 backdrop-blur-3xl shadow-2xl">
-					{#if matchData}
+			</div>
+			
+			<div class="flex items-center justify-center gap-6">
+				<div class="flex items-center gap-6 bg-black/40 rounded-2xl border border-white/5 px-6 py-3 backdrop-blur-3xl shadow-2xl">
+					{#if matchData && currentState}
+						<div class="flex items-center gap-4">
+							<div class="text-right">
+								<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Home</div>
+								<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
+							</div>
+							<div class="text-3xl font-black text-white tabular-nums">{currentState.teams.A.score}</div>
+						</div>
+
+						<div class="flex flex-col items-center px-6 border-x border-white/10">
+							<div class="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--color-brand-primary)] mb-1">Tick</div>
+							<div class="text-xl font-mono font-black text-white tabular-nums">
+								{currentTick}
+								<span class="text-white/10 text-[10px]">/ {isLive ? currentTick : states.length - 1}</span>
+							</div>
+						</div>
+
+						<div class="flex items-center gap-4">
+							<div class="text-3xl font-black text-white tabular-nums">{currentState.teams.B.score}</div>
+							<div class="text-left">
+								<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Away</div>
+								<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
+							</div>
+						</div>
+					{:else if matchData}
 						<div class="text-right">
 							<div class="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-40">Home</div>
 							<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
@@ -230,7 +256,7 @@
 							<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
 						</div>
 					{:else}
-						<div class="h-8 w-40 bg-white/5 rounded-lg animate-pulse"></div>
+						<div class="h-8 w-60 bg-white/5 rounded-lg animate-pulse"></div>
 					{/if}
 				</div>
 
@@ -242,7 +268,7 @@
 				{/if}
 			</div>
 
-			<div class="flex items-center gap-4">
+			<div class="flex-1 flex items-center justify-end gap-4">
 				{#if isCompleted}
 					<a 
 						href="{base}/match/{matchData?.id}/stats"
@@ -280,7 +306,7 @@
 			</div>
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
-				<div class="flex-1 w-full max-w-4xl min-h-0 p-4">
+				<div class="flex-1 w-full max-w-4xl min-h-0 p-4 flex items-center justify-center">
 					<ReplayGrid state={currentState} {showControlMap} {playSpeed} />
 				</div>
 
@@ -325,20 +351,7 @@
 	<aside class="w-96 border-l border-white/5 bg-black/20 p-8 backdrop-blur-3xl overflow-y-auto no-scrollbar">
 		{#if currentState}
 			<div class="space-y-12">
-				<!-- Score Board -->
-				<section>
-					<h3 class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] mb-6">Match Score</h3>
-					<div class="grid grid-cols-2 gap-4">
-						<div class="rounded-2xl border bg-black/20 p-6 text-center shadow-xl" style="border-color: {currentState.teams.A.color}11">
-							<div class="text-[8px] font-black uppercase tracking-widest mb-1" style="color: {currentState.teams.A.color}">{currentState.teams.A.name}</div>
-							<div class="text-5xl font-black text-white leading-none">{currentState.teams.A.score}</div>
-						</div>
-						<div class="rounded-2xl border bg-black/20 p-6 text-center shadow-xl" style="border-color: {currentState.teams.B.color}11">
-							<div class="text-[8px] font-black uppercase tracking-widest mb-1" style="color: {currentState.teams.B.color}">{currentState.teams.B.name}</div>
-							<div class="text-5xl font-black text-white leading-none">{currentState.teams.B.score}</div>
-						</div>
-					</div>
-				</section>
+
 
 				<!-- RNG Luck Factor -->
 				<section>

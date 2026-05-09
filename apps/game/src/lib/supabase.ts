@@ -31,5 +31,16 @@ export async function getActiveSeason() {
 		.limit(1)
 		.maybeSingle();
 
-	return next;
+	if (next) return next;
+	
+	// 3. Fallback to most recent past season
+	const { data: past } = await supabase
+		.from('seasons')
+		.select('*')
+		.lt('end_date', now)
+		.order('end_date', { ascending: false })
+		.limit(1)
+		.maybeSingle();
+
+	return past;
 }

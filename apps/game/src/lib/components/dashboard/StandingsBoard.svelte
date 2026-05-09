@@ -4,17 +4,15 @@
 	import { onMount } from 'svelte';
 	import { getProtocol } from '$packages/protocols/registry';
 
+	let { season = null }: { season?: any } = $props();
 	let teams: any[] = $state([]);
-	let activeSeason: any = $state(null);
 	let isLoading = $state(true);
 
 	const DEFAULT_TICK_RATE = 750;
 	const K_FACTOR = 32;
 
 	async function fetchStandings() {
-
-		activeSeason = await getActiveSeason();
-		if (!activeSeason) {
+		if (!season) {
 			teams = [];
 			isLoading = false;
 			return;
@@ -41,7 +39,7 @@
 				seasons (protocol_version, protocol_config)
 			`)
 			.in('status', ['simulated', 'simmed', 'played'])
-			.eq('season_id', activeSeason.id)
+			.eq('season_id', season.id)
 			.order('scheduled_time', { ascending: true });
 
 		if (matchesError) {
@@ -130,9 +128,13 @@
 	}
 
 	onMount(() => {
-		fetchStandings();
+		if (season) fetchStandings();
 		const interval = setInterval(fetchStandings, 10000); // Refresh every 10s
 		return () => clearInterval(interval);
+	});
+
+	$effect(() => {
+		if (season) fetchStandings();
 	});
 </script>
 
@@ -140,7 +142,7 @@
 	<div class="flex items-center justify-between border-b border-[var(--color-brand-secondary)]/10 pb-2">
 		<h2 class="text-xl font-bold tracking-tight text-[var(--color-brand-secondary)] flex items-center gap-2">
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
-			{activeSeason ? activeSeason.name : 'Standings'}
+			{season ? season.name : 'Standings'}
 		</h2>
 		<a href="/leaderboard" class="text-sm font-semibold tracking-wider uppercase text-[var(--color-brand-secondary)]/50 hover:text-[var(--color-brand-primary)] transition-colors">Full Leaderboard</a>
 	</div>
