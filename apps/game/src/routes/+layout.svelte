@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
 
-	let { children } = $props();
 
 	// Function to update the favicon based on current theme variables
 	function updateFavicon() {
@@ -35,15 +34,29 @@
 		link.href = url;
 	}
 
+	import Modal from '$lib/components/Modal.svelte';
+	import { invalidate } from '$app/navigation';
+	let { children, data } = $props();
+
+	let { supabase, session } = $derived(data);
+
 	onMount(() => {
 		updateFavicon();
 		// Re-run if theme variables change (useful for dynamic swaps later)
 		const observer = new MutationObserver(() => updateFavicon());
 		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
-		return () => observer.disconnect();
-	});
 
-	import Modal from '$lib/components/Modal.svelte';
+		const { data: authData } = supabase.auth.onAuthStateChange((_, newSession) => {
+			if (newSession?.expires_at !== session?.expires_at) {
+				invalidate('supabase:auth');
+			}
+		});
+
+		return () => {
+			observer.disconnect();
+			authData.subscription.unsubscribe();
+		};
+	});
 </script>
 
 {@render children()}

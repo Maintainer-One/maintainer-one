@@ -17,7 +17,7 @@ async function bootstrap() {
 
     // 0. Cleanup existing Inaugural data to ensure a fresh schedule
     console.log("🧹 Cleaning up old Inaugural data...");
-    const { data: oldLeague } = await supabase.from('leagues').select('id').eq('name', 'Inaugural League').maybeSingle();
+    const { data: oldLeague } = await supabase.from('leagues').select('id').eq('name', 'Maintainer One').maybeSingle();
     if (oldLeague) {
         await supabase.from('seasons').delete().eq('league_id', oldLeague.id);
         // Cascading deletes will handle matches and secrets
@@ -25,14 +25,14 @@ async function bootstrap() {
 
     // 1. Create/Get League
     let league;
-    const { data: existingLeague } = await supabase.from('leagues').select().eq('name', 'Inaugural League').maybeSingle();
+    const { data: existingLeague } = await supabase.from('leagues').select().eq('name', 'Maintainer One').maybeSingle();
     
     if (existingLeague) {
         league = existingLeague;
     } else {
         const { data: newLeague, error: leagueError } = await supabase
             .from('leagues')
-            .insert({ name: 'Inaugural League', protocol_version: 'v1' })
+            .insert({ name: 'Maintainer One', protocol_version: 'v1' })
             .select()
             .single();
 

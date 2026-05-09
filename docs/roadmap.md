@@ -58,7 +58,7 @@ o
 - [x] **Team Dashboard**: A `/team` dashboard for teams to manage their code versions (including naming versions) and assign specific override versions for upcoming matchups.
 - [x] **Team Practice & Test Runner**: A `/team/test-runner` environment allowing developers to run large batches of headless simulations against opponents to evaluate logic changes based on statistical outcomes.
 - [x] **Match Viewing & Analytics**: A dedicated `/match/[id]` viewing experience enriched with advanced analytics (Control Maps, Expected Spawns (xS), and Luck metrics) distinct from the developer-focused Film Room.
-- [ ] **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
+
 - [x] **Protocol V1 Scoring Update**: Update the V1 protocol to award points for the highest and lowest of each stat (e.g., the player most stunned and the player least stunned each earn their team a point). Points structure: Wins = 3, Draws = 1, Most/Least of each stat = 1, Losses = 0.
 - [x] **Game Lore**: Establish the foundational lore and narrative for the game.
 
@@ -66,11 +66,11 @@ o
 
 _The goal is to seamlessly integrate the community and establish the formal RBAC foundation._
 
-- [ ] **GitHub Authentication**: Utilize GitHub OAuth as the primary authentication method. This natively links Contributors' identities to their code repositories and PRs.
-- [ ] **Cohesive Permission System**: Implement the role-based access control (RBAC) system to naturally gate Team Management and League settings UI behind appropriate permissions.
-- [ ] **"Around the League" Hub**: A dedicated dashboard space to curate and aggregate community content.
+- [x] **GitHub Authentication**: Utilize GitHub OAuth as the primary authentication method. This natively links Contributors' identities to their code repositories and PRs.
+- [x] **Cohesive Permission System**: Implement the role-based access control (RBAC) system to naturally gate Team Management and League settings UI behind appropriate permissions.
+- [x] **"Around the League" Hub**: A dedicated dashboard space to curate and aggregate community content.
   - Initially powered by user submissions.
-  - Implementing targeted scraping for highly trusted profiles (e.g., reliable Twitter feeds or YouTube channels).
+
 
 ### Phase 7: The Protocol RFC Process & Reputation
 
@@ -87,6 +87,8 @@ _The goal is to formalize how the game evolves and how trust is built._
 - **Tick-by-Tick Event Tracking**: Create a dedicated `match_events` database schema to capture granular simulation events (e.g., stuns, captures) with their exact tick and positional data, enabling advanced analytics and scrubber functionality in the Film Room.
 - **Tiered Official Leagues**: Expanding beyond "Maintainer One" to lower-tier official leagues (e.g., Maintainer Two) as popularity demands, making top-tier team maintenance a prestigious achievement.
 - **Fan Predictions**: A gamified fan experience featuring outcome prediction mechanics and global leaderboards to keep viewers engaged with "premiering" matches.
+- **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
+- **Automated Hub Scraper**: Implementing targeted scraping for highly trusted profiles (e.g., reliable Twitter feeds or YouTube channels) to automatically curate content for the "Around the League" hub.
 
 ---
 

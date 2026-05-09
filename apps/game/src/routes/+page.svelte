@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	let { data } = $props();
 	import { onMount } from 'svelte';
 	import { supabase, getActiveSeason } from '$lib/supabase';
 	import LeagueTicker from '$lib/components/dashboard/LeagueTicker.svelte';
@@ -154,23 +155,63 @@
 				<span class="h-2 w-2 rounded-xl bg-white animate-pulse"></span>
 				Multiview
 			</a>
-			<div class="relative group">
-				<button 
-					class="p-3 bg-white/5 border border-white/10 text-white/20 rounded-xl group-hover:text-[var(--color-brand-primary)] group-hover:border-[var(--color-brand-primary)]/30 transition-all flex items-center justify-center"
-					title="Admin Panel"
-				>
-					<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-				</button>
-				
-				<div class="absolute right-0 top-full mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
-					<a href="{base}/admin/league" class="block px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/10 hover:text-white transition-colors">
-						League Admin
-					</a>
-					<a href="{base}/admin/authority" class="block px-5 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:bg-[var(--color-brand-primary)]/10 hover:text-[var(--color-brand-primary)] transition-colors border-t border-white/5">
-						Platform Authority
-					</a>
+
+			{#if data.session}
+				<div class="relative group">
+					<button 
+						class="flex items-center gap-3 p-1.5 pr-4 bg-white/5 border border-white/10 rounded-xl hover:border-[var(--color-brand-primary)]/30 transition-all shadow-xl group/btn"
+					>
+						<div class="h-8 w-8 rounded-lg overflow-hidden bg-[var(--color-brand-primary)]/20 border border-white/5 flex items-center justify-center">
+							{#if data.profile?.avatar_url}
+								<img src={data.profile.avatar_url} alt={data.profile.username} class="h-full w-full object-cover" />
+							{:else}
+								<span class="text-xs font-black text-[var(--color-brand-primary)]">
+									{data.profile?.username?.charAt(0).toUpperCase() || 'U'}
+								</span>
+							{/if}
+						</div>
+						<div class="flex flex-col items-start">
+							<span class="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none mb-0.5">Maintainer</span>
+							<span class="text-[11px] font-black text-white uppercase tracking-tighter leading-none">@{data.profile?.username || 'user'}</span>
+						</div>
+						<svg class="h-4 w-4 text-white/20 group-hover/btn:text-[var(--color-brand-primary)] transition-colors ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+					</button>
+					
+					<div class="absolute right-0 top-full mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-out bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+						{#if data.roles?.includes('project_maintainer') || data.roles?.includes('league_maintainer')}
+							<div class="px-5 py-2 border-b border-white/5 bg-white/5">
+								<span class="text-[8px] font-black uppercase tracking-[0.2em] text-white/30">Management</span>
+							</div>
+							<a href="{base}/admin/league" class="flex items-center gap-3 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white/60 hover:bg-white/10 hover:text-white transition-colors">
+								<svg class="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+								League Admin
+							</a>
+						{/if}
+						
+						{#if data.roles?.includes('project_maintainer')}
+							<a href="{base}/admin/authority" class="flex items-center gap-3 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:bg-[var(--color-brand-primary)]/10 hover:text-[var(--color-brand-primary)] transition-colors border-t border-white/5">
+								<svg class="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+								Platform Authority
+							</a>
+						{/if}
+
+						<button 
+							onclick={async () => { await data.supabase.auth.signOut(); window.location.reload(); }}
+							class="w-full flex items-center gap-3 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-rose-500/60 hover:bg-rose-500/10 hover:text-rose-500 transition-colors border-t border-white/5"
+						>
+							<svg class="h-4 w-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+							Sign Out
+						</button>
+					</div>
 				</div>
-			</div>
+			{:else}
+				<a 
+					href="{base}/login" 
+					class="px-6 py-2.5 bg-white/10 border border-white/10 text-white font-black rounded-xl shadow-lg hover:bg-white/20 transition-all text-sm uppercase tracking-tighter flex items-center gap-2"
+				>
+					Sign In
+				</a>
+			{/if}
 		</div>
 	</header>
 
@@ -229,7 +270,7 @@
 							{featuredMatch.status === 'played' || featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
 								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 							</a>
-						{:else}
+						{:else if data.roles?.includes('project_maintainer') || data.roles?.includes('league_maintainer')}
 							<a 
 								href="{base}/admin/league" 
 								class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
@@ -237,6 +278,11 @@
 								Create Season
 								<svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
 							</a>
+						{:else}
+							<div class="mt-4 flex items-center gap-2 text-[var(--color-brand-primary)] font-black uppercase tracking-widest text-xs">
+								<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+								Standby for Season Launch
+							</div>
 						{/if}
 					</div>
 				</div>
