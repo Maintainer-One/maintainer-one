@@ -9,6 +9,8 @@
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
 	import SimWorker from '$lib/workers/sim.worker?worker';
 	import { fade, fly } from 'svelte/transition';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
 	let states = $state<GameState[]>([]);
 	let currentTick = $state(0);
@@ -220,17 +222,25 @@
 			</div>
 			
 			<div class="flex items-center justify-center gap-6">
-				<div class="flex items-center gap-6 bg-black/40 rounded-2xl border border-white/5 px-6 py-3 backdrop-blur-3xl shadow-2xl">
+				<div class="flex items-center gap-6 bg-black/40 rounded-2xl border border-white/5 px-6 py-3 backdrop-blur-3xl shadow-2xl min-w-[520px]">
 					{#if matchData && currentState}
-						<div class="flex items-center gap-4">
-							<div class="text-right">
-								<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Home</div>
-								<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
+						<div class="flex flex-1 items-center justify-end gap-4">
+							<div class="flex items-center gap-3">
+								<TeamIcon 
+									teamName={matchData.home_team.name} 
+									color={matchData.home_team.color} 
+									size="size-10" 
+									class="drop-shadow-[0_0_10px_{matchData.home_team.color}44]" 
+								/>
+								<div class="text-right">
+									<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Home</div>
+									<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
+								</div>
 							</div>
-							<div class="text-3xl font-black text-white tabular-nums">{currentState.teams.A.score}</div>
+							<div class="w-12 text-center text-3xl font-black text-white tabular-nums">{currentState.teams.A.score}</div>
 						</div>
 
-						<div class="flex flex-col items-center px-6 border-x border-white/10">
+						<div class="flex flex-col items-center w-36 border-x border-white/10">
 							<div class="text-[8px] font-black uppercase tracking-[0.2em] text-[var(--color-brand-primary)] mb-1">Tick</div>
 							<div class="text-xl font-mono font-black text-white tabular-nums">
 								{currentTick}
@@ -238,22 +248,36 @@
 							</div>
 						</div>
 
-						<div class="flex items-center gap-4">
-							<div class="text-3xl font-black text-white tabular-nums">{currentState.teams.B.score}</div>
-							<div class="text-left">
-								<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Away</div>
-								<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
+						<div class="flex flex-1 items-center justify-start gap-4">
+							<div class="w-12 text-center text-3xl font-black text-white tabular-nums">{currentState.teams.B.score}</div>
+							<div class="flex items-center gap-3">
+								<div class="text-left">
+									<div class="text-[8px] font-black uppercase tracking-widest leading-none mb-1 opacity-20">Away</div>
+									<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
+								</div>
+								<TeamIcon 
+									teamName={matchData.away_team.name} 
+									color={matchData.away_team.color} 
+									size="size-10" 
+									class="drop-shadow-[0_0_10px_{matchData.away_team.color}44]" 
+								/>
 							</div>
 						</div>
 					{:else if matchData}
-						<div class="text-right">
-							<div class="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-40">Home</div>
-							<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
+						<div class="flex flex-1 items-center justify-end gap-3">
+							<TeamIcon teamName={matchData.home_team.name} color={matchData.home_team.color} size="size-8 opacity-40" />
+							<div class="text-right">
+								<div class="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-40">Home</div>
+								<div class="text-sm font-black leading-none" style="color: {matchData.home_team.color}">{matchData.home_team.name}</div>
+							</div>
 						</div>
 						<div class="px-3 text-[10px] font-black text-white/10 uppercase tracking-widest">vs</div>
-						<div class="text-left">
-							<div class="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-40">Away</div>
-							<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
+						<div class="flex flex-1 items-center justify-start gap-3">
+							<div class="text-left">
+								<div class="text-[9px] font-black uppercase tracking-widest leading-none mb-1 opacity-40">Away</div>
+								<div class="text-sm font-black leading-none" style="color: {matchData.away_team.color}">{matchData.away_team.name}</div>
+							</div>
+							<TeamIcon teamName={matchData.away_team.name} color={matchData.away_team.color} size="size-8 opacity-40" />
 						</div>
 					{:else}
 						<div class="h-8 w-60 bg-white/5 rounded-lg animate-pulse"></div>

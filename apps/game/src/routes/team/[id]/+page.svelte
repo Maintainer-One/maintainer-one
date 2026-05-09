@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { supabase, getActiveSeason } from '$lib/supabase';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 	import { fade, fly } from 'svelte/transition';
 
 	let teamId = $derived(page.params.id);
@@ -38,8 +39,12 @@
 		}
 		teamData = team;
 
-		// 2. Fetch ALL teams to initialize standings map (required for ELO)
-		const { data: allTeams } = await supabase.from('teams').select('id, name, color');
+		// 2. Fetch ALL teams IN THIS LEAGUE to initialize standings map (required for ELO)
+		const { data: allTeams } = await supabase
+			.from('teams')
+			.select('id, name, color')
+			.eq('league_id', teamData.league_id);
+			
 		if (!allTeams) {
 			isLoading = false;
 			return;
@@ -103,7 +108,7 @@
 			const startTime = new Date(m.scheduled_time).getTime();
 			const endTime = startTime + (leagueMaxTicks * tickRate);
 
-			const isPast = (m.status === 'played' || m.status === 'simulated' || m.status === 'simmed') && nowTime >= endTime;
+			const isPast = (m.status === 'played' || m.status === 'simulated' || m.status === 'simmed') && now >= endTime;
 
 			if (isPast) {
 				// Update Records
@@ -202,8 +207,8 @@
 			
 			<div class="container mx-auto flex h-full items-end p-8 lg:p-12">
 				<div class="flex items-center gap-8" in:fly={{ y: 20, duration: 800 }}>
-					<div class="flex h-32 w-32 items-center justify-center rounded-3xl border-4 shadow-2xl text-5xl font-black" style="background-color: {teamData.color}22; border-color: {teamData.color}44; color: {teamData.color}">
-						{teamData.name.charAt(0)}
+					<div class="flex h-32 w-32 items-center justify-center rounded-3xl border-4 shadow-2xl overflow-hidden bg-black/40" style="border-color: {teamData.color}44;">
+						<TeamIcon teamName={teamData.name} color={teamData.color} size="size-20" class="drop-shadow-[0_0_20px_{teamData.color}66]" />
 					</div>
 					<div class="flex flex-col gap-2">
 						<div class="flex items-center gap-4">
@@ -296,8 +301,13 @@
 						{#each recentMatches as match}
 							<a href="{base}/match/{match.id}" class="flex items-center justify-between rounded-2xl border border-white/5 bg-black/20 p-4 transition-all hover:bg-white/5 hover:border-white/10 group shadow-lg">
 								<div class="flex items-center gap-4">
-									<div class="flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black {match.result === 'W' ? 'bg-emerald-500/10 text-emerald-400' : (match.result === 'L' ? 'bg-rose-500/10 text-rose-400' : 'bg-white/5 text-white/40')}">
-										{match.result}
+									<div class="relative">
+										<div class="flex h-10 w-10 items-center justify-center rounded-xl text-xs font-black {match.result === 'W' ? 'bg-emerald-500/10 text-emerald-400' : (match.result === 'L' ? 'bg-rose-500/20 text-rose-400' : 'bg-white/5 text-white/40')}">
+											{match.result}
+										</div>
+										<div class="absolute -right-2 -bottom-2 bg-black/60 rounded-full p-0.5 border border-white/5">
+											<TeamIcon teamName={match.opponent.name} color={match.opponent.color} size="size-4" />
+										</div>
 									</div>
 									<div class="flex flex-col">
 										<span class="text-xs font-black text-white group-hover:text-[var(--color-brand-primary)] transition-colors">vs {match.opponent.name}</span>
@@ -326,8 +336,8 @@
 									<span class="text-[9px] font-black uppercase tracking-widest text-white/20">{formatTime(match.scheduled_time)}</span>
 								</div>
 								<div class="flex items-center gap-4">
-									<div class="h-10 w-10 rounded-xl flex items-center justify-center text-xs font-black" style="background-color: {match.opponent.color}22; color: {match.opponent.color}; border: 1px solid {match.opponent.color}44">
-										{match.opponent.name.charAt(0)}
+									<div class="h-10 w-10 rounded-xl flex items-center justify-center bg-black/40 border" style="border-color: {match.opponent.color}44">
+										<TeamIcon teamName={match.opponent.name} color={match.opponent.color} size="size-6" />
 									</div>
 									<div class="flex flex-col">
 										<span class="text-[10px] font-bold text-white/20 uppercase tracking-widest leading-none mb-1">Opponent</span>

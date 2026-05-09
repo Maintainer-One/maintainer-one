@@ -59,8 +59,13 @@ async function bootstrap() {
 
     for (const v of variations) {
         try {
-            // Check if team exists
-            const { data: existingTeam } = await supabase.from('teams').select().eq('name', v.name).maybeSingle();
+            // Check if team exists in this league
+            const { data: existingTeam } = await supabase
+                .from('teams')
+                .select()
+                .eq('name', v.name)
+                .eq('league_id', league.id)
+                .maybeSingle();
             
             let team;
             if (existingTeam) {

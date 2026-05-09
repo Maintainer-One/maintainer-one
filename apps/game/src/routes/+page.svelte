@@ -13,7 +13,8 @@
 	let allSeasons = $state<any[]>([]);
 	let selectedSeasonId = $state<string | null>(null);
 	let selectedSeason = $derived(allSeasons.find(s => s.id === selectedSeasonId));
-	let isSeasonOver = $derived(selectedSeason && new Date(selectedSeason.end_date) < new Date());
+	let now = $state(new Date());
+	let isSeasonOver = $derived(selectedSeason && (new Date(selectedSeason.end_date) < now || selectedSeason.status === 'completed'));
 	let standingsResult = $state<any>(null);
 
 	async function fetchDashboardData() {
@@ -51,7 +52,13 @@
 	}
 
 	async function fetchStandingsData(seasonId: string) {
-		const { data: teamsData } = await supabase.from('teams').select('id, name, color, logo_url, logo_icon_url');
+		if (!selectedSeason) return;
+
+		const { data: teamsData } = await supabase
+			.from('teams')
+			.select('id, name, color, logo_url, logo_icon_url')
+			.eq('league_id', selectedSeason.league_id);
+
 		const { data: matchesData } = await supabase
 			.from('matches')
 			.select(`
@@ -75,6 +82,8 @@
 
 	onMount(() => {
 		fetchDashboardData();
+		const interval = setInterval(() => { now = new Date(); }, 1000);
+		return () => clearInterval(interval);
 	});
 </script>
 
@@ -94,13 +103,13 @@
 			<BrandLogo size="size-12" />
 			<div class="flex flex-col">
 				<h1 class="text-white text-3xl font-black tracking-tighter leading-none flex items-center gap-2">
-					<span class="text-[var(--color-brand-secondary)]">COMMAND</span> 
+					<span class="text-[var(--color-brand-secondary)]">MAINTAINER</span> 
 					<span class="text-[var(--color-brand-primary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">
-						CENTER
+						ONE
 					</span>
 				</h1>
 				<div class="flex items-center gap-2 mt-1">
-					<p class="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em]">Live Dashboard</p>
+					<p class="text-[10px] text-white/50 font-bold uppercase tracking-[0.2em]">Dashboard</p>
 					{#if allSeasons.length > 0}
 						<div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/5">
 							<span class="text-[9px] font-black uppercase text-white/30 tracking-widest">Season</span>
@@ -195,7 +204,7 @@
 						<div>
 							<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
 								<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
-							{featuredMatch?.status === 'played' || featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
+							{['played', 'simulated', 'simmed'].includes(featuredMatch?.status) ? 'Latest Match' : 'Upcoming Match'}
 						</div>
 						<h2 class="text-4xl font-black text-white tracking-tighter">
 							{#if featuredMatch}

@@ -4,6 +4,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 	import { runSimulation } from '$lib/simulation';
 	import { fade, slide } from 'svelte/transition';
 
@@ -23,20 +24,25 @@
 	const DEFAULT_TICK_RATE = 750;
 	const MATCH_TICKS = 1000;
 
-	// UI State
+	let mounted = $state(false);
 	let isSidebarOpen = $state(false);
 
 	// Sync state to URL and vice-versa
 	$effect(() => {
-		if (browser) {
-			const mParam = Array.from(selectedMatchIds).join(',');
+		if (browser && mounted) {
+			const mParam = Array.from(selectedMatchIds).sort().join(',');
 			const currentUrl = new URL(location.href);
-			if (mParam) {
-				currentUrl.searchParams.set('m', mParam);
-			} else {
-				currentUrl.searchParams.delete('m');
+			const existingParam = currentUrl.searchParams.get('m') || '';
+			
+			// Only update if the param has actually changed to avoid router initialization issues
+			if (existingParam !== mParam) {
+				if (mParam) {
+					currentUrl.searchParams.set('m', mParam);
+				} else {
+					currentUrl.searchParams.delete('m');
+				}
+				replaceState(currentUrl, page.state);
 			}
-			replaceState(currentUrl, page.state);
 		}
 	});
 
@@ -103,13 +109,22 @@
 		} else {
 			newSet.add(match.id);
 			selectedMatchIds = newSet;
-			if (!matchSims[match.id] && !simulatingMatches.has(match.id)) {
+			
+			// Try to sim if we don't have states OR if we are in PREVIEW mode and match has started
+			const needsSim = !matchSims[match.id] || matchSims[match.id] === 'PREVIEW';
+			const isSimulating = simulatingMatches.has(match.id);
+			
+			if (needsSim && !isSimulating) {
 				simulatingMatches.add(match.id);
 				try {
 					const states = await runSimulation(match);
 					matchSims[match.id] = states;
-				} catch (e) {
-					console.error("Failed to sim match", e);
+				} catch (e: any) {
+					if (e.message?.includes("seed not revealed") || e.message?.includes("secret_seed")) {
+						matchSims[match.id] = 'PREVIEW';
+					} else {
+						console.error("Failed to sim match", e);
+					}
 				} finally {
 					simulatingMatches.delete(match.id);
 				}
@@ -117,7 +132,29 @@
 		}
 	}
 
+	// Auto-upgrade PREVIEW matches once they start
+	$effect(() => {
+		for (const matchId of selectedMatchIds) {
+			const match = availableMatches.find(m => m.id === matchId);
+			if (!match) continue;
+			
+			const startTime = new Date(match.scheduled_time).getTime();
+			if (matchSims[matchId] === 'PREVIEW' && now >= startTime && !simulatingMatches.has(matchId)) {
+				// Only retry every few seconds to avoid hammering
+				const lastAttempt = (match as any)._lastRetry || 0;
+				if (now - lastAttempt > 5000) {
+					(match as any)._lastRetry = now;
+					toggleMatch(match, true);
+				}
+			}
+		}
+	});
+
 	onMount(() => {
+		// Wait for a frame to ensure SvelteKit router is ready
+		requestAnimationFrame(() => {
+			mounted = true;
+		});
 		fetchMatches();
 		clockInterval = window.setInterval(() => {
 			now = Date.now();
@@ -128,24 +165,30 @@
 
 	function getLiveState(matchId: string, scheduledTime: string, config: any) {
 		const states = matchSims[matchId];
-		if (!states || states.length === 0) return null;
-
-		const tickRate = config?.tickRateMs || DEFAULT_TICK_RATE;
 		const startTime = new Date(scheduledTime).getTime();
 		const elapsed = now - startTime;
+		const diff = Math.abs(elapsed);
+		const h = Math.floor(diff / 3600000);
+		const m = Math.floor((diff % 3600000) / 60000);
+		const s = Math.floor((diff % 60000) / 1000);
+		const countdown = h > 0 ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
 
-		if (elapsed < 0) {
-			// Match hasn't started yet
-			const diff = Math.abs(elapsed);
-			const h = Math.floor(diff / 3600000);
-			const m = Math.floor((diff % 3600000) / 60000);
-			const s = Math.floor((diff % 60000) / 1000);
-			const status = h > 0 ? `Starts in ${h}h ${m}m ${s}s` : `Starts in ${m}m ${s}s`;
-			return { state: states[0], tick: 0, status };
+		if (states === 'PREVIEW' || (!states && elapsed < 0)) {
+			if (elapsed >= 0) {
+				return { state: null, tick: 0, status: `Awaiting Broadcast...`, isPreview: true };
+			}
+			return { state: null, tick: 0, status: `Starts in ${countdown}`, isPreview: true };
 		}
 
+		if (!states || states.length === 0) return null;
+
+		if (elapsed < 0) {
+			return { state: states[0], tick: 0, status: `Starts in ${countdown}` };
+		}
+
+		const tickRate = config?.tickRateMs || DEFAULT_TICK_RATE;
 		const tick = Math.floor(elapsed / tickRate);
-		const maxTick = states.length - 1;
+		const maxTick = (states as any[]).length - 1;
 
 		if (tick >= maxTick) {
 			return { state: states[maxTick], tick: maxTick, status: 'Final' };
@@ -210,8 +253,8 @@
 				</div>
 			{:else}
 				<div 
-					class="grid gap-6 auto-rows-fr max-w-screen-2xl mx-auto h-full"
-					style="grid-template-columns: repeat(auto-fit, minmax({selectedMatches.length <= 4 ? '400px' : '300px'}, 1fr));"
+					class="grid gap-8 max-w-screen-2xl mx-auto"
+					style="grid-template-columns: repeat(auto-fit, minmax({selectedMatches.length <= 4 ? '500px' : '350px'}, 1fr));"
 				>
 					{#each selectedMatches as match (match.id)}
 						{@const liveData = getLiveState(match.id, match.scheduled_time, match.seasons?.protocol_config ?? match.leagues?.protocol_config)}
@@ -220,48 +263,77 @@
 						
 						<a 
 							href="{base}/match/{match.id}?returnTo={returnUrl}" 
-							class="group relative flex flex-col rounded-3xl border border-white/5 bg-black/40 shadow-2xl overflow-hidden transition-all hover:scale-[1.02] hover:border-[var(--color-brand-primary)]/30 hover:shadow-[0_0_30px_rgba(5,150,105,0.15)]"
+							class="group relative flex flex-col rounded-[2.5rem] border border-white/5 bg-black/40 shadow-2xl overflow-hidden transition-all hover:scale-[1.01] hover:border-[var(--color-brand-primary)]/30 hover:shadow-[0_0_40px_rgba(5,150,105,0.1)]"
 							transition:fade={{duration: 200}}
 						>
-							<!-- Match Info Header -->
-							<div class="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-								<div class="flex items-center gap-3">
-									<div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10">
-										<span class="text-sm font-black" style="color: {match.home_team.color}">{liveData?.state?.teams.A.score ?? 0}</span>
-										<span class="text-white/20 text-[10px]">-</span>
-										<span class="text-sm font-black" style="color: {match.away_team.color}">{liveData?.state?.teams.B.score ?? 0}</span>
-									</div>
-								</div>
-								
-								<div class="flex flex-col items-end gap-1">
-									<div class="flex gap-2">
-										<div class="px-2 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest" style="color: {match.home_team.color}">{match.home_team.name}</div>
-										<div class="px-2 py-1 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[9px] font-black tracking-widest" style="color: {match.away_team.color}">{match.away_team.name}</div>
-									</div>
-									{#if liveData}
-										{#if liveData.status === 'Live'}
-											<div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/20 text-red-400 border border-red-500/30 text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md">
-												<span class="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse"></span>
-												Tick {liveData.tick}
-											</div>
-										{:else}
-											<div class="px-2 py-1 rounded-md bg-white/10 text-white/40 border border-white/10 text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md">
-												{liveData.status}
-											</div>
-										{/if}
-									{:else}
-										<div class="px-2 py-1 rounded-md bg-white/10 text-white/40 border border-white/10 text-[8px] font-black uppercase tracking-[0.2em] backdrop-blur-md animate-pulse">
-											Loading...
+							<!-- Header Unit (Status + Score) -->
+							<div class="w-full pt-2 flex flex-col items-center bg-black/20 gap-1 px-6 pointer-events-none z-20">
+								<!-- Status Header Pill -->
+								{#if liveData}
+									<div class="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5 shadow-sm" in:fade>
+										<div class="flex items-center gap-2">
+											{#if liveData.status === 'Live'}
+												<div class="flex items-center gap-1.5">
+													<span class="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+													<span class="text-[8px] font-black text-rose-500 uppercase tracking-[0.2em]">Live</span>
+												</div>
+												<div class="w-px h-2 bg-white/10"></div>
+												<span class="text-[9px] font-black tabular-nums text-white/70 uppercase tracking-widest">Tick {liveData.tick}</span>
+											{:else}
+												<span class="text-[8px] font-black text-white/40 uppercase tracking-[0.2em]">{liveData.status}</span>
+											{/if}
 										</div>
-									{/if}
+									</div>
+								{/if}
+
+								<!-- Scoreboard Bar -->
+								<div class="flex items-center gap-0.5 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-2xl">
+									<!-- Home Team -->
+									<div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl" style="background-color: {match.home_team.color}11">
+										<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-5" />
+										<span class="text-sm font-black tabular-nums" style="color: {match.home_team.color}">{liveData?.state?.teams.A.score ?? 0}</span>
+									</div>
+									
+									<div class="w-px h-6 bg-white/10 mx-0.5"></div>
+									
+									<!-- Away Team -->
+									<div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl" style="background-color: {match.away_team.color}11">
+										<span class="text-sm font-black tabular-nums" style="color: {match.away_team.color}">{liveData?.state?.teams.B.score ?? 0}</span>
+										<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-5" />
+									</div>
 								</div>
 							</div>
 
 							<!-- Game Render -->
-							<div class="flex-1 relative bg-black/20 flex items-center justify-center p-4">
+							<div class="flex-1 w-full relative bg-black/20 flex items-center justify-center p-6 pt-2">
 								{#if liveData && liveData.state}
 									<div class="w-full aspect-square pointer-events-none max-h-full">
 										<ReplayGrid state={liveData.state} {playSpeed} showControlMap={false} />
+									</div>
+								{:else if liveData?.isPreview}
+									<div class="flex flex-col items-center gap-8 text-center" in:fade>
+										<div class="flex items-center gap-12">
+											<div class="flex flex-col items-center gap-3">
+												<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-16" />
+												<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.home_team.name}</div>
+											</div>
+											<div class="text-2xl font-black text-white/10 tracking-tighter italic">VS</div>
+											<div class="flex flex-col items-center gap-3">
+												<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-16" />
+												<div class="text-[10px] font-black uppercase tracking-widest text-white/40">{match.away_team.name}</div>
+											</div>
+										</div>
+										<div class="space-y-1">
+											<div class="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">Match Preview</div>
+											<div class="text-2xl font-black text-white tabular-nums tracking-tight">
+												{liveData.status.replace('Starts in ', '')}
+											</div>
+										</div>
+									</div>
+								{:else}
+									<div class="flex flex-col items-center gap-4">
+										<div class="h-12 w-12 rounded-full border-4 border-white/5 border-t-[var(--color-brand-primary)] animate-spin"></div>
+										<div class="text-[10px] font-black uppercase tracking-widest text-white/20">Preparing Simulation...</div>
 									</div>
 								{/if}
 							</div>

@@ -17,7 +17,7 @@
 	}
 </script>
 
-<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
+<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl overflow-hidden" data-component="ReplayGrid">
 	
 	<!-- Background Elements (Clipped to border radius) -->
 	<div class="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
@@ -54,7 +54,7 @@
                 height: {getPos(pz.position).height};
             "
 		>
-			<div class="h-4/5 w-4/5 animate-pulse rounded-xl bg-[var(--color-brand-primary)]/10 shadow-[0_0_25px_rgba(5,150,105,0.4)] border border-[var(--color-brand-primary)]/40 flex flex-col items-center justify-center relative">
+			<div class="h-3/4 w-3/4 animate-pulse rounded-xl bg-[var(--color-brand-primary)]/10 shadow-[0_0_25px_rgba(5,150,105,0.4)] border border-[var(--color-brand-primary)]/40 flex flex-col items-center justify-center relative">
 				<span class="text-[10px] font-black text-[var(--color-brand-secondary)] tracking-widest uppercase">Zone</span>
 				{#if pz.age !== undefined}
 					<span class="absolute -top-2 -right-2 text-[8px] font-black bg-[var(--color-brand-primary)] text-black rounded-full w-4 h-4 flex items-center justify-center shadow-lg">{pz.age}</span>
@@ -76,7 +76,7 @@
             "
 		>
 			<div
-				class="relative flex h-4/5 w-4/5 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md transition-colors duration-300"
+				class="relative flex h-3/4 w-3/4 items-center justify-center rounded-full border-2 shadow-lg backdrop-blur-md transition-colors duration-300"
 				style="border-color: {state.teams[player.team].color}; background-color: {state.teams[player.team].color}33; color: {state.teams[player.team].color}; box-shadow: 0 0 10px {state.teams[player.team].color}33;"
 			>
 				<span class="text-[10px] font-black uppercase">{state.teams[player.team].name[0]}{player.id.slice(1)}</span>
@@ -87,7 +87,7 @@
 				
 				<!-- Team Indicator Glow -->
 				<div 
-					class="absolute -inset-1.5 -z-10 animate-pulse rounded-full opacity-20"
+					class="absolute -inset-1 -z-10 animate-pulse rounded-full opacity-20"
 					style="background-color: {state.teams[player.team].color}"
 				>
                 </div>
@@ -133,7 +133,11 @@
                     Match Concluded
                 </div>
                 <h2 class="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">
-                    <span style="color: {state.teams[state.winner].color}">{state.teams[state.winner].name}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
+                    {#if state.winner && state.teams[state.winner]}
+                        <span style="color: {state.teams[state.winner].color}">{state.teams[state.winner].name}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
+                    {:else}
+                        <span class="text-[var(--color-brand-primary)]">Match Over</span>
+                    {/if}
                 </h2>
                 <div class="mt-6 flex flex-col items-center gap-1">
                     <p class="text-white/40 font-bold uppercase tracking-[0.2em] text-[10px]">Capture complete</p>

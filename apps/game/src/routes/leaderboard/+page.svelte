@@ -26,10 +26,11 @@
 			return;
 		}
 
-		// 2. Fetch all teams
+		// 2. Fetch all teams in THIS LEAGUE
 		const { data: teamsData, error: teamsError } = await supabase
 			.from('teams')
-			.select('id, name, color');
+			.select('id, name, color')
+			.eq('league_id', activeSeason.league_id);
 
 		if (teamsError) {
 			console.error('Error fetching teams:', teamsError);

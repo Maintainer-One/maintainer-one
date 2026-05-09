@@ -63,7 +63,7 @@
 		<!-- Hero Section -->
 		<div class="flex flex-col items-center justify-between gap-8 md:flex-row">
 			<div class="flex flex-col items-center gap-6 md:items-start">
-				<div class="inline-flex items-center gap-3 rounded-full border-[var(--team-color)]/30 bg-[var(--team-color)]/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-[var(--team-color)] border">
+				<div class="inline-flex items-center gap-3 rounded-full border-[var(--color-gold)]/30 bg-[var(--color-gold)]/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-[var(--color-gold)] border shadow-[0_0_15px_rgba(251,191,36,0.1)]">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 					{season.name} Champions
 				</div>
@@ -150,10 +150,10 @@
 			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{#each topAwards as award}
 					<div 
-						class="group relative flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 hover:border-[var(--team-color)]/30 {award.players.length === 1 ? 'border-[var(--team-color)]/20 bg-[var(--team-color)]/5' : ''}"
+						class="group relative flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/5 p-5 transition-all hover:bg-white/10 hover:border-[var(--color-gold)]/30 {award.players.length === 1 ? 'border-[var(--color-gold)]/20 bg-[var(--color-gold)]/5' : ''}"
 					>
 						{#if award.players.length === 1}
-							<div class="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-[var(--team-color)] text-[10px] font-black text-black shadow-lg">
+							<div class="absolute -right-2 -top-2 flex size-6 items-center justify-center rounded-full bg-[var(--color-gold)] text-[10px] font-black text-black shadow-lg">
 								★
 							</div>
 						{/if}

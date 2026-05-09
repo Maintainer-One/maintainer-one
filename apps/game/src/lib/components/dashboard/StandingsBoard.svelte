@@ -8,7 +8,7 @@
 	let teams: any[] = $state([]);
 	let isLoading = $state(true);
 
-	let isSeasonOver = $derived(season && new Date(season.end_date) < new Date());
+	let isSeasonOver = $derived(season && (new Date(season.end_date) < new Date() || season.status === 'completed'));
 
 	async function fetchStandings() {
 		if (!season) {
@@ -17,10 +17,11 @@
 			return;
 		}
 
-		// 2. Fetch all teams
+		// 2. Fetch all teams in THIS LEAGUE
 		const { data: teamsData, error: teamsError } = await supabase
 			.from('teams')
-			.select('id, name, color, logo_url, logo_icon_url');
+			.select('id, name, color, logo_url, logo_icon_url')
+			.eq('league_id', season.league_id);
 
 		if (teamsError) {
 			console.error('Error fetching teams:', teamsError);
@@ -69,7 +70,7 @@
 			<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[var(--color-brand-primary)]"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
 			{season ? season.name : 'Standings'}
 		</h2>
-		<a href="/leaderboard" class="text-sm font-semibold tracking-wider uppercase text-[var(--color-brand-secondary)]/50 hover:text-[var(--color-brand-primary)] transition-colors">Full Leaderboard</a>
+		<a href="/leaderboard" class="text-sm font-semibold tracking-wider uppercase text-[var(--color-brand-secondary)]/50 hover:text-[var(--color-brand-primary)] transition-colors">View Full</a>
 	</div>
 
 	<div class="grid gap-3 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-1">
@@ -85,7 +86,7 @@
 					</div>
 					<div class="flex-1 relative">
 						{#if i === 0 && isSeasonOver}
-							<div class="absolute -right-2 -top-2 z-10 px-2 py-0.5 rounded-full bg-[var(--color-brand-primary)] text-[8px] font-black text-black uppercase tracking-tighter shadow-lg ring-1 ring-black/10">
+							<div class="absolute -right-2 -top-2 z-10 px-2 py-0.5 rounded-full bg-[#fbbf24] text-[8px] font-black text-black uppercase tracking-tighter shadow-lg ring-1 ring-black/10">
 								CHAMPION
 							</div>
 						{/if}
