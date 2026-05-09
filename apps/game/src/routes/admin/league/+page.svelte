@@ -42,6 +42,8 @@
 	let isGeneratingSchedule = $state(false);
 	let isSimulatingMatch = $state<string | null>(null);
 
+	let selectedSeason = $derived(seasons.find(s => s.id === selectedSeasonId));
+
 	// Bulk Actions & Copy/Paste State
 	let selectedMatchIds = $state<Set<string>>(new Set());
 	let clipboardTime = $state<string | null>(null);
@@ -142,6 +144,14 @@
 		}
 	}
 
+	async function handleSeasonChange(event: Event) {
+		const select = event.target as HTMLSelectElement;
+		selectedSeasonId = select.value;
+		if (selectedSeasonId) {
+			await loadMatches(selectedSeasonId);
+		}
+	}
+
 
 
 	function calculateCodeLockTime(scheduledIso: string, offsetMinutes: number) {
@@ -180,6 +190,22 @@
 				scheduled_time: scheduledIso, 
 				code_lock_time: codeLockIso,
 				status: determineNewStatus(match, scheduledIso)
+			})
+			.eq('id', matchId);
+
+		if (!error) {
+			await loadMatches(selectedSeasonId!);
+		} else {
+			modal.alert('Error', error.message);
+		}
+	}
+
+	async function updateCodeLockTime(matchId: string, newTime: string) {
+		const lockIso = new Date(newTime).toISOString();
+		const { error } = await supabase
+			.from('matches')
+			.update({ 
+				code_lock_time: lockIso
 			})
 			.eq('id', matchId);
 
@@ -559,6 +585,22 @@
 					<svg class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-brand-primary)] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
 				</div>
 			{/if}
+
+			{#if activeTab === 'schedule' && seasons.length > 0}
+				<div class="relative">
+					<select 
+						value={selectedSeasonId} 
+						onchange={handleSeasonChange}
+						class="appearance-none bg-black/40 border border-white/10 rounded-xl pl-4 pr-10 py-3 text-[10px] font-black uppercase tracking-widest text-white/60 outline-none focus:border-white/20 transition-colors cursor-pointer"
+					>
+						{#each seasons as season}
+							<option value={season.id} class="text-black">Season {season.season_number}: {season.name}</option>
+						{/each}
+					</select>
+					<svg class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+				</div>
+			{/if}
+
 			{#if activeTab === 'schedule'}
 				<a 
 					href="{base}/admin/league/season/new?league={selectedLeagueId}"
@@ -587,69 +629,36 @@
 	</div>
 
 	{#if activeTab === 'schedule'}
-		<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
-		<!-- Sidebar: Season Selection -->
-		<aside class="space-y-6">
-			<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Seasons</h3>
-			
-
-			<div class="space-y-2">
-				{#each seasons as season}
-					{@const nowTime = new Date().getTime()}
-					{@const startTime = new Date(season.start_date).getTime()}
-					{@const endTime = season.end_date ? new Date(season.end_date).getTime() : startTime + 14 * 24 * 60 * 60 * 1000}
-					{@const isCompleted = nowTime > endTime}
-					{@const isActive = nowTime >= startTime && nowTime <= endTime}
-					<div class="group relative">
-						<button 
-							onclick={() => {
-								selectedSeasonId = season.id;
-								loadMatches(season.id);
-							}}
-							class="w-full flex items-end justify-between p-4 rounded-xl border transition-all {selectedSeasonId === season.id ? 'bg-[var(--color-brand-primary)]/10 border-[var(--color-brand-primary)]/30 text-white' : 'bg-black/20 border-white/5 text-white/40 hover:bg-black/40'}"
-						>
-							<div class="flex flex-col items-start">
-								<span class="text-[10px] font-black uppercase tracking-widest">Season {season.season_number}</span>
-								<span class="text-xs font-bold">{season.name}</span>
-								<div class="flex items-center gap-2 mt-1 opacity-40">
-									<span class="text-[8px] font-black uppercase">{new Date(season.start_date).toLocaleDateString()}</span>
-									<span class="text-[8px] font-black opacity-20">→</span>
-									<span class="text-[8px] font-black uppercase">{season.end_date ? new Date(season.end_date).toLocaleDateString() : '??'}</span>
-									<span class="text-[8px] font-black ml-1 bg-white/5 px-1 rounded">{season.game_slots?.length || season.game_density} SLOTS</span>
-								</div>
-							</div>
-							<div class="px-2 py-0.5 rounded {isActive ? 'bg-emerald-500/20 text-emerald-400' : isCompleted ? 'bg-white/10 text-white/40' : 'bg-black/40 text-[var(--color-brand-primary)]'} text-[8px] font-black uppercase tracking-widest">
-								{isActive ? 'ACTIVE' : isCompleted ? 'COMPLETED' : 'UPCOMING'}
-							</div>
-						</button>
-						
-						<div class="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all z-10">
-							<a 
-								href="{base}/admin/league/season/new?league={selectedLeagueId}&template={season.id}"
-								onclick={(e) => e.stopPropagation()}
-								class="p-1.5 rounded-lg bg-[var(--color-brand-primary)]/10 text-[var(--color-brand-primary)]/40 hover:bg-[var(--color-brand-primary)] hover:text-black transition-all"
-								title="Use as Template"
-							>
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-							</a>
-							<button 
-								onclick={(e) => {
-									e.stopPropagation();
-									deleteSeason(season.id);
-								}}
-								class="p-1.5 rounded-lg bg-red-500/10 text-red-500/40 hover:bg-red-500 hover:text-white transition-all"
-								title="Delete Season"
-							>
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-							</button>
+		<div class="max-w-6xl mx-auto space-y-8">
+			{#if selectedSeason}
+				<div class="p-6 rounded-3xl bg-black/40 border border-white/5 backdrop-blur-3xl flex items-center justify-between shadow-2xl">
+					<div class="flex flex-col">
+						<div class="flex items-center gap-3">
+							<span class="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">Season {selectedSeason.season_number}</span>
+							<div class="h-1 w-1 rounded-full bg-white/20"></div>
+							<span class="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{new Date(selectedSeason.start_date).toLocaleDateString()} → {selectedSeason.end_date ? new Date(selectedSeason.end_date).toLocaleDateString() : '??'}</span>
 						</div>
+						<h2 class="text-2xl font-black uppercase tracking-tighter text-white mt-1">{selectedSeason.name}</h2>
 					</div>
-				{/each}
-			</div>
-		</aside>
 
-		<!-- Main: Match Management -->
-		<div class="lg:col-span-2 space-y-8">
+					<div class="flex items-center gap-2">
+						<a 
+							href="{base}/admin/league/season/new?league={selectedLeagueId}&template={selectedSeason.id}"
+							class="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 hover:bg-white/10 hover:text-white transition-all"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+							Duplicate Template
+						</a>
+						<button 
+							onclick={() => deleteSeason(selectedSeason!.id)}
+							class="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/5 border border-red-500/10 text-[10px] font-black uppercase tracking-widest text-red-500/60 hover:bg-red-500/20 hover:text-red-500 transition-all"
+						>
+							<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+							Delete
+						</button>
+					</div>
+				</div>
+			{/if}
 			{#if selectedSeasonId}
 				<div class="flex items-center justify-between">
 					<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Match Management</h3>
@@ -733,7 +742,7 @@
 						</div>
 					{/if}
 
-					<div class="rounded-3xl border border-white/5 bg-black/20 backdrop-blur-xl overflow-hidden shadow-2xl">
+					<div class="rounded-3xl border border-white/5 bg-black/20 backdrop-blur-xl overflow-x-auto shadow-2xl">
 						<table class="w-full text-left">
 							<thead>
 								<tr class="border-b border-white/5 bg-white/5">
@@ -746,9 +755,9 @@
 										/>
 									</th>
 									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">Matchup</th>
-									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">Scheduled Time</th>
-									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">Status</th>
-									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20 text-right">Action</th>
+									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">Code Lock (Sim)</th>
+									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20">Broadcast (Start)</th>
+									<th class="px-6 py-4 text-[9px] font-black uppercase tracking-widest text-white/20 text-right">Status</th>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-white/5">
@@ -763,32 +772,44 @@
 											/>
 										</td>
 										<td class="px-6 py-4">
-											<div class="flex flex-col gap-1">
-												<div class="flex items-center gap-2 text-xs font-bold text-white">
-													<span style="color: {match.home_team.color || 'white'}">{match.home_team.name}</span>
-													<span class="text-white/10 uppercase text-[9px]">vs</span>
-													<span style="color: {match.away_team.color || 'white'}">{match.away_team.name}</span>
+											<div class="flex items-center gap-4 min-w-[240px]">
+												<div class="flex-1 flex flex-col items-end text-right">
+													<span class="text-xs font-bold" style="color: {match.home_team.color || 'white'}">{match.home_team.name}</span>
+													{#if match.status === 'played' || (match.status === 'simmed' && match.home_score !== null)}
+														<span class="text-[10px] font-black text-white/40 mt-0.5">{match.home_score}</span>
+													{/if}
 												</div>
-												{#if match.status === 'played' || (match.status === 'simmed' && match.home_score !== null)}
-													<div class="text-[10px] font-black text-[var(--color-brand-primary)]">
-														{match.home_score} - {match.away_score}
-													</div>
-												{/if}
+												
+												<div class="flex flex-col items-center">
+													<span class="text-white/10 uppercase text-[8px] font-black">VS</span>
+												</div>
+
+												<div class="flex-1 flex flex-col items-start">
+													<span class="text-xs font-bold" style="color: {match.away_team.color || 'white'}">{match.away_team.name}</span>
+													{#if match.status === 'played' || (match.status === 'simmed' && match.away_score !== null)}
+														<span class="text-[10px] font-black text-white/40 mt-0.5">{match.away_score}</span>
+													{/if}
+												</div>
 											</div>
 										</td>
 										<td class="px-6 py-4">
 											<div class="flex items-center gap-2 group">
-												<div class="flex flex-col">
-													<input 
-														type="datetime-local" 
-														value={new Date(new Date(match.scheduled_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)}
-														onchange={(e) => updateMatchTime(match.id, e.currentTarget.value)}
-														class="bg-transparent border-none text-[10px] font-bold text-white/40 focus:text-white focus:outline-none cursor-pointer p-0"
-													/>
-													{#if match.code_lock_time}
-														<span class="text-[8px] font-black text-white/20 uppercase mt-1">Locks: {new Date(match.code_lock_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-													{/if}
-												</div>
+												<input 
+													type="datetime-local" 
+													value={match.code_lock_time ? new Date(new Date(match.code_lock_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : ''}
+													onchange={(e) => updateCodeLockTime(match.id, e.currentTarget.value)}
+													class="bg-transparent border-none text-[10px] font-bold text-white/20 focus:text-white focus:outline-none cursor-pointer p-0"
+												/>
+											</div>
+										</td>
+										<td class="px-6 py-4">
+											<div class="flex items-center gap-2 group">
+												<input 
+													type="datetime-local" 
+													value={new Date(new Date(match.scheduled_time).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 16)}
+													onchange={(e) => updateMatchTime(match.id, e.currentTarget.value)}
+													class="bg-transparent border-none text-[10px] font-bold text-white/40 focus:text-white focus:outline-none cursor-pointer p-0"
+												/>
 												<button 
 													onclick={() => clipboardTime = match.scheduled_time}
 													class="text-white/20 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
@@ -796,41 +817,24 @@
 												>
 													<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
 												</button>
-												{#if clipboardTime}
-													<button 
-														onclick={() => updateMatchTime(match.id, clipboardTime!)}
-														class="text-white/20 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
-														title="Paste Time"
-													>
-														<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-													</button>
-												{/if}
 											</div>
 										</td>
-										<td class="px-6 py-4">
-											<span class="text-[9px] font-black uppercase tracking-widest {
-												match.status === 'played' ? 'text-emerald-400' : 
-												match.status === 'simmed' ? 'text-blue-400' : 
-												match.status === 'scheduled' ? 'text-amber-400' : 
-												'text-white/40'
-											}">
-												{match.status}
-											</span>
-										</td>
 										<td class="px-6 py-4 text-right">
-											{#if match.status === 'pending' || match.status === 'scheduled'}
-												<button 
-													onclick={() => triggerSimulation(match.id)}
-													disabled={isSimulatingMatch === match.id}
-													class="text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:underline disabled:opacity-50"
-												>
-													{isSimulatingMatch === match.id ? 'Simulating...' : 'Run Sim Now'}
-												</button>
-											{:else}
-												<a href="{base}/match/{match.id}" class="text-[9px] font-black uppercase tracking-widest text-white/20 hover:text-white transition-colors">
-													View Replay
-												</a>
-											{/if}
+											<div class="flex flex-col gap-1 items-end">
+												<span class="text-[9px] font-black uppercase tracking-widest {
+													match.status === 'played' ? 'text-emerald-400' : 
+													match.status === 'simmed' ? 'text-blue-400' : 
+													match.status === 'scheduled' ? 'text-amber-400' : 
+													'text-white/40'
+												}">
+													{match.status}
+												</span>
+												{#if match.status === 'played' || (match.status === 'simmed' && match.home_score !== null)}
+													<a href="{base}/match/{match.id}" class="text-[8px] font-black uppercase tracking-widest text-white/20 hover:text-[var(--color-brand-primary)] transition-colors">
+														View Replay →
+													</a>
+												{/if}
+											</div>
 										</td>
 									</tr>
 								{/each}
@@ -848,7 +852,6 @@
 				</div>
 			{/if}
 		</div>
-	</div>
 	{:else if activeTab === 'franchises'}
 		<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12">
 			<!-- Teams Sidebar -->

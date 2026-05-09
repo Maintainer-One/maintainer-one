@@ -10,6 +10,8 @@
 		points = 0,
 		statPoints = 0,
 		statAwards = [],
+		logo_url = null,
+		logo_icon_url = null,
 	} = $props<{
 		id: string;
 		name?: string;
@@ -19,6 +21,8 @@
 		points?: number;
 		statPoints?: number;
 		statAwards?: string[];
+		logo_url?: string | null;
+		logo_icon_url?: string | null;
 	}>();
 
 	// Derive a gradient using the primary color
@@ -34,10 +38,16 @@
 		<div class="mb-3 flex items-center justify-between">
 			<div class="flex items-center gap-3">
 				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg font-bold shadow-sm"
+					class="flex h-10 w-10 items-center justify-center rounded-lg font-bold shadow-sm overflow-hidden"
 					style="background-color: {color}44; border: 1px solid {color}88; color: {color}"
 				>
-					{name.charAt(0)}
+					{#if logo_icon_url}
+						<img src={logo_icon_url} alt={name} class="h-full w-full object-cover" />
+					{:else if logo_url}
+						<img src={logo_url} alt={name} class="h-full w-full object-cover" />
+					{:else}
+						{name.charAt(0)}
+					{/if}
 				</div>
 				<h3 class="text-lg font-bold tracking-tight text-white">{name}</h3>
 			</div>

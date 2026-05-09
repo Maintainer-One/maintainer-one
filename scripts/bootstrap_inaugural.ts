@@ -47,12 +47,12 @@ async function bootstrap() {
 
     // 2. Load and create teams with variations
     const variations = [
-        { name: 'Amber Seekers', file: 'greedy_v1.ts', color: '#FFBF00' },
-        { name: 'Beige Blockers', file: 'defensive_v1.ts', color: '#F5F5DC' },
-        { name: 'Crimson Strikers', file: 'aggressive_v1.ts', color: '#DC143C' },
-        { name: 'Denim Drifters', file: 'random_v1.ts', color: '#1560BD' },
-        { name: 'Emerald Pausers', file: 'patient_v1.ts', color: '#50C878' },
-        { name: 'Fuchsia Soloists', file: 'staggered_v1.ts', color: '#FF00FF' }
+        { name: 'Amber Seekers', file: 'greedy_v1.ts', color: '#FFBF00', logo: '/logos/amber_seekers.png', icon: '/logos/icons/amber_seekers.png' },
+        { name: 'Beige Blockers', file: 'defensive_v1.ts', color: '#F5F5DC', logo: '/logos/beige_blockers.png', icon: '/logos/icons/beige_blockers.png' },
+        { name: 'Crimson Strikers', file: 'aggressive_v1.ts', color: '#DC143C', logo: '/logos/crimson_strikers.png', icon: '/logos/icons/crimson_strikers.png' },
+        { name: 'Denim Drifters', file: 'random_v1.ts', color: '#1560BD', logo: '/logos/denim_drifters.png', icon: '/logos/icons/denim_drifters.png' },
+        { name: 'Emerald Pausers', file: 'patient_v1.ts', color: '#50C878', logo: '/logos/emerald_pausers.png', icon: '/logos/icons/emerald_pausers.png' },
+        { name: 'Fuchsia Soloists', file: 'staggered_v1.ts', color: '#FF00FF', logo: '/logos/fuchsia_soloists.png', icon: '/logos/icons/fuchsia_soloists.png' }
     ];
 
     const teams: any[] = [];
@@ -65,10 +65,12 @@ async function bootstrap() {
             let team;
             if (existingTeam) {
                 team = existingTeam;
+                // Update color and logo just in case
+                await supabase.from('teams').update({ color: v.color, logo_url: v.logo, logo_icon_url: v.icon }).eq('id', team.id);
             } else {
                 const { data: newTeam, error: teamError } = await supabase
                     .from('teams')
-                    .insert({ name: v.name, league_id: league.id, color: v.color })
+                    .insert({ name: v.name, league_id: league.id, color: v.color, logo_url: v.logo, logo_icon_url: v.icon })
                     .select()
                     .single();
                 if (teamError) throw teamError;

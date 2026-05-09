@@ -3,7 +3,7 @@
 	import { onMount } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 
-	let { season = null }: { season?: any } = $props();
+	let { season = null } = $props<{ season?: any }>();
 	let events: string[] = $state([]);
 	let internalSeason = $state<any>(null);
 	let activeSeason = $derived(season || internalSeason);
@@ -22,6 +22,12 @@
 		const { data, error } = await supabase
 			.from('matches')
 			.select(`
+				id,
+				home_team_id,
+				away_team_id,
+				winner_id,
+				status,
+				stats,
 				home_score,
 				away_score,
 				scheduled_time,
@@ -38,6 +44,8 @@
 			console.error('Error fetching ticker events:', error);
 			return;
 		}
+
+		const { data: teamsData } = await supabase.from('teams').select('id, name, color');
 
 		const nowTime = new Date().getTime();
 		const validMatches = (data || []).filter(m => {
@@ -56,6 +64,14 @@
 		});
 
 		const isPast = activeSeason.end_date && new Date(activeSeason.end_date).getTime() < nowTime;
+
+		if (isPast) {
+			const { calculateSeasonStandings } = await import('$lib/utils/standings');
+			const result = calculateSeasonStandings(teamsData || [], data || []);
+			if (result.winner) {
+				events.unshift(`🏆 ${activeSeason.name.toUpperCase()} CHAMPIONS: ${result.winner.name.toUpperCase()} (${result.winner.record}) 🏆`);
+			}
+		}
 
 		if (events.length === 0) {
 			if (isPast) {
@@ -83,10 +99,15 @@
 		if (activeSeason) fetchRecentEvents();
 	});
 
+	let duration = $derived(Math.max(20, events.length * 10)); // ~10s per event, min 20s
+
 </script>
 
 <div class="relative flex overflow-x-hidden border-b border-white/10 bg-black/40 py-2 text-sm">
-	<div class="animate-marquee whitespace-nowrap text-[var(--color-brand-secondary)]/70">
+	<div 
+		class="animate-marquee whitespace-nowrap text-[var(--color-brand-secondary)]/70"
+		style="animation-duration: {duration}s"
+	>
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
 				<BrandLogo size="size-4" />
@@ -96,7 +117,10 @@
 	</div>
 	
 	<!-- Duplicate for seamless looping -->
-	<div class="absolute top-2 animate-marquee2 whitespace-nowrap text-[var(--color-brand-secondary)]/70">
+	<div 
+		class="absolute top-2 animate-marquee2 whitespace-nowrap text-[var(--color-brand-secondary)]/70"
+		style="animation-duration: {duration}s"
+	>
 		{#each events as event}
 			<span class="mx-8 inline-flex items-center gap-2">
 				<BrandLogo size="size-4" />
@@ -127,9 +151,9 @@
 	}
 
 	.animate-marquee {
-		animation: marquee 35s linear infinite;
+		animation: marquee 60s linear infinite;
 	}
 	.animate-marquee2 {
-		animation: marquee2 35s linear infinite;
+		animation: marquee2 60s linear infinite;
 	}
 </style>

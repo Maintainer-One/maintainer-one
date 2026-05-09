@@ -6,11 +6,15 @@
 	import StandingsBoard from '$lib/components/dashboard/StandingsBoard.svelte';
 	import MatchFeed from '$lib/components/dashboard/MatchFeed.svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
+	import SeasonChampion from '$lib/components/dashboard/SeasonChampion.svelte';
+	import { calculateSeasonStandings } from '$lib/utils/standings';
 
 	let featuredMatch = $state<any>(null);
 	let allSeasons = $state<any[]>([]);
 	let selectedSeasonId = $state<string | null>(null);
 	let selectedSeason = $derived(allSeasons.find(s => s.id === selectedSeasonId));
+	let isSeasonOver = $derived(selectedSeason && new Date(selectedSeason.end_date) < new Date());
+	let standingsResult = $state<any>(null);
 
 	async function fetchDashboardData() {
 		const { data: seasons } = await supabase
@@ -46,10 +50,28 @@
 		featuredMatch = data;
 	}
 
-	$effect(() => {
-		if (selectedSeasonId) fetchFeaturedMatch(selectedSeasonId);
-	});
+	async function fetchStandingsData(seasonId: string) {
+		const { data: teamsData } = await supabase.from('teams').select('id, name, color, logo_url, logo_icon_url');
+		const { data: matchesData } = await supabase
+			.from('matches')
+			.select(`
+				id, home_team_id, away_team_id, home_score, away_score, scheduled_time, status, stats, winner_id,
+				leagues (protocol_version, protocol_config),
+				seasons (protocol_version, protocol_config)
+			`)
+			.in('status', ['simulated', 'simmed', 'played'])
+			.eq('season_id', seasonId)
+			.order('scheduled_time', { ascending: true });
 
+		standingsResult = calculateSeasonStandings(teamsData || [], matchesData || []);
+	}
+
+	$effect(() => {
+		if (selectedSeasonId) {
+			fetchFeaturedMatch(selectedSeasonId);
+			fetchStandingsData(selectedSeasonId);
+		}
+	});
 
 	onMount(() => {
 		fetchDashboardData();
@@ -158,52 +180,63 @@
 		<div class="lg:col-span-8 xl:col-span-9 flex flex-col gap-8">
 			
 			<!-- Featured Live Action or Hero Section -->
-			<div class="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl p-8 shadow-2xl">
-				<div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-brand-secondary)]/10 opacity-50 blur-xl transition duration-1000 group-hover:opacity-100"></div>
-				
-				<div class="relative z-10 flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
-					<div>
-						<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
-							<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
-						{featuredMatch?.status === 'played' || featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
+			{#if isSeasonOver && standingsResult?.winner}
+				<SeasonChampion 
+					season={selectedSeason} 
+					winner={standingsResult.winner} 
+					playerAwards={standingsResult.playerAwards}
+					teams={standingsResult.teams}
+				/>
+			{:else}
+				<div class="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl p-8 shadow-2xl">
+					<div class="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[var(--color-brand-primary)]/10 to-[var(--color-brand-secondary)]/10 opacity-50 blur-xl transition duration-1000 group-hover:opacity-100"></div>
+					
+					<div class="relative z-10 flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
+						<div>
+							<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-[var(--color-brand-primary)]/30 bg-[var(--color-brand-primary)]/10 px-3 py-1 text-[10px] font-black tracking-[0.1em] text-[var(--color-brand-secondary)] uppercase">
+								<span class="h-2 w-2 animate-pulse rounded-full bg-[var(--color-brand-primary)]"></span>
+							{featuredMatch?.status === 'played' || featuredMatch?.status === 'simulated' ? 'Latest Match' : 'Upcoming Match'}
+						</div>
+						<h2 class="text-4xl font-black text-white tracking-tighter">
+							{#if featuredMatch}
+								<span style="color: {featuredMatch.home_team.color}">{featuredMatch.home_team.name}</span>
+								<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span>
+								<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
+							{:else}
+								League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span> Arena
+							{/if}
+						</h2>
+						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
+							{selectedSeason ? `Currently viewing ${selectedSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
+						</p>
 					</div>
-					<h2 class="text-4xl font-black text-white tracking-tighter">
-						{#if featuredMatch}
-							<span style="color: {featuredMatch.home_team.color}">{featuredMatch.home_team.name}</span>
-							<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span>
-							<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
-						{:else}
-							League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span> Arena
-						{/if}
-					</h2>
-					<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">
-						{selectedSeason ? `Currently viewing ${selectedSeason.name}. Check out the latest high-stakes matchups.` : 'No active season. Create one in the admin panel to get started.'}
-					</p>
-				</div>
 
-				
-				{#if featuredMatch}
-					<a 
-						href="{base}/match/{featuredMatch.id}" 
-						class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
-					>
-						{featuredMatch.status === 'played' || featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
-							<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-						</a>
-					{:else}
+					
+					{#if featuredMatch}
 						<a 
-							href="{base}/admin/league" 
+							href="{base}/match/{featuredMatch.id}" 
 							class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
 						>
-							Create Season
-							<svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-						</a>
-					{/if}
+							{featuredMatch.status === 'played' || featuredMatch.status === 'simulated' ? 'Watch Replay' : 'Match Details'}
+								<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="ml-2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+							</a>
+						{:else}
+							<a 
+								href="{base}/admin/league" 
+								class="mt-4 flex items-center justify-center rounded-xl bg-[var(--color-brand-secondary)] px-8 py-4 font-black text-[var(--color-background-dark)] shadow-lg shadow-black/20 transition-all hover:scale-105 active:scale-95 md:mt-0"
+							>
+								Create Season
+								<svg class="ml-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+							</a>
+						{/if}
+					</div>
 				</div>
-			</div>
+			{/if}
 
-			<!-- Match Feed List -->
-			<MatchFeed season={selectedSeason} />
+			<!-- Match Feed List (Hidden during post-season celebration) -->
+			{#if !isSeasonOver}
+				<MatchFeed season={selectedSeason} />
+			{/if}
 
 		</div>
 	</div>
