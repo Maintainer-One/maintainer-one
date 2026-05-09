@@ -69,17 +69,17 @@
 				</div>
 			</div>
 
-			<div class="relative flex size-48 items-center justify-center rounded-full bg-white/5 p-4 shadow-inner md:size-64">
-				<div class="absolute inset-0 animate-pulse rounded-full bg-[var(--team-color)]/10 blur-3xl"></div>
-				<div class="relative z-10 overflow-hidden rounded-full shadow-2xl transition-all duration-500 hover:scale-105">
+			<div class="relative flex size-48 items-center justify-center rounded-3xl bg-white/5 p-8 shadow-inner md:size-64">
+				<div class="absolute inset-0 animate-pulse rounded-full bg-[var(--team-color)]/20 blur-[60px]"></div>
+				<div class="relative z-10 transition-all duration-700 hover:scale-110">
 					{#if winner?.logo_url}
 						<img 
 							src={winner.logo_url} 
 							alt={winner.name} 
-							class="size-32 md:size-48 object-cover rounded-full" 
+							class="size-32 md:size-48 object-contain drop-shadow-[0_0_20px_var(--team-color)]" 
 						/>
 					{:else}
-						<BrandLogo size="size-32" />
+						<BrandLogo size="size-32 md:size-48" />
 					{/if}
 				</div>
 			</div>

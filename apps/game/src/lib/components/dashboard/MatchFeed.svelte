@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 
 	import { runSimulation } from '$lib/simulation';
 
@@ -208,16 +209,23 @@
 
 		<div class="flex flex-1 items-center justify-between">
 			<!-- Team A -->
-			<div class="flex flex-1 flex-col items-center gap-1 text-center">
-				<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.home_team.color}44; border: 2px solid {match.home_team.color}88; color: {match.home_team.color}">
-					{match.home_team.name.charAt(0)}
+			<div class="flex flex-1 flex-col items-center gap-2 text-center">
+				<div class="flex h-16 w-16 items-center justify-center rounded-2xl" style="background: radial-gradient(circle at center, {match.home_team.color}33 0%, transparent 70%);">
+					<TeamIcon 
+						teamName={match.home_team.name} 
+						color={match.home_team.color} 
+						size="size-12" 
+						logoIconUrl={match.home_team.logo_icon_url}
+						logoUrl={match.home_team.logo_url}
+						class="drop-shadow-[0_0_8px_{match.home_team.color}66]"
+					/>
 				</div>
-				<span class="text-xs font-bold text-[var(--color-brand-secondary)]/80 line-clamp-1">{match.home_team.name}</span>
+				<span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-secondary)]/60 line-clamp-1">{match.home_team.name}</span>
 			</div>
 
 			<!-- Score -->
 			<div class="flex flex-col items-center justify-center px-4 min-w-[120px]">
-				<div class="text-2xl font-black tracking-tighter text-white">
+				<div class="text-3xl font-black tracking-tighter text-white italic">
 					{#if status.type === 'upcoming' || status.type === 'delayed'}
 						0 <span class="text-[var(--color-brand-secondary)]/20">-</span> 0
 					{:else if isRevealed}
@@ -227,23 +235,30 @@
 					{:else}
 						<button 
 							onclick={(e) => { e.preventDefault(); revealedScores[match.id] = true; }}
-							class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-2 py-1 rounded-md hover:bg-[var(--color-brand-primary)]/20 transition-colors"
+							class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10 px-3 py-1.5 rounded-md hover:bg-[var(--color-brand-primary)]/20 transition-colors border border-[var(--color-brand-primary)]/20"
 						>
-							Reveal Score
+							Reveal
 						</button>
 					{/if}
 				</div>
-				<span class="text-[10px] uppercase font-bold tracking-wider {status.type === 'live' ? 'text-[var(--color-brand-primary)]' : 'text-[var(--color-brand-secondary)]/40'}">
+				<span class="text-[9px] uppercase font-black tracking-[0.2em] {status.type === 'live' ? 'text-[var(--color-brand-primary)]' : 'text-white/20'} mt-1">
 					{status.label}
 				</span>
 			</div>
 
 			<!-- Team B -->
-			<div class="flex flex-1 flex-col items-center gap-1 text-center">
-				<div class="flex h-12 w-12 items-center justify-center rounded-full font-bold shadow-md" style="background-color: {match.away_team.color}44; border: 2px solid {match.away_team.color}88; color: {match.away_team.color}">
-					{match.away_team.name.charAt(0)}
+			<div class="flex flex-1 flex-col items-center gap-2 text-center">
+				<div class="flex h-16 w-16 items-center justify-center rounded-2xl" style="background: radial-gradient(circle at center, {match.away_team.color}33 0%, transparent 70%);">
+					<TeamIcon 
+						teamName={match.away_team.name} 
+						color={match.away_team.color} 
+						size="size-12" 
+						logoIconUrl={match.away_team.logo_icon_url}
+						logoUrl={match.away_team.logo_url}
+						class="drop-shadow-[0_0_8px_{match.away_team.color}66]"
+					/>
 				</div>
-				<span class="text-xs font-bold text-[var(--color-brand-secondary)]/80 line-clamp-1">{match.away_team.name}</span>
+				<span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-secondary)]/60 line-clamp-1">{match.away_team.name}</span>
 			</div>
 		</div>
 

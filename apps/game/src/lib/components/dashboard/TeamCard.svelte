@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { base } from '$app/paths';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 
 	let {
 		id,
@@ -36,21 +37,23 @@
 >
 	<div class="p-4">
 		<div class="mb-3 flex items-center justify-between">
-			<div class="flex items-center gap-3">
+			<div class="flex items-center gap-4">
 				<div
-					class="flex h-10 w-10 items-center justify-center rounded-lg font-bold shadow-sm overflow-hidden"
-					style="background-color: {color}44; border: 1px solid {color}88; color: {color}"
+					class="flex h-20 w-20 items-center justify-center rounded-3xl transition-transform group-hover:scale-110"
+					style="background: radial-gradient(circle at center, {color}44 0%, transparent 70%);"
 				>
-					{#if logo_icon_url}
-						<img src={logo_icon_url} alt={name} class="h-full w-full object-cover" />
-					{:else if logo_url}
-						<img src={logo_url} alt={name} class="h-full w-full object-cover" />
-					{:else}
-						{name.charAt(0)}
-					{/if}
+					<TeamIcon 
+						teamName={name} 
+						{color} 
+						size="size-16" 
+						logoUrl={logo_url} 
+						logoIconUrl={logo_icon_url}
+						class="drop-shadow-[0_0_15px_{color}88]" 
+					/>
 				</div>
 				<h3 class="text-lg font-bold tracking-tight text-white">{name}</h3>
 			</div>
+
 			<div class="text-right">
 				<div class="mb-2">
 					<div class="text-[9px] text-white/30 uppercase font-black tracking-[0.2em] mb-0.5">Points</div>

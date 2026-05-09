@@ -47,12 +47,12 @@ async function bootstrap() {
 
     // 2. Load and create teams with variations
     const variations = [
-        { name: 'Amber Seekers', file: 'greedy_v1.ts', color: '#FFBF00', logo: '/logos/amber_seekers.png', icon: '/logos/icons/amber_seekers.png' },
-        { name: 'Beige Blockers', file: 'defensive_v1.ts', color: '#F5F5DC', logo: '/logos/beige_blockers.png', icon: '/logos/icons/beige_blockers.png' },
-        { name: 'Crimson Strikers', file: 'aggressive_v1.ts', color: '#DC143C', logo: '/logos/crimson_strikers.png', icon: '/logos/icons/crimson_strikers.png' },
-        { name: 'Denim Drifters', file: 'random_v1.ts', color: '#1560BD', logo: '/logos/denim_drifters.png', icon: '/logos/icons/denim_drifters.png' },
-        { name: 'Emerald Pausers', file: 'patient_v1.ts', color: '#50C878', logo: '/logos/emerald_pausers.png', icon: '/logos/icons/emerald_pausers.png' },
-        { name: 'Fuchsia Soloists', file: 'staggered_v1.ts', color: '#FF00FF', logo: '/logos/fuchsia_soloists.png', icon: '/logos/icons/fuchsia_soloists.png' }
+        { name: 'Amber Seekers', file: 'greedy_v1.ts', color: '#FFBF00', logo: '/logos/amber_seekers.svg', icon: '/logos/icons/amber_seekers.svg' },
+        { name: 'Beige Blockers', file: 'defensive_v1.ts', color: '#F5F5DC', logo: '/logos/beige_blockers.svg', icon: '/logos/icons/beige_blockers.svg' },
+        { name: 'Crimson Strikers', file: 'aggressive_v1.ts', color: '#DC143C', logo: '/logos/crimson_strikers.svg', icon: '/logos/icons/crimson_strikers.svg' },
+        { name: 'Denim Drifters', file: 'random_v1.ts', color: '#1560BD', logo: '/logos/denim_drifters.svg', icon: '/logos/icons/denim_drifters.svg' },
+        { name: 'Emerald Pausers', file: 'patient_v1.ts', color: '#50C878', logo: '/logos/emerald_pausers.svg', icon: '/logos/icons/emerald_pausers.svg' },
+        { name: 'Fuchsia Soloists', file: 'staggered_v1.ts', color: '#FF00FF', logo: '/logos/fuchsia_soloists.svg', icon: '/logos/icons/fuchsia_soloists.svg' }
     ];
 
     const teams: any[] = [];
