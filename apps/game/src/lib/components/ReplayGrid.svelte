@@ -17,10 +17,10 @@
 	}
 </script>
 
-<div class="relative aspect-square h-full max-h-full max-w-full rounded-3xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
+<div class="relative aspect-square h-full max-h-full max-w-full rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl" data-component="ReplayGrid">
 	
 	<!-- Background Elements (Clipped to border radius) -->
-	<div class="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+	<div class="absolute inset-0 overflow-hidden rounded-xl pointer-events-none">
 		<!-- Pitch Lines -->
 		<div class="absolute inset-0 grid grid-cols-10 grid-rows-10 opacity-30">
 			{#each Array(100) as _, i (i)}
@@ -127,16 +127,16 @@
 
     <!-- Victory Overlay -->
     {#if state.isFinished}
-        <div class="absolute inset-[-5px] flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50 rounded-3xl overflow-hidden">
+        <div class="absolute inset-[-5px] flex items-center justify-center bg-[var(--color-background-dark)]/60 backdrop-blur-md transition-opacity duration-1000 z-50 rounded-xl overflow-hidden">
             <div class="rounded-[2rem] border border-[var(--color-brand-primary)]/30 bg-black/40 p-12 text-center shadow-[0_0_50px_rgba(5,150,105,0.2)] backdrop-blur-3xl transition-all duration-500 hover:scale-[1.02]">
                 <div class="mb-4 inline-block rounded-full bg-[var(--color-brand-primary)]/10 px-4 py-1 text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)]">
                     Match Concluded
                 </div>
                 <h2 class="text-5xl font-black italic tracking-tighter text-white uppercase leading-none">
                     {#if state.winner && state.teams[state.winner]}
-                        <span style="color: {state.teams[state.winner].color}">{state.teams[state.winner].name}</span> <span class="text-[var(--color-brand-primary)]">Wins!</span>
+                        <span style="color: {state.teams[state.winner].color}">{state.teams[state.winner].name}</span> <span class="text-[var(--color-brand-primary)]">Win!</span>
                     {:else}
-                        <span class="text-[var(--color-brand-primary)]">Match Over</span>
+                        <span class="text-[var(--color-brand-primary)]">Draw. Match Over</span>
                     {/if}
                 </h2>
                 <div class="mt-6 flex flex-col items-center gap-1">

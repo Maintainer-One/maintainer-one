@@ -117,6 +117,20 @@
 			if (needsSim && !isSimulating) {
 				simulatingMatches.add(match.id);
 				try {
+					// If we don't have a seed yet, try to fetch it again from the DB
+					// This fixes the "Awaiting Broadcast" hang where the local data is stale
+					if (!match.public_seed) {
+						const { data: freshMatch } = await supabase
+							.from('matches')
+							.select('public_seed')
+							.eq('id', match.id)
+							.single();
+						
+						if (freshMatch?.public_seed) {
+							match.public_seed = freshMatch.public_seed;
+						}
+					}
+
 					const states = await runSimulation(match);
 					matchSims[match.id] = states;
 				} catch (e: any) {
@@ -204,7 +218,39 @@
 	<title>Maintainer One | Multiview</title>
 </svelte:head>
 
-<div class="flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] font-sans">
+<style>
+	.multiview-container {
+		--grid-pt: 104px;
+		--grid-pb: 32px;
+		--grid-gap: 32px;
+		/* Calculate height for exactly 2 rows based on viewport */
+		--card-height: max(320px, calc((100vh - var(--grid-pt) - var(--grid-pb) - var(--grid-gap)) / 2));
+	}
+
+	.multiview-grid {
+		display: grid;
+		gap: var(--grid-gap);
+		/* Fixed width based on height to maintain aspect ratio */
+		grid-template-columns: repeat(auto-fill, calc(var(--card-height) * 0.88));
+		justify-content: center;
+		padding-bottom: var(--grid-pb);
+	}
+
+	.multiview-card {
+		height: var(--card-height);
+		aspect-ratio: 0.88 / 1;
+		flex-shrink: 0;
+	}
+
+	/* Ensure the replay grid container stays square and fills space correctly */
+	.game-render-area {
+		min-height: 0;
+		flex: 1;
+	}
+</style>
+
+
+<div class="multiview-container flex h-screen w-full overflow-hidden bg-[var(--color-background-dark)] font-sans">
 	
 	<!-- Main Area -->
 	<main class="flex-1 flex flex-col relative h-full">
@@ -252,10 +298,7 @@
 					</button>
 				</div>
 			{:else}
-				<div 
-					class="grid gap-8 max-w-screen-2xl mx-auto"
-					style="grid-template-columns: repeat(auto-fit, minmax({selectedMatches.length <= 4 ? '500px' : '350px'}, 1fr));"
-				>
+				<div class="multiview-grid w-full mx-auto">
 					{#each selectedMatches as match (match.id)}
 						{@const liveData = getLiveState(match.id, match.scheduled_time, match.seasons?.protocol_config ?? match.leagues?.protocol_config)}
 						{@const playSpeed = match.seasons?.protocol_config?.tickRateMs ?? match.leagues?.protocol_config?.tickRateMs ?? DEFAULT_TICK_RATE}
@@ -263,7 +306,7 @@
 						
 						<a 
 							href="{base}/match/{match.id}?returnTo={returnUrl}" 
-							class="group relative flex flex-col rounded-[2.5rem] border border-white/5 bg-black/40 shadow-2xl overflow-hidden transition-all hover:scale-[1.01] hover:border-[var(--color-brand-primary)]/30 hover:shadow-[0_0_40px_rgba(5,150,105,0.1)]"
+							class="multiview-card group relative flex flex-col rounded-2xl border border-white/5 bg-black/40 shadow-2xl overflow-hidden transition-all hover:scale-[1.01] hover:border-[var(--color-brand-primary)]/50 hover:shadow-[0_0_40px_rgba(5,150,105,0.2)]"
 							transition:fade={{duration: 200}}
 						>
 							<!-- Header Unit (Status + Score) -->
@@ -287,7 +330,7 @@
 								{/if}
 
 								<!-- Scoreboard Bar -->
-								<div class="flex items-center gap-0.5 bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-1 shadow-2xl">
+								<div class="flex items-center gap-0.5 bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl">
 									<!-- Home Team -->
 									<div class="flex items-center gap-2.5 px-3 py-1.5 rounded-xl" style="background-color: {match.home_team.color}11">
 										<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-5" />
@@ -305,7 +348,7 @@
 							</div>
 
 							<!-- Game Render -->
-							<div class="flex-1 w-full relative bg-black/20 flex items-center justify-center p-6 pt-2">
+							<div class="game-render-area w-full relative bg-black/20 flex items-center justify-center p-6 pt-2">
 								<div class="w-full aspect-square flex items-center justify-center pointer-events-none max-h-full">
 									{#if liveData && liveData.state}
 										<ReplayGrid state={liveData.state} {playSpeed} showControlMap={false} />
@@ -338,21 +381,22 @@
 								</div>
 							</div>
 							
-							<!-- Hover Overlay -->
-							<div class="absolute inset-0 bg-[var(--color-brand-primary)]/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none z-20 backdrop-blur-[1px]">
-								<div class="px-6 py-3 rounded-xl bg-[var(--color-brand-primary)] text-black font-black uppercase tracking-widest text-xs shadow-xl transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-									Enter Match
+							<!-- Action Buttons (Hover only) -->
+							<div class="absolute top-6 right-6 z-30 flex flex-row gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-[-8px] group-hover:translate-y-0 pointer-events-none">
+								<!-- Remove Button -->
+								<button 
+									onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleMatch(match); }}
+									class="p-2 rounded-lg bg-black/60 text-white/40 hover:text-rose-400 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 transition-all shadow-lg pointer-events-auto"
+									title="Remove from Multiview"
+								>
+									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+								</button>
+
+								<!-- Expand Indicator -->
+								<div class="p-2 rounded-lg bg-[var(--color-brand-primary)] text-black shadow-lg shadow-[var(--color-brand-primary)]/20">
+									<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"></path><path d="M10 14L21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg>
 								</div>
 							</div>
-							
-							<!-- Remove Button (appears on hover) -->
-							<button 
-								onclick={(e) => { e.preventDefault(); e.stopPropagation(); toggleMatch(match); }}
-								class="absolute bottom-4 right-4 z-30 p-2 rounded-xl bg-black/60 text-white/40 hover:text-rose-400 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 transition-all opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0"
-								title="Remove from Multiview"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-							</button>
 						</a>
 					{/each}
 				</div>
@@ -364,14 +408,14 @@
 	{#if isSidebarOpen}
 		<!-- Backdrop -->
 		<div 
-			class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 transition-opacity"
+			class="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity"
 			onclick={() => isSidebarOpen = false}
 			transition:fade={{duration: 200}}
 		></div>
 		
 		<!-- Panel -->
 		<aside 
-			class="absolute right-0 top-0 bottom-0 w-[400px] max-w-full bg-black/90 border-l border-white/10 shadow-2xl z-50 flex flex-col"
+			class="absolute right-0 top-0 bottom-0 w-[400px] max-w-full bg-black/90 border-l border-white/10 shadow-2xl z-[110] flex flex-col"
 			transition:slide={{axis: 'x', duration: 300}}
 		>
 			<div class="flex items-center justify-between p-6 border-b border-white/10">
