@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import TeamIcon from '$lib/components/TeamIcon.svelte';
+	import { spring } from 'svelte/motion';
 
 	let { season, winner, playerAwards, teams } = $props<{
 		season: any;
@@ -14,6 +15,27 @@
 	}
 
 	const topAwards = $derived(playerAwards.slice(0, 6));
+
+	// 3D Tilt Logic
+	let tiltX = spring(0, { stiffness: 0.1, damping: 0.3 });
+	let tiltY = spring(0, { stiffness: 0.1, damping: 0.3 });
+
+	function handleMouseMove(e: MouseEvent) {
+		const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		const x = e.clientX - rect.left;
+		const y = e.clientY - rect.top;
+		
+		const centerX = rect.width / 2;
+		const centerY = rect.height / 2;
+		
+		tiltX.set((y - centerY) / 15);
+		tiltY.set((centerX - x) / 15);
+	}
+
+	function handleMouseLeave() {
+		tiltX.set(0);
+		tiltY.set(0);
+	}
 </script>
 
 <div class="relative overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-2xl ring-1 ring-[#fbbf24]/20 border-[#fbbf24]/30" style="--team-color: {winner?.color || 'var(--color-brand-primary)'}; --color-gold: #fbbf24;">
@@ -69,16 +91,48 @@
 				</div>
 			</div>
 
-			<div class="relative flex size-48 items-center justify-center rounded-3xl bg-white/5 p-8 shadow-inner md:size-64">
-				<div class="absolute inset-0 animate-pulse rounded-full bg-[var(--team-color)]/20 blur-[60px]"></div>
-				<div class="relative z-10 transition-all duration-700 hover:scale-110">
+			<div 
+				class="relative flex size-48 items-center justify-center rounded-3xl bg-white/5 p-8 shadow-inner md:size-64 perspective-1000 group/logo"
+				onmousemove={handleMouseMove}
+				onmouseleave={handleMouseLeave}
+			>
+				<!-- Multi-layered Glow -->
+				<div class="absolute inset-0 animate-pulse rounded-full bg-[var(--team-color)]/10 blur-[80px]"></div>
+				<div class="absolute inset-0 rounded-full bg-[var(--team-color)]/20 blur-[40px] transition-opacity duration-500 group-hover/logo:opacity-100 opacity-40"></div>
+				
+				<!-- Rotating Corona -->
+				<div class="absolute inset-0 z-0 flex items-center justify-center opacity-10 group-hover/logo:opacity-30 transition-opacity duration-700">
+					<svg class="size-full animate-[spin_30s_linear_infinite]" viewBox="0 0 100 100">
+						<defs>
+							<radialGradient id="corona-grad" cx="50" cy="50" r="50" gradientUnits="userSpaceOnUse">
+								<stop offset="30%" stop-color="var(--team-color)" stop-opacity="1" />
+								<stop offset="100%" stop-color="var(--team-color)" stop-opacity="0" />
+							</radialGradient>
+						</defs>
+						{#each Array(8) as _, i}
+							<path 
+								d="M50 50 L49.5 5 L50.5 5 Z" 
+								fill="url(#corona-grad)" 
+								transform="rotate({i * 45} 50 50)"
+							/>
+						{/each}
+					</svg>
+				</div>
+
+				<!-- The Icon with 3D Tilt -->
+				<div 
+					class="relative z-10 transition-all duration-200"
+					style="transform: perspective(1000px) rotateX({$tiltX}deg) rotateY({$tiltY}deg) scale({$tiltX !== 0 ? 1.02 : 1});"
+				>
 					{#if winner}
-						<TeamIcon 
-							teamName={winner.name} 
-							color={winner.color} 
-							size="size-32 md:size-48" 
-							class="drop-shadow-[0_0_20px_var(--team-color)]" 
-						/>
+						<div class="relative">
+							<TeamIcon 
+								teamName={winner.name} 
+								color={winner.color} 
+								size="size-32 md:size-48" 
+								class="drop-shadow-[0_0_20px_var(--team-color)] filter brightness-110" 
+							/>
+						</div>
 					{:else}
 						<BrandLogo size="size-32 md:size-48" />
 					{/if}
@@ -153,5 +207,9 @@
 
 	.confetti {
 		z-index: 0;
+	}
+
+	.perspective-1000 {
+		perspective: 1000px;
 	}
 </style>
