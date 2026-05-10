@@ -108,10 +108,11 @@
                 "
 			>
 				{#if event.type === 'CAPTURE'}
+					{@const isTop = event.position.y <= 2}
 					<div 
-						in:fly={{ y: 20, duration: Math.min(400, playSpeed) }} 
+						in:fly={{ y: isTop ? -20 : 20, duration: Math.min(400, playSpeed) }} 
 						out:fade={{ duration: Math.min(300, playSpeed) }}
-						class="absolute text-xl md:text-2xl font-black drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] -mt-16"
+						class="absolute text-xl md:text-2xl font-black drop-shadow-[0_0_10px_rgba(0,0,0,0.8)] {isTop ? 'mt-16' : '-mt-16'}"
 						style="color: {state.teams[event.team].color}"
 					>
 						+{event.score}

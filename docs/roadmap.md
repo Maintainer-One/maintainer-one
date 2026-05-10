@@ -72,7 +72,24 @@ _The goal is to seamlessly integrate the community and establish the formal RBAC
   - Initially powered by user submissions.
 
 
-### Phase 7: The Protocol RFC Process & Reputation
+### Phase 7: Pre-Alpha Polish & Deployment
+
+_The goal is to finalize all critical paths, squash lingering bugs, and successfully deploy the alpha version of the game._
+
+- [ ] **Landing Page Overhaul**: Clean up the main landing page (`apps/landing`) and align its aesthetic and messaging with the project's vision.
+- [ ] **Documentation Site**: Implement a static documentation section within the landing site to host the game manual, API references, and protocol details.
+- [ ] **Dev Blog**: Set up a blog system on the landing site to post updates, patch notes, and stream recaps.
+- [ ] **Robust Match Scheduling**: Overhaul the scheduling logic to support the "Saturday Broadcast Format":
+  - **Game Days**: Schedule full round-robin series specifically on Saturdays.
+  - **Round-Based Staggering**: Either run all matches in a round simultaneously (to highlight Multiview) or stagger them by ~5 minutes.
+  - **Live-Coding Intermissions**: Schedule 15-30 minute gaps *between rounds* for on-stream logic patching and deployment.
+  - **Multi-Week Seasons**: Support 1-month seasons containing 4-5 weekly series (20-25 total games per team).
+- [ ] **Developer Experience Polish**: Iron out bugs in the team logic editor and ensure writing, saving, and testing team scripts is a smooth and pleasant experience for contributors.
+- [ ] **Deployment Preparation**: Set up production hosting, configure environment variables, and ensure the build process is stable.
+- [ ] **UI/UX Final Polish**: Review layouts across device sizes and ensure all visual components match the design system.
+- [ ] **Security & Data Audit**: Verify RLS policies, session handling, and database integrity for a live environment.
+
+### Phase 8: The Protocol RFC Process & Reputation
 
 _The goal is to formalize how the game evolves and how trust is built._
 
