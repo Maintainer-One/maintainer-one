@@ -13,7 +13,8 @@
 		"sim": "deno run -A packages/engine/match_runner.ts",
 		"cron": "deno run -A packages/engine/cron_runner.ts",
 		"supabase": "deno run -A scripts/supabase_managed.ts",
-		"seed": "deno run -A scripts/bootstrap_inaugural.ts"
+		"seed": "deno run -A scripts/bootstrap_inaugural.ts",
+		"seed:landing": "deno run -A scripts/seed_landing.ts"
 	},
 	"compilerOptions": {
 		"allowJs": true,
