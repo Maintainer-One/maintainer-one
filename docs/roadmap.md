@@ -76,7 +76,7 @@ _The goal is to seamlessly integrate the community and establish the formal RBAC
 
 _The goal is to finalize all critical paths, squash lingering bugs, and successfully deploy the alpha version of the game._
 
-- [ ] **Landing Page Overhaul**: Clean up the main landing page (`apps/landing`) and align its aesthetic and messaging with the project's vision.
+- [x] **Landing Page Overhaul**: Clean up the main landing page (`apps/landing`) and align its aesthetic and messaging with the project's vision.
 - [ ] **Documentation Site**: Implement a static documentation section within the landing site to host the game manual, API references, and protocol details.
 - [ ] **Dev Blog**: Set up a blog system on the landing site to post updates, patch notes, and stream recaps.
 - [ ] **Robust Match Scheduling**: Overhaul the scheduling logic to support the "Saturday Broadcast Format":

@@ -18,6 +18,8 @@
 	let tick = $state(0);
 	let state = $state<any>(null);
 
+	let respawnTimer = $state(0);
+
 	function calculateControlMap(players: any[]) {
 		const BOARD_SIZE = 10;
 		const controlMap = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(null));
@@ -90,6 +92,7 @@
 		phase = 'PREGAME';
 		countdown = 10;
 		tick = 0;
+		respawnTimer = 0;
 		state = getInitialState();
 	}
 
@@ -108,15 +111,23 @@
 					state.tick = tick;
 					state.lastEvents = [];
 					
-					// 1. Age Zone
+					// 1. Age Zone / Respawn logic
 					let zone = state.pointZones[0];
 					if (zone) {
 						zone.age++;
 						if (zone.age > 40) {
-							state.pointZones[0] = { position: { x: Math.floor(Math.random()*6)+2, y: Math.floor(Math.random()*6)+2 }, age: 0 };
-							zone = state.pointZones[0];
+							state.pointZones = [];
+							respawnTimer = 2;
+						}
+					} else if (respawnTimer > 0) {
+						respawnTimer--;
+						if (respawnTimer === 0) {
+							state.pointZones = [{ position: { x: Math.floor(Math.random()*10), y: Math.floor(Math.random()*10) }, age: 0 }];
 						}
 					}
+
+					// Refresh zone reference for movement logic
+					zone = state.pointZones[0];
 
 					// 2. Move Players (Orthogonal, towards zone, avoid collisions)
 					const occupied = new Set(state.players.map((p: any) => `${p.position.x},${p.position.y}`));
@@ -167,12 +178,14 @@
 						const playersOnZone = state.players.filter((p: any) => p.position.x === zone.position.x && p.position.y === zone.position.y);
 						if (playersOnZone.length === 1) {
 							const capturer = playersOnZone[0];
-							const pts = Math.floor(zone.age / 10) + 1;
+							// Protocol V1: Score is simply the age of the zone
+							const pts = zone.age;
 							
 							state.teams[capturer.team].score += pts;
 							state.lastEvents.push({ type: 'CAPTURE', position: { ...zone.position }, team: capturer.team, score: pts });
 							
-							state.pointZones[0] = { position: { x: Math.floor(Math.random()*6)+2, y: Math.floor(Math.random()*6)+2 }, age: 0 };
+							state.pointZones = [];
+							respawnTimer = 2;
 						}
 					}
 
