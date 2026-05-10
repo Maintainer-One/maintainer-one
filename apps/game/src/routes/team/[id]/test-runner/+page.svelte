@@ -433,7 +433,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	<!-- Right Side: Test Results -->
 	<main class="flex flex-1 flex-col p-8 lg:p-12 overflow-hidden">
 		<header class="mb-12 flex items-center justify-between flex-shrink-0">
-			<div class="inline-flex flex-col rounded-3xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
+			<div class="inline-flex flex-col rounded-2xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
 				<div class="flex items-center gap-4">
 					<a href="{base}/team/{teamId}" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:border-[var(--color-brand-primary)]/30 hover:bg-[var(--color-brand-primary)]/5 hover:text-[var(--color-brand-primary)] shadow-lg">
 						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -487,11 +487,11 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		{#if stats}
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 flex-shrink-0" in:fade>
-				<div class="rounded-3xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
+				<div class="rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
 					<div class="text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] mb-2">Win Rate</div>
 					<div class="text-4xl font-black text-white">{stats.winRate.toFixed(1)}%</div>
 				</div>
-				<div class="rounded-3xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
+				<div class="rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
 					<div class="text-[9px] font-black uppercase tracking-widest text-white/20 mb-2">Avg Score</div>
 					<div class="text-2xl font-black text-white">
 						<span class="text-blue-400">{stats.avgScoreA.toFixed(1)}</span>
@@ -499,19 +499,19 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 						<span class="text-rose-400">{stats.avgScoreB.toFixed(1)}</span>
 					</div>
 				</div>
-				<div class="rounded-3xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
+				<div class="rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
 					<div class="text-[9px] font-black uppercase tracking-widest text-amber-500/60 mb-2">Avg Luck ({homeTeam?.name || 'Home'})</div>
 					<div class="text-2xl font-black {stats.avgLuckA >= 0 ? 'text-emerald-400' : 'text-rose-400'}">
 						{stats.avgLuckA > 0 ? '+' : ''}{stats.avgLuckA.toFixed(2)}
 					</div>
 				</div>
-				<div class="rounded-3xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
+				<div class="rounded-2xl border border-white/5 bg-black/20 p-6 backdrop-blur-xl">
 					<div class="text-[9px] font-black uppercase tracking-widest text-white/20 mb-2">Samples</div>
 					<div class="text-4xl font-black text-white">{batchResults.length}</div>
 				</div>
 			</div>
 
-			<div class="flex-1 min-h-0 rounded-3xl border border-white/5 bg-black/20 backdrop-blur-xl overflow-hidden flex flex-col shadow-2xl">
+			<div class="flex-1 min-h-0 rounded-2xl border border-white/5 bg-black/20 backdrop-blur-xl overflow-hidden flex flex-col shadow-2xl">
 				<div class="overflow-y-auto no-scrollbar flex-1">
 					<table class="w-full text-left border-collapse">
 						<thead class="sticky top-0 bg-zinc-900/90 backdrop-blur-md z-10 border-b border-white/5">

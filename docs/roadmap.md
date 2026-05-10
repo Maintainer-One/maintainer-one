@@ -88,6 +88,9 @@ _The goal is to finalize all critical paths, squash lingering bugs, and successf
 - [ ] **Deployment Preparation**: Set up production hosting, configure environment variables, and ensure the build process is stable.
 - [ ] **UI/UX Final Polish**: Review layouts across device sizes and ensure all visual components match the design system.
 - [ ] **Security & Data Audit**: Verify RLS policies, session handling, and database integrity for a live environment.
+- [ ] **Alpha Access Control**: Implement a whitelist or "Alpha Key" system to restrict signups and official deployments, while keeping the dashboard public for viewing and scratchpad experimentation.
+- [ ] **Authentic Voice Pass**: Review and rewrite all site copy, documentation, and blog placeholders to ensure they sound like a human creator rather than a marketing team or an AI.
+- [ ] **Streamer Prep & Practice**: Design OBS-friendly UI overlays and run low-stakes "Summer Dev Streams" to practice the broadcast flow before the official September launch.
 
 ### Phase 8: The Protocol RFC Process & Reputation
 

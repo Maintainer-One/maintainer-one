@@ -1,0 +1,62 @@
+---
+import { getCollection } from 'astro:content';
+import '../../styles/global.css';
+import BrandLogo from '$lib/components/BrandLogo.svelte';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="viewport" content="width=device-width" />
+		<title>Dev Blog | Maintainer One</title>
+	</head>
+	<body class="bg-[var(--color-background-dark)] text-white font-sans antialiased">
+		<nav class="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/20 backdrop-blur-xl px-6 py-4">
+			<div class="max-w-7xl mx-auto flex items-center justify-between">
+				<a href="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
+					<BrandLogo size="size-8" />
+					<span class="font-black tracking-tighter uppercase text-sm">Maintainer <span class="text-[var(--color-brand-primary)]">One</span></span>
+				</a>
+				<div class="flex items-center gap-6">
+					<a href="/docs/manual" class="text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-colors">Manual</a>
+					<a href="/blog" class="text-[10px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]">Blog</a>
+				</div>
+			</div>
+		</nav>
+
+		<main class="max-w-4xl mx-auto py-32 px-6">
+			<header class="mb-24 text-center">
+				<h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-6">Dev <span class="text-[var(--color-brand-primary)]">Blog</span></h1>
+				<p class="text-lg text-white/40 font-bold uppercase tracking-[0.2em]">Latest updates from the arena</p>
+			</header>
+
+			<div class="space-y-8">
+				{posts.map(post => (
+					<a href={`/blog/${post.slug}`} class="block group">
+						<div class="glass-panel p-8 md:p-12 rounded-[2.5rem] border-white/5 hover:border-emerald-500/30 transition-all flex flex-col md:flex-row gap-8 items-start md:items-center">
+							<div class="flex-1">
+								<div class="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--color-brand-primary)] mb-3">
+									{post.data.pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+								</div>
+								<h2 class="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-4 group-hover:text-[var(--color-brand-primary)] transition-colors">
+									{post.data.title}
+								</h2>
+								<p class="text-white/50 leading-relaxed line-clamp-2">
+									{post.data.description}
+								</p>
+							</div>
+							<div class="text-[var(--color-brand-primary)] opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0 hidden md:block">
+								<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+							</div>
+						</div>
+					</a>
+				))}
+			</div>
+		</main>
+	</body>
+</html>

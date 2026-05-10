@@ -89,7 +89,7 @@
 </script>
 
 <svelte:head>
-	<title>Maintainer One | Command Center</title>
+	<title>Maintainer One | The Dashboard</title>
 </svelte:head>
 
 <!-- Global League Ticker at the very top -->
@@ -253,7 +253,7 @@
 								<span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span>
 								<span style="color: {featuredMatch.away_team.color}">{featuredMatch.away_team.name}</span>
 							{:else}
-								League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span> Arena
+								League <span class="text-[var(--color-brand-secondary)] drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)] mx-2">VS</span> Pitch
 							{/if}
 						</h2>
 						<p class="mt-2 max-w-md text-sm text-white/70 font-medium leading-relaxed">

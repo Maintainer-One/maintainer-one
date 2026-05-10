@@ -317,7 +317,7 @@
 		{:else if isPreview || isAwaitingSeed}
 			<div class="flex flex-1 flex-col items-center justify-center gap-6">
 				<div class="flex items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm animate-pulse">
-					{isAwaitingSeed ? 'Technical Difficulties - Awaiting Arena Feed...' : 'Synchronizing Arena Data...'}
+					{isAwaitingSeed ? 'Technical Difficulties - Awaiting Pitch Feed...' : 'Synchronizing Pitch Data...'}
 				</div>
 				{#if isAwaitingSeed}
 					<button 
@@ -366,7 +366,7 @@
 			</div>
 		{:else if isSimulating}
 			<div class="flex flex-1 items-center justify-center italic text-white/20 font-black uppercase tracking-widest text-sm animate-pulse">
-				Broadcasting from Arena...
+				Broadcasting from Pitch...
 			</div>
 		{/if}
 	</main>

@@ -138,7 +138,7 @@
 <div class="min-h-screen bg-[var(--color-background-dark)] text-[var(--color-brand-secondary)]/90 p-8 lg:p-12 font-sans selection:bg-[var(--color-brand-primary)]/30">
 	<header class="mb-12 flex items-center justify-between">
 		<div class="flex items-center gap-8">
-			<div class="inline-flex flex-col rounded-3xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
+			<div class="inline-flex flex-col rounded-2xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
 				<div class="flex items-center gap-4">
 					<a href="{base}/" aria-label="Go back" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:border-[var(--color-brand-primary)]/30 hover:bg-[var(--color-brand-primary)]/5 hover:text-[var(--color-brand-primary)] hover:scale-105 active:scale-95 shadow-lg backdrop-blur-md">
 						<svg class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -183,7 +183,7 @@
 				<h2 class="text-xs font-black uppercase tracking-[0.2em]" style="color: {teamA?.color || '#3b82f6'}">{teamA?.name || 'Home Team'}</h2>
 			</div>
 
-			<div class="rounded-3xl border border-white/5 bg-black/20 p-8 backdrop-blur-xl space-y-6">
+			<div class="rounded-2xl border border-white/5 bg-black/20 p-8 backdrop-blur-xl space-y-6">
 				<div class="space-y-4">
 					<label for="team-a-select" class="block text-[10px] font-black uppercase tracking-widest text-white/20">Select Team</label>
 					<select 
@@ -235,7 +235,7 @@
 				<h2 class="text-xs font-black uppercase tracking-[0.2em]" style="color: {teamB?.color || '#f43f5e'}">{teamB?.name || 'Away Team'}</h2>
 			</div>
 
-			<div class="rounded-3xl border border-white/5 bg-black/20 p-8 backdrop-blur-xl space-y-6">
+			<div class="rounded-2xl border border-white/5 bg-black/20 p-8 backdrop-blur-xl space-y-6">
 				<div class="space-y-4">
 					<label for="team-b-select" class="block text-[10px] font-black uppercase tracking-widest text-white/20">Select Opponent</label>
 					<select 
@@ -315,7 +315,7 @@
 					<div class="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent"></div>
 				</div>
 
-				<div class="grid grid-cols-3 items-center gap-8 bg-black/40 rounded-3xl border border-white/5 p-10 backdrop-blur-2xl">
+				<div class="grid grid-cols-3 items-center gap-8 bg-black/40 rounded-2xl border border-white/5 p-10 backdrop-blur-2xl">
 					<div class="text-right space-y-2">
 						<div class="text-[10px] font-black uppercase tracking-widest opacity-40" style="color: {simResult.teams.A.color}">{simResult.teams.A.name}</div>
 						<div class="text-4xl lg:text-6xl font-black text-white">{simResult.teams.A.score}</div>

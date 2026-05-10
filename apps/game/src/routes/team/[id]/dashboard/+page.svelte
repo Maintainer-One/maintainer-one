@@ -264,7 +264,7 @@
 				</section>
 
 				<!-- Info Box -->
-				<section class="rounded-3xl bg-[var(--color-brand-primary)]/5 border border-[var(--color-brand-primary)]/10 p-8 space-y-4 shadow-2xl">
+				<section class="rounded-2xl bg-[var(--color-brand-primary)]/5 border border-[var(--color-brand-primary)]/10 p-8 space-y-4 shadow-2xl">
 					<div class="h-10 w-10 rounded-xl bg-[var(--color-brand-primary)]/20 flex items-center justify-center">
 						<svg class="h-5 w-5 text-[var(--color-brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>
 					</div>
@@ -278,7 +278,7 @@
 	{:else}
 		<div class="flex h-screen items-center justify-center flex-col gap-4">
 			<h1 class="text-4xl font-black uppercase text-white/20">Access Denied</h1>
-			<a href="{base}/" class="text-[var(--color-brand-primary)] font-black uppercase tracking-widest hover:underline">Return to Arena</a>
+			<a href="{base}/" class="text-[var(--color-brand-primary)] font-black uppercase tracking-widest hover:underline">Return to Pitch</a>
 		</div>
 	{/if}
 </div>

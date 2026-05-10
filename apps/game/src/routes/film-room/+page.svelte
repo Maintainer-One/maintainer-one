@@ -753,7 +753,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			<div class="flex items-center gap-8">
 				
 				<!-- Identity Block Card -->
-				<div class="inline-flex flex-col rounded-3xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
+				<div class="inline-flex flex-col rounded-2xl border border-white/10 bg-black/40 p-4 pr-8 shadow-2xl backdrop-blur-3xl">
 					<div class="flex items-center gap-4">
 						<button 
 							onclick={() => window.history.back()}
@@ -785,7 +785,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				</div>
 
 				<!-- Playback Hub (Floating Glass) -->
-				<div class="w-full max-w-3xl space-y-5 rounded-3xl border border-white/10 bg-black/40 p-6 shadow-2xl backdrop-blur-2xl">
+				<div class="w-full max-w-3xl space-y-5 rounded-2xl border border-white/10 bg-black/40 p-6 shadow-2xl backdrop-blur-2xl">
 					<div class="flex items-center gap-6">
 						<div class="flex items-center gap-3">
 							<button

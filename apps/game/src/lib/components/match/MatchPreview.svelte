@@ -130,7 +130,7 @@
 			
 			<div class="flex items-center justify-center gap-12 md:gap-24">
 				<div class="flex flex-col items-center gap-4" in:fly={{ y: 20, delay: 100 }}>
-					<div class="h-24 w-24 rounded-3xl flex items-center justify-center border-2 shadow-2xl overflow-hidden bg-black/40" style="border-color: {match.home_team.color}44;">
+					<div class="h-24 w-24 rounded-2xl flex items-center justify-center border-2 shadow-2xl overflow-hidden bg-black/40" style="border-color: {match.home_team.color}44;">
 						<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-16" class="drop-shadow-[0_0_15px_{match.home_team.color}66]" />
 					</div>
 					<h2 class="text-2xl font-black text-white tracking-tighter">{match.home_team.name}</h2>
@@ -144,7 +144,7 @@
 				</div>
 
 				<div class="flex flex-col items-center gap-4" in:fly={{ y: 20, delay: 200 }}>
-					<div class="h-24 w-24 rounded-3xl flex items-center justify-center border-2 shadow-2xl overflow-hidden bg-black/40" style="border-color: {match.away_team.color}44;">
+					<div class="h-24 w-24 rounded-2xl flex items-center justify-center border-2 shadow-2xl overflow-hidden bg-black/40" style="border-color: {match.away_team.color}44;">
 						<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-16" class="drop-shadow-[0_0_15px_{match.away_team.color}66]" />
 					</div>
 					<h2 class="text-2xl font-black text-white tracking-tighter">{match.away_team.name}</h2>

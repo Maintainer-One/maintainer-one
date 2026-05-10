@@ -37,7 +37,7 @@
 		<div class="mb-3 flex items-center justify-between">
 			<div class="flex items-center gap-4">
 				<div
-					class="flex h-20 w-20 items-center justify-center rounded-3xl transition-transform group-hover:scale-110"
+					class="flex h-20 w-20 items-center justify-center rounded-2xl transition-transform group-hover:scale-110"
 					style="background: radial-gradient(circle at center, {color}44 0%, transparent 70%);"
 				>
 					<TeamIcon 

@@ -84,7 +84,7 @@
 		</header>
 
 		<!-- Scoreboard Header -->
-		<section class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 py-8 rounded-3xl border border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl relative overflow-hidden">
+		<section class="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16 py-8 rounded-2xl border border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl relative overflow-hidden">
 			<div class="absolute inset-0 pointer-events-none opacity-20" style="background: linear-gradient(90deg, {match.home_team.color} 0%, transparent 50%, {match.away_team.color} 100%);"></div>
 			
 			<div class="flex flex-col items-center z-10">

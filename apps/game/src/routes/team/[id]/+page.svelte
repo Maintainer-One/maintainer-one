@@ -207,7 +207,7 @@
 			
 			<div class="container mx-auto flex h-full items-end p-8 lg:p-12">
 				<div class="flex items-center gap-8" in:fly={{ y: 20, duration: 800 }}>
-					<div class="flex h-32 w-32 items-center justify-center rounded-3xl border-4 shadow-2xl overflow-hidden bg-black/40" style="border-color: {teamData.color}44;">
+					<div class="flex h-32 w-32 items-center justify-center rounded-2xl border-4 shadow-2xl overflow-hidden bg-black/40" style="border-color: {teamData.color}44;">
 						<TeamIcon teamName={teamData.name} color={teamData.color} size="size-20" class="drop-shadow-[0_0_20px_{teamData.color}66]" />
 					</div>
 					<div class="flex flex-col gap-2">
@@ -356,7 +356,7 @@
 	{:else}
 		<div class="flex h-screen items-center justify-center flex-col gap-4">
 			<h1 class="text-4xl font-black uppercase text-white/20">Team Not Found</h1>
-			<a href="{base}/" class="text-[var(--color-brand-primary)] font-black uppercase tracking-widest hover:underline">Return to Arena</a>
+			<a href="{base}/" class="text-[var(--color-brand-primary)] font-black uppercase tracking-widest hover:underline">Return to Pitch</a>
 		</div>
 	{/if}
 </div>

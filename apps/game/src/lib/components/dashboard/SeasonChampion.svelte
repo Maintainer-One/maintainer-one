@@ -38,7 +38,7 @@
 	}
 </script>
 
-<div class="relative overflow-hidden rounded-3xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-2xl ring-1 ring-[#fbbf24]/20 border-[#fbbf24]/30" style="--team-color: {winner?.color || 'var(--color-brand-primary)'}; --color-gold: #fbbf24;">
+<div class="relative overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-2xl ring-1 ring-[#fbbf24]/20 border-[#fbbf24]/30" style="--team-color: {winner?.color || 'var(--color-brand-primary)'}; --color-gold: #fbbf24;">
 	<!-- Background Decorations -->
 	<div class="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[var(--team-color)]/20 blur-[100px]"></div>
 	<div class="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-[#fbbf24]/10 blur-[100px]"></div>
@@ -92,7 +92,7 @@
 			</div>
 
 			<div 
-				class="relative flex size-48 items-center justify-center rounded-3xl bg-white/5 p-8 shadow-inner md:size-64 perspective-1000 group/logo"
+				class="relative flex size-48 items-center justify-center rounded-2xl bg-white/5 p-8 shadow-inner md:size-64 perspective-1000 group/logo"
 				onmousemove={handleMouseMove}
 				onmouseleave={handleMouseLeave}
 			>

@@ -78,7 +78,7 @@
 				events = [
 					`${activeSeason.name} has concluded!`,
 					"Review the matches in the Film Room.",
-					"Prepare your protocols for the next season."
+					"Prepare your logic for the next season."
 				];
 			} else {
 				events = [

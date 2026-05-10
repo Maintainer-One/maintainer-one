@@ -1,10 +1,13 @@
 @import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+@source "../../../../apps/game/src";
 
 @theme {
 	--color-brand-primary: #059669;
 	--color-brand-primary-dark: #065f46;
 	--color-brand-secondary: #d1fae5;
 	--color-background-dark: #064e3b;
+	--color-background-deeper: #042f24;
 	--color-glass: rgba(255, 255, 255, 0.03);
 	--color-glass-border: rgba(255, 255, 255, 0.08);
 }
@@ -12,6 +15,13 @@
 :root {
 	--font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 	color-scheme: dark;
+	
+	/* Brand Colors */
+	--color-brand-primary: #059669;
+	--color-brand-primary-dark: #065f46;
+	--color-brand-secondary: #d1fae5;
+	--color-background-dark: #064e3b;
+	--color-background-deeper: #042f24;
 }
 
 body {
@@ -30,6 +40,10 @@ body {
 
 	.glass-panel {
 		@apply border border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl;
+	}
+
+	.glass-panel-emerald {
+		@apply border border-emerald-500/20 bg-emerald-950/20 backdrop-blur-xl shadow-2xl;
 	}
 
 	.bg-glass-heavy {

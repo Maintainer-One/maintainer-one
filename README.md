@@ -41,7 +41,7 @@ where every strategy can be analyzed, countered, and evolved by the community.
 
 ### 4. Thematic Identity
 
-Every team is a brand. Maintainer One features a fully themeable UI that adapts to team colors and context, providing a unique "Command Center" experience for every maintainer and high-stakes matchup.
+Every team is a brand. Maintainer One features a fully themeable UI that adapts to team colors and context, providing a unique "The Dashboard" experience for every maintainer and high-stakes matchup.
 
 ---
 
@@ -86,8 +86,11 @@ Maintainer One is built with a modern, high-performance web stack:
    # Create symlinks for the apps
    ln -s ../../.env apps/game/.env
    ln -s ../../.env apps/landing/.env
+
+   # Link shared assets (like team logos) to the landing page
+   ln -s ../../../apps/game/static/logos apps/landing/public/logos
    ```
-   *(Windows users: If `ln -s` fails, you can simply copy the `.env` file into both the `apps/game/` and `apps/landing/` directories.)*
+   *(Windows users: If `ln -s` fails, copy the `.env` file into both the `apps/game/` and `apps/landing/` directories. For the shared logos, copy the `apps/game/static/logos` folder into `apps/landing/public/`.)*
 
 4. **Start Supabase Locally**: _Ensure Docker is running._
 
