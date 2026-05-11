@@ -9,12 +9,20 @@ const originalMathRandom = Math.random;
  */
 
 self.onmessage = async (e: MessageEvent) => {
-	const { type, startState, alphaCode, bravoCode, alphaCompiled, bravoCompiled, maxTicks = 1000, config } = e.data;
+	const { type, timelineId, startState, alphaBlocks, bravoBlocks, maxTicks = 1000, config } = e.data;
 
 	if (type === 'SIMULATE_BRANCH') {
 		try {
-			const alphaLogic = alphaCompiled ? loadCompiled(alphaCompiled) : createLogic(alphaCode);
-			const bravoLogic = bravoCompiled ? loadCompiled(bravoCompiled) : createLogic(bravoCode);
+			const alphaLogicFns = (alphaBlocks || []).map((b: any) => ({
+				startTick: b.startTick,
+				endTick: b.endTick,
+				fn: b.compiled ? loadCompiled(b.compiled) : createLogic(b.code)
+			}));
+			const bravoLogicFns = (bravoBlocks || []).map((b: any) => ({
+				startTick: b.startTick,
+				endTick: b.endTick,
+				fn: b.compiled ? loadCompiled(b.compiled) : createLogic(b.code)
+			}));
 
 			// Isolated PRNGs for each team to prevent entropy stealing
 			// We load from startState to ensure branching is perfectly deterministic
@@ -39,10 +47,13 @@ self.onmessage = async (e: MessageEvent) => {
 				};
 				
 				self.Math.random = () => teamA_RNG.next();
-				const alphaActions: PlayerAction[] = alphaLogic(sense) || [];
+				const currentTick = currentState.tick;
+				const alphaBlock = alphaLogicFns.find((b: any) => currentTick >= b.startTick && (b.endTick === null || currentTick <= b.endTick));
+				const alphaActions: PlayerAction[] = alphaBlock ? alphaBlock.fn(sense) || [] : [];
 				
 				self.Math.random = () => teamB_RNG.next();
-				const bravoActions: PlayerAction[] = bravoLogic(sense) || [];
+				const bravoBlock = bravoLogicFns.find((b: any) => currentTick >= b.startTick && (b.endTick === null || currentTick <= b.endTick));
+				const bravoActions: PlayerAction[] = bravoBlock ? bravoBlock.fn(sense) || [] : [];
 
 				const teamAActions = alphaActions.filter(a => 
 					currentState.players.find((p: Player) => p.id === a.playerId)?.team === 'A'
@@ -62,10 +73,10 @@ self.onmessage = async (e: MessageEvent) => {
 
 			// Restore just in case
 			self.Math.random = originalMathRandom;
-			self.postMessage({ type: 'SIMULATION_COMPLETE', states });
+			self.postMessage({ type: 'SIMULATION_COMPLETE', timelineId, states });
 		} catch (error) {
 			self.Math.random = originalMathRandom;
-			self.postMessage({ type: 'SIMULATION_ERROR', error: (error as Error).message });
+			self.postMessage({ type: 'SIMULATION_ERROR', timelineId, error: (error as Error).message });
 		}
 	} else if (type === 'SIMULATE_BATCH') {
 		const { iterations, seeds, alphaCode, bravoCode, alphaCompiled, bravoCompiled, protocolVersion = 'v1', config, teamData } = e.data;
@@ -163,7 +174,8 @@ function createLogic(code: string) {
 		
 		// Wrap in a factory function that returns the exported logic function
 		const factory = new Function(`
-			const exports = {};
+			const module = { exports: {} };
+			const exports = module.exports;
 			${cleanedCode};
 			
 			if (typeof teamLogic !== 'undefined') return teamLogic;

@@ -74,8 +74,9 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	$effect(() => {
 		const unsubscribe = scratchpad.subscribe(v => {
-			if (selectedHomeVersionId === 'scratchpad') {
-				teamCode = v.A || STARTER_CODE;
+			if (selectedHomeVersionId === 'scratchpad' && teamId) {
+				const teamDrafts = v[teamId as string];
+				teamCode = (teamDrafts && teamDrafts.length > 0) ? teamDrafts[0].code : STARTER_CODE;
 			}
 		});
 		return unsubscribe;
@@ -156,7 +157,9 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				if (!selectedOpponent) {
 					selectedOpponent = filteredTeams[0].id;
 				}
-				await loadOpponentVersions(selectedOpponent);
+				if (selectedOpponent) {
+					await loadOpponentVersions(selectedOpponent);
+				}
 			}
 		} else {
 			console.error('Error loading opponents:', teamsErr);
@@ -174,11 +177,17 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			homeVersions = data;
 			
 			// Auto-hydrate scratchpad if empty
-			const currentScratch = get(scratchpad).A;
-			if (!currentScratch || currentScratch === STARTER_CODE) {
+			if (!teamId) return;
+			const tId = teamId as string;
+			const currentDrafts = get(scratchpad)[tId] || [];
+			if (currentDrafts.length === 0 || currentDrafts[0].code === STARTER_CODE) {
 				const activeVersion = data.find(v => v.id === homeTeam?.active_version_id) || data[0];
 				if (activeVersion) {
-					scratchpad.updateCode('A', activeVersion.source_code);
+					if (currentDrafts.length === 0) {
+						scratchpad.addScratchpad(tId, 'Draft 1', activeVersion.source_code);
+					} else {
+						scratchpad.updateScratchpad(tId, currentDrafts[0].id, activeVersion.source_code);
+					}
 				}
 			}
 		}
@@ -204,8 +213,9 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	}
 
 	function handleHomeVersionChange() {
-		if (selectedHomeVersionId === 'scratchpad') {
-			teamCode = get(scratchpad).A || STARTER_CODE;
+		if (selectedHomeVersionId === 'scratchpad' && teamId) {
+			const teamDrafts = get(scratchpad)[teamId as string];
+			teamCode = (teamDrafts && teamDrafts.length > 0) ? teamDrafts[0].code : STARTER_CODE;
 		} else {
 			const version = homeVersions.find(v => v.id === selectedHomeVersionId);
 			if (version) {
@@ -282,8 +292,14 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	function handleCodeChange(newCode: string) {
 		teamCode = newCode;
-		if (selectedHomeVersionId === 'scratchpad') {
-			scratchpad.updateCode('A', newCode);
+		if (selectedHomeVersionId === 'scratchpad' && teamId) {
+			const tId = teamId as string;
+			const teamDrafts = get(scratchpad)[tId];
+			if (teamDrafts && teamDrafts.length > 0) {
+				scratchpad.updateScratchpad(tId, teamDrafts[0].id, newCode);
+			} else {
+				scratchpad.addScratchpad(tId, 'Draft 1', newCode);
+			}
 		}
 	}
 

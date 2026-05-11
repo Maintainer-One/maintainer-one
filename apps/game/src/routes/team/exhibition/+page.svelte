@@ -34,8 +34,14 @@
 
 	$effect(() => {
 		const unsubscribe = scratchpad.subscribe(v => {
-			scratchpadContent.A = v.A;
-			scratchpadContent.B = v.B;
+			if (selectedTeamA) {
+				const draftsA = v[selectedTeamA];
+				scratchpadContent.A = (draftsA && draftsA.length > 0) ? draftsA[0].code : '';
+			}
+			if (selectedTeamB) {
+				const draftsB = v[selectedTeamB];
+				scratchpadContent.B = (draftsB && draftsB.length > 0) ? draftsB[0].code : '';
+			}
 		});
 		return unsubscribe;
 	});
@@ -302,7 +308,7 @@
 		</button>
 
 		{#if errorMessage}
-			<div class="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-6 py-4 text-sm font-bold text-rose-400" transition:shake>
+			<div class="rounded-2xl border border-rose-500/20 bg-rose-500/10 px-6 py-4 text-sm font-bold text-rose-400" transition:fade>
 				{errorMessage}
 			</div>
 		{/if}
