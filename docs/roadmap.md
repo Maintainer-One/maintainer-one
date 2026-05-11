@@ -87,6 +87,7 @@ _The goal is to finalize all critical paths, squash lingering bugs, and successf
 - [ ] **Developer Experience Polish**: Iron out bugs in the team logic editor and ensure writing, saving, and testing team scripts is a smooth and pleasant experience for contributors.
 - [ ] **Deployment Preparation**: Set up production hosting, configure environment variables, and ensure the build process is stable.
 - [ ] **UI/UX Final Polish**: Review layouts across device sizes and ensure all visual components match the design system.
+- [ ] **Mobile Experience Polish**: Optimize the dashboard, match views, and logic editor for touch interactions and small viewports.
 - [ ] **Security & Data Audit**: Verify RLS policies, session handling, and database integrity for a live environment.
 - [ ] **Alpha Access Control**: Implement a whitelist or "Alpha Key" system to restrict signups and official deployments, while keeping the dashboard public for viewing and scratchpad experimentation.
 - [ ] **Authentic Voice Pass**: Review and rewrite all site copy, documentation, and blog placeholders to ensure they sound like a human creator rather than a marketing team or an AI.

@@ -510,7 +510,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 							disabled={isSimulating}
 							onclick={() => {
 								if (activeTab === 'REF') return;
-								modalInputName = '';
+								modalInputName = `Draft ${new Date().toLocaleDateString()}`;
 								modalSelectedOverwriteId = '';
 								isScratchpadModalOpen = true;
 							}}
@@ -657,14 +657,12 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 							</div>
 							<button 
 								onclick={() => {
-									const name = prompt('Name for new scratchpad:', `Draft ${new Date().toLocaleDateString()}`);
-									if (name) {
-										scratchpad.addScratchpad(teamId, name, teamCodes[teamKey as 'A' | 'B']);
-										const newScratchpads = $scratchpad[teamId] || [];
-										if (newScratchpads.length > 0) {
-											selectVersion(teamKey as 'A' | 'B', 'scratch', newScratchpads[newScratchpads.length - 1].id);
-										}
-									}
+									activeTab = teamKey as 'A' | 'B';
+									modalInputName = `Draft ${new Date().toLocaleDateString()}`;
+									modalSelectedOverwriteId = '';
+									isScratchpadModalOpen = true;
+									isSwitcherOpen.A = false;
+									isSwitcherOpen.B = false;
 								}}
 								class="w-full rounded-lg border border-dashed border-white/10 p-2 text-[10px] font-bold uppercase tracking-widest text-white/40 transition-colors hover:border-white/20 hover:bg-white/5 hover:text-white/70"
 							>

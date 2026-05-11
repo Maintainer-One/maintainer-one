@@ -70,15 +70,12 @@ async function bootstrap() {
             let team;
             if (existingTeam) {
                 team = existingTeam;
-                // Clear active version and update styling
+                // Update styling
                 await supabase.from('teams').update({ 
                     color: v.color, 
                     logo_url: v.logo, 
-                    logo_icon_url: v.icon,
-                    active_version_id: null
+                    logo_icon_url: v.icon
                 }).eq('id', team.id);
-                // Delete old code versions to prevent duplicate "Version 1"s
-                await supabase.from('team_code_versions').delete().eq('team_id', team.id);
             } else {
                 const { data: newTeam, error: teamError } = await supabase
                     .from('teams')
@@ -112,30 +109,61 @@ async function bootstrap() {
                 return logic(sense);
             `;
 
-            // Create Version
-            const { data: version, error: versionError } = await supabase
+            // Update or Create Version 1
+            const { data: existingV1s } = await supabase
                 .from('team_code_versions')
-                .insert({
-                    team_id: team.id,
-                    version_number: 1,
-                    source_code: code,
-                    compiled_code: compiledCode
-                })
-                .select()
-                .single();
+                .select('id')
+                .eq('team_id', team.id)
+                .eq('version_number', 1);
 
-            if (versionError) {
-                console.error(`Error creating version for ${v.name}:`, versionError);
-                continue;
+            let version;
+            if (existingV1s && existingV1s.length > 0) {
+                const { data, error: updateError } = await supabase
+                    .from('team_code_versions')
+                    .update({ source_code: code, compiled_code: compiledCode })
+                    .eq('id', existingV1s[0].id)
+                    .select()
+                    .single();
+                if (updateError) {
+                    console.error(`Error updating version 1 for ${v.name}:`, updateError);
+                    continue;
+                }
+                version = data;
+                
+                // Cleanup any duplicate version 1s from previous bugs
+                if (existingV1s.length > 1) {
+                    const duplicateIds = existingV1s.slice(1).map(v => v.id);
+                    await supabase.from('team_code_versions').delete().in('id', duplicateIds);
+                }
+            } else {
+                const { data, error: insertError } = await supabase
+                    .from('team_code_versions')
+                    .insert({
+                        team_id: team.id,
+                        version_number: 1,
+                        source_code: code,
+                        compiled_code: compiledCode
+                    })
+                    .select()
+                    .single();
+                
+                if (insertError) {
+                    console.error(`Error creating version 1 for ${v.name}:`, insertError);
+                    continue;
+                }
+                version = data;
             }
 
-            // Set Active Version
-            await supabase
-                .from('teams')
-                .update({ active_version_id: version.id })
-                .eq('id', team.id);
+            // Set Active Version ONLY if the team doesn't have one selected yet
+            if (!team.active_version_id) {
+                await supabase
+                    .from('teams')
+                    .update({ active_version_id: version.id })
+                    .eq('id', team.id);
+                team.active_version_id = version.id;
+            }
 
-            teams.push({ ...team, active_version_id: version.id });
+            teams.push({ ...team, active_version_id: team.active_version_id });
             console.log(`✅ Created Team: ${v.name} (v1)`);
         } catch (err) {
             console.error(`Failed to process team ${v.name}:`, err);

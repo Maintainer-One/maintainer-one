@@ -116,11 +116,21 @@ console.log("⌨️  [Lifecycle] Commands: type 'migrate' to run migrations, 're
       }).spawn();
       await p.status;
       console.log("\n📖 [Lifecycle] Returning to logs...\n");
+    } else if (input === "season") {
+      console.log("\n🌱 [Lifecycle] Seeding a new multiseason test...");
+      const p = new Deno.Command("deno", {
+        args: ["run", "-A", "scripts/seed_season.ts"],
+        stdout: "inherit",
+        stderr: "inherit",
+      }).spawn();
+      await p.status;
+      console.log("\n📖 [Lifecycle] Returning to logs...\n");
     } else if (input === "help") {
       console.log("\n❓ [Lifecycle] Available commands:");
       console.log("   - migrate : Runs 'supabase migration up'");
       console.log("   - reset   : Runs 'supabase db reset'");
       console.log("   - seed    : Runs 'scripts/bootstrap_inaugural.ts'");
+      console.log("   - season  : Runs 'scripts/seed_season.ts' to append a new season");
       console.log("   - help    : Shows this message");
       console.log("   - Ctrl+C  : Stops Supabase and exits\n");
     }
