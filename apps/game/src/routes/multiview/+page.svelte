@@ -407,6 +407,8 @@
 	<!-- Sidebar (Drawer) -->
 	{#if isSidebarOpen}
 		<!-- Backdrop -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
 		<div 
 			class="absolute inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity"
 			onclick={() => isSidebarOpen = false}
@@ -422,6 +424,7 @@
 				<h2 class="text-sm font-black text-white uppercase tracking-widest">Select Games</h2>
 				<button 
 					onclick={() => isSidebarOpen = false}
+					aria-label="Close Sidebar"
 					class="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
 				>
 					<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>

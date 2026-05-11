@@ -299,7 +299,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					isSimulating = false;
 				}
 			};
-			Editor = (await import('$lib/components/SmartEditor.svelte')).default;
+			Editor = (await import('$lib/components/Editor.svelte')).default;
 		}
 	});
 

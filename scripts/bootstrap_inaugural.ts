@@ -70,8 +70,15 @@ async function bootstrap() {
             let team;
             if (existingTeam) {
                 team = existingTeam;
-                // Update color and logo just in case
-                await supabase.from('teams').update({ color: v.color, logo_url: v.logo, logo_icon_url: v.icon }).eq('id', team.id);
+                // Clear active version and update styling
+                await supabase.from('teams').update({ 
+                    color: v.color, 
+                    logo_url: v.logo, 
+                    logo_icon_url: v.icon,
+                    active_version_id: null
+                }).eq('id', team.id);
+                // Delete old code versions to prevent duplicate "Version 1"s
+                await supabase.from('team_code_versions').delete().eq('team_id', team.id);
             } else {
                 const { data: newTeam, error: teamError } = await supabase
                     .from('teams')

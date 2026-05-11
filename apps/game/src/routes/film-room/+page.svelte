@@ -474,8 +474,8 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				await loadMatchReplay(replays[0].id);
 			}
 
-			// Initialize Smart Editor
-			Editor = (await import('$lib/components/SmartEditor.svelte')).default;
+			// Initialize Editor
+			Editor = (await import('$lib/components/Editor.svelte')).default;
 		}
 	});
 	

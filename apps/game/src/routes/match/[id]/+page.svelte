@@ -216,7 +216,7 @@
 	<main class="flex flex-1 flex-col p-6 lg:p-10 relative overflow-hidden">
 		<header class="mb-8 flex items-center justify-between min-h-[64px]">
 			<div class="flex-1 flex items-center justify-start">
-				<a href="{returnToUrl}" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:text-[var(--color-brand-primary)] shadow-lg backdrop-blur-md">
+				<a href="{returnToUrl}" aria-label="Back to Match View" class="group flex h-10 w-10 items-center justify-center rounded-xl border border-white/5 bg-black/20 text-white/20 transition-all hover:text-[var(--color-brand-primary)] shadow-lg backdrop-blur-md">
 					<svg class="h-5 w-5 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
 				</a>
 			</div>
