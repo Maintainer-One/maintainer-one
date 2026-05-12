@@ -268,14 +268,19 @@
 					Watch Match &rarr;
 				</a>
 			{:else}
-				<a href="{base}/match/{match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all hover:bg-white/5 py-2 rounded-lg">
-					Watch
+				<a href="{base}/team/{match.home_team.id}/film-room?match={match.id}" class="flex items-center justify-center px-4 transition-all hover:bg-white/5 py-2 rounded-lg group" style="color: {match.home_team.color}" title="{match.home_team.name} Film Room">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-60 group-hover:opacity-100 transition-opacity"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h4"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 12h4"/><path d="M17 16.5h4"/></svg>
 				</a>
-				<a href="{base}/film-room?match={match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/5 py-2 rounded-lg">
-					Analyze
-				</a>
-				<a href="{base}/match/{match.id}/stats" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]/60 hover:text-[var(--color-brand-primary)] transition-all hover:bg-[var(--color-brand-primary)]/5 py-2 rounded-lg border-l border-white/5">
-					Stats
+				<div class="flex flex-1 border-l border-r border-white/5">
+					<a href="{base}/match/{match.id}" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all hover:bg-white/5 py-2">
+						Watch
+					</a>
+					<a href="{base}/match/{match.id}/stats" class="flex-1 text-center text-[9px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all hover:bg-white/5 py-2 border-l border-white/5">
+						Stats
+					</a>
+				</div>
+				<a href="{base}/team/{match.away_team.id}/film-room?match={match.id}" class="flex items-center justify-center px-4 transition-all hover:bg-white/5 py-2 rounded-lg group" style="color: {match.away_team.color}" title="{match.away_team.name} Film Room">
+					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-60 group-hover:opacity-100 transition-opacity"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h4"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 12h4"/><path d="M17 16.5h4"/></svg>
 				</a>
 			{/if}
 		</div>

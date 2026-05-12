@@ -1,0 +1,1 @@
+function e(e){return new Worker(``+new URL(`../workers/sim.worker-De86-9a-.js`,import.meta.url).href,{name:e?.name})}export{e as t};

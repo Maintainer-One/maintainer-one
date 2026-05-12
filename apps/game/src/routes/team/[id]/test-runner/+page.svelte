@@ -562,7 +562,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 								</td>
 								<td class="px-6 py-4 text-right">
 									<a 
-										href="{base}/film-room?seed={res.seed}" 
+										href="{base}/team/{teamId}/film-room?seed={res.seed}&opponent={selectedOpponent}&version={selectedVersionOpponent}" 
 										class="text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
 									>
 										Visual Replay

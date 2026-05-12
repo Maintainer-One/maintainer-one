@@ -1,0 +1,49 @@
+{
+  "headers": [
+    {
+      "source": "/_app/immutable/:file*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, immutable, max-age=31536000"
+        }
+      ]
+    }
+  ],
+  "redirects": [],
+  "rewrites": [],
+  "staticFiles": [
+    {
+      "source": "/_app/immutable/:file*",
+      "destination": ".deno-deploy/static/_app/immutable/:file*"
+    },
+    {
+      "source": "/logos/amber_seekers.svg",
+      "destination": ".deno-deploy/static/logos/amber_seekers.svg"
+    },
+    {
+      "source": "/logos/beige_blockers.svg",
+      "destination": ".deno-deploy/static/logos/beige_blockers.svg"
+    },
+    {
+      "source": "/logos/crimson_strikers.svg",
+      "destination": ".deno-deploy/static/logos/crimson_strikers.svg"
+    },
+    {
+      "source": "/logos/denim_drifters.svg",
+      "destination": ".deno-deploy/static/logos/denim_drifters.svg"
+    },
+    {
+      "source": "/logos/emerald_pausers.svg",
+      "destination": ".deno-deploy/static/logos/emerald_pausers.svg"
+    },
+    {
+      "source": "/logos/fuchsia_soloists.svg",
+      "destination": ".deno-deploy/static/logos/fuchsia_soloists.svg"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": ".deno-deploy/static/robots.txt"
+    }
+  ]
+}

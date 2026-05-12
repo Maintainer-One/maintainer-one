@@ -7,8 +7,8 @@
 	type Season = { id: string, name: string, season_number: number, status: string };
 	type Match = { 
 		id: string, 
-		home_team: { name: string, color?: string }, 
-		away_team: { name: string, color?: string }, 
+		home_team: { id: string, name: string, color?: string }, 
+		away_team: { id: string, name: string, color?: string }, 
 		scheduled_time: string, 
 		status: 'scheduled' | 'simmed' | 'played' | 'simulated',
 		home_score: number | null,
@@ -50,8 +50,8 @@
 				status,
 				home_score,
 				away_score,
-				home_team:teams!home_team_id (name, color),
-				away_team:teams!away_team_id (name, color)
+				home_team:teams!home_team_id (id, name, color),
+				away_team:teams!away_team_id (id, name, color)
 			`)
 			.eq('season_id', seasonId)
 			.order('scheduled_time', { ascending: true });
@@ -73,8 +73,8 @@
 				status,
 				home_score,
 				away_score,
-				home_team:teams!home_team_id (name, color),
-				away_team:teams!away_team_id (name, color)
+				home_team:teams!home_team_id (id, name, color),
+				away_team:teams!away_team_id (id, name, color)
 			`)
 			.order('scheduled_time', { ascending: true });
 
@@ -166,10 +166,7 @@
 
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{#each dayMatches as match}
-							<a 
-								href="{base}/{(match.status === 'played' || match.status === 'simulated') ? `match/${match.id}` : '#'}"
-								class="group flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-6 transition-all hover:bg-black/40 hover:border-[var(--color-brand-primary)]/30 hover:scale-[1.01] {(match.status !== 'played' && match.status !== 'simulated') ? 'cursor-default' : ''}"
-							>
+							<div class="group relative flex items-center justify-between bg-black/20 border border-white/5 rounded-2xl p-6 transition-all hover:bg-black/40 hover:border-[var(--color-brand-primary)]/30 hover:scale-[1.01]">
 								<div class="flex flex-col gap-1">
 									<span class="text-[8px] font-black uppercase tracking-[0.2em] {(match.status === 'played' || match.status === 'simulated') ? 'text-emerald-400' : 'text-amber-400'}">
 										{(match.status === 'played' || match.status === 'simulated') ? 'Completed' : 'Upcoming'}
@@ -199,14 +196,33 @@
 									</div>
 								</div>
 
-								<div class="flex items-center justify-center w-8 h-8 rounded-full bg-white/5 text-white/20 group-hover:text-[var(--color-brand-primary)] transition-colors">
-									{#if match.status === 'played' || match.status === 'simulated'}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-									{:else}
-										<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-									{/if}
-								</div>
-							</a>
+								<!-- Hover Overlay with Actions -->
+								{#if match.status === 'played' || match.status === 'simulated'}
+									<div class="absolute inset-0 flex items-center justify-center gap-4 sm:gap-6 bg-black/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl z-10">
+										<a href="{base}/team/{match.home_team.id}/film-room?match={match.id}" 
+										   class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-current"
+										   style="color: {match.home_team.color}"
+										   title="{match.home_team.name} Film Room">
+											<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+											<span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest hidden sm:inline">Film Room</span>
+										</a>
+
+										<a href="{base}/match/{match.id}" 
+										   class="flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-xl bg-[var(--color-brand-primary)] text-black hover:scale-105 transition-transform shadow-[0_0_20px_rgba(5,150,105,0.3)] border border-emerald-400">
+											<svg class="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+											<span class="text-[10px] sm:text-xs font-black uppercase tracking-widest">Play</span>
+										</a>
+
+										<a href="{base}/team/{match.away_team.id}/film-room?match={match.id}" 
+										   class="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-transparent hover:border-current"
+										   style="color: {match.away_team.color}"
+										   title="{match.away_team.name} Film Room">
+											<span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest hidden sm:inline">Film Room</span>
+											<svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+										</a>
+									</div>
+								{/if}
+							</div>
 						{/each}
 					</div>
 				</section>

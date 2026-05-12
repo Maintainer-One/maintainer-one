@@ -146,8 +146,8 @@
 			simWorker.postMessage({
 				type: 'SIMULATE_BRANCH',
 				startState: JSON.parse(JSON.stringify(initialState)),
-				alphaCompiled: homeV.compiled_code,
-				bravoCompiled: awayV.compiled_code,
+				alphaBlocks: [{ startTick: 0, endTick: null, compiled: homeV.compiled_code }],
+				bravoBlocks: [{ startTick: 0, endTick: null, compiled: awayV.compiled_code }],
 				maxTicks,
 				config: config ? JSON.parse(JSON.stringify(config)) : undefined
 			});
@@ -331,7 +331,7 @@
 		{:else if currentState}
 			<div class="flex-1 flex flex-col items-center justify-center min-h-0">
 				<div class="flex-1 w-full max-w-4xl min-h-0 p-4 flex items-center justify-center">
-					<ReplayGrid state={currentState} {showControlMap} {playSpeed} />
+					<ReplayGrid primaryState={currentState} {showControlMap} {playSpeed} />
 				</div>
 
 				<!-- Playback Controls -->

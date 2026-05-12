@@ -68,9 +68,13 @@
 				<p class="text-sm font-medium text-white/50 mt-2 uppercase tracking-widest">{match.seasons?.name || 'Season Match'}</p>
 			</div>
 			<div class="flex gap-3">
-				<a href="{base}/film-room?match={match.id}" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-lg hover:bg-white/10 bg-white/5">
-					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-					Film Room
+				<a href="{base}/team/{match.home_team.id}/film-room?match={match.id}" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-lg hover:bg-white/10 bg-white/5" style="border-color: {match.home_team.color}40; color: {match.home_team.color}">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h4"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 12h4"/><path d="M17 16.5h4"/></svg>
+					{match.home_team.name} Film Room
+				</a>
+				<a href="{base}/team/{match.away_team.id}/film-room?match={match.id}" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-lg hover:bg-white/10 bg-white/5" style="border-color: {match.away_team.color}40; color: {match.away_team.color}">
+					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 3v18"/><path d="M17 3v18"/><path d="M3 7.5h4"/><path d="M3 12h4"/><path d="M3 16.5h4"/><path d="M17 7.5h4"/><path d="M17 12h4"/><path d="M17 16.5h4"/></svg>
+					{match.away_team.name} Film Room
 				</a>
 				<a href="{base}/match/{match.id}" class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors px-4 py-2 border border-white/10 rounded-lg hover:bg-white/10 bg-white/5">
 					<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>

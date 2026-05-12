@@ -1,0 +1,1 @@
+import{t as e}from"./DNlqdcAh.js";function t(t,n=`v1`,r,i){let a=e(n),o=r&&Object.keys(r).length>0?r:a.defaultConfig;return a.createInitialState(o,t,i)}export{t};

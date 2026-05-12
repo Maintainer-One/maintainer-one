@@ -351,7 +351,7 @@
 							<div class="game-render-area w-full relative bg-black/20 flex items-center justify-center p-6 pt-2">
 								<div class="w-full aspect-square flex items-center justify-center pointer-events-none max-h-full">
 									{#if liveData && liveData.state}
-										<ReplayGrid state={liveData.state} {playSpeed} showControlMap={false} />
+										<ReplayGrid primaryState={liveData.state} {playSpeed} showControlMap={false} />
 									{:else if liveData?.isPreview}
 										<div class="flex flex-col items-center gap-8 text-center" in:fade>
 											<div class="flex items-center gap-12">

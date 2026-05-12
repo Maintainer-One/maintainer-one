@@ -92,6 +92,7 @@ _The goal is to finalize all critical paths, squash lingering bugs, and successf
 - [ ] **Alpha Access Control**: Implement a whitelist or "Alpha Key" system to restrict signups and official deployments, while keeping the dashboard public for viewing and scratchpad experimentation.
 - [ ] **Authentic Voice Pass**: Review and rewrite all site copy, documentation, and blog placeholders to ensure they sound like a human creator rather than a marketing team or an AI.
 - [ ] **Streamer Prep & Practice**: Design OBS-friendly UI overlays and run low-stakes "Summer Dev Streams" to practice the broadcast flow before the official September launch.
+- [x] **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
 
 ### Phase 8: The Protocol RFC Process & Reputation
 
@@ -108,7 +109,6 @@ _The goal is to formalize how the game evolves and how trust is built._
 - **Tick-by-Tick Event Tracking**: Create a dedicated `match_events` database schema to capture granular simulation events (e.g., stuns, captures) with their exact tick and positional data, enabling advanced analytics and scrubber functionality in the Film Room.
 - **Tiered Official Leagues**: Expanding beyond "Maintainer One" to lower-tier official leagues (e.g., Maintainer Two) as popularity demands, making top-tier team maintenance a prestigious achievement.
 - **Fan Predictions**: A gamified fan experience featuring outcome prediction mechanics and global leaderboards to keep viewers engaged with "premiering" matches.
-- **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
 - **Automated Hub Scraper**: Implementing targeted scraping for highly trusted profiles (e.g., reliable Twitter feeds or YouTube channels) to automatically curate content for the "Around the League" hub.
 
 ---

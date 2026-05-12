@@ -19,10 +19,11 @@
 
 	interface Props {
 		code: string;
+		readOnly?: boolean;
 		onCodeChange?: (newCode: string) => void;
 	}
 
-	let { code, onCodeChange }: Props = $props();
+	let { code, readOnly = false, onCodeChange }: Props = $props();
 
 	let editorContainer: HTMLDivElement;
 	let view: EditorView;
@@ -53,6 +54,7 @@
 				tsLinterWorker(),
 				tsHoverWorker(),
 				autocompletion({ override: [tsAutocompleteWorker()] }),
+				EditorState.readOnly.of(readOnly),
 				EditorView.lineWrapping,
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged && onCodeChange && !isSettingValue) {
@@ -93,7 +95,7 @@
 			Loading Editor Environment...
 		</div>
 	{/if}
-	<div bind:this={editorContainer} class="h-full w-full overflow-hidden rounded-lg border border-white/10 bg-[#282c34] text-sm shadow-inner"></div>
+	<div bind:this={editorContainer} class="h-full w-full overflow-hidden rounded-lg border border-white/10 bg-[#282c34] text-sm shadow-inner {readOnly ? 'opacity-80' : ''}"></div>
 </div>
 
 <style>
@@ -113,6 +115,9 @@
 	}
 	:global(.cm-tooltip-hover) {
 		white-space: pre-wrap !important;
+	}
+	:global(.cm-editor[aria-readonly="true"] .cm-content) {
+		cursor: not-allowed !important;
 	}
 </style>
 

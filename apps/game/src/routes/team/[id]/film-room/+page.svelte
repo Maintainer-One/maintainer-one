@@ -17,7 +17,9 @@
 
 	import type { CodeBlock, Timeline } from '$lib/types/film-room';
 
-	type MatchItem = { id: string, home_team: { name: string, color: string }, away_team: { name: string, color: string } };
+	let teamId = $derived(page.params.id);
+
+	type MatchItem = { id: string, home_team: { id: string, name: string, color: string }, away_team: { id: string, name: string, color: string } };
 	let replays = $state<MatchItem[]>([]);
 	let selectedReplayId = $state<string | null>(null);
 
@@ -55,6 +57,16 @@
 	let activeDraftIds = $state({ A: '', B: '' }); // Points to IDs in the scratchpad store
 	let isVersionBrowserOpen = $state(false);
 	let loadedMatch = $state<any>(null);
+
+	let userTeamSlot = $derived((Array.isArray(loadedMatch?.away_team) ? loadedMatch.away_team[0]?.id : loadedMatch?.away_team?.id) === teamId ? 'B' : 'A');
+	let opponentTeamSlot = $derived((Array.isArray(loadedMatch?.away_team) ? loadedMatch.away_team[0]?.id : loadedMatch?.away_team?.id) === teamId ? 'A' : 'B');
+
+	// Scenario Configuration State
+	let allTeams = $state<{ id: string, name: string, color: string }[]>([]);
+	let selectedOpponentId = $state<string | null>(null);
+	let versionsOpponent = $state<{ id: string, version_number: number, source_code: string, compiled_code: string, name?: string }[]>([]);
+	let selectedOpponentVersionId = $state<string | null>(null);
+	let customSeed = $state<number>(Math.floor(Math.random() * 1000000));
 
 	// Custom Modal State
 	let isPublishModalOpen = $state(false);
@@ -101,6 +113,20 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	// Removed loadReplay since we use loadMatchReplay exclusively now.
 
+	const setupInitialDraft = (team: 'A' | 'B', tId: string, version: any) => {
+		const existingDrafts = $scratchpad[tId] || [];
+		let draft = existingDrafts.find(d => d.name === 'Match Default' || d.name === 'Autosave');
+		
+		if (!draft) {
+			const newId = scratchpad.addScratchpad(tId, 'Match Default', version?.source_code || STARTER_CODE);
+			activeDraftIds[team] = newId;
+			teamCodes[team] = version?.source_code || STARTER_CODE;
+		} else {
+			activeDraftIds[team] = draft.id;
+			teamCodes[team] = draft.code;
+		}
+	};
+
 	async function loadMatchReplay(matchId: string) {
 		stopPlayback();
 		isSimulating = true;
@@ -128,10 +154,16 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 		// @ts-ignore
 		loadedMatch = match;
+		
+		const homeTeam = Array.isArray(match.home_team) ? match.home_team[0] : match.home_team;
+		const awayTeam = Array.isArray(match.away_team) ? match.away_team[0] : match.away_team;
+
 		// @ts-ignore
-		teamIds.A = match.home_team.id;
+		teamIds.A = homeTeam.id;
 		// @ts-ignore
-		teamIds.B = match.away_team.id;
+		teamIds.B = awayTeam.id;
+		
+		activeTab = awayTeam?.id === teamId ? 'B' : 'A';
 
 		// Fetch historical versions for both teams
 		const { data: allVersions } = await supabase
@@ -146,27 +178,12 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		}
 
 		// @ts-ignore
-		const matchHomeVersionId = match.home_code_version_id || match.home_team.active_version_id;
+		const matchHomeVersionId = match.home_code_version_id || homeTeam.active_version_id;
 		// @ts-ignore
-		const matchAwayVersionId = match.away_code_version_id || match.away_team.active_version_id;
+		const matchAwayVersionId = match.away_code_version_id || awayTeam.active_version_id;
 
 		const homeV = teamVersions.A.find(v => v.id === matchHomeVersionId) || teamVersions.A[0];
 		const awayV = teamVersions.B.find(v => v.id === matchAwayVersionId) || teamVersions.B[0];
-
-		// Populate initial drafts if they don't exist, or load the match version into a "Match Default" draft
-		const setupInitialDraft = (team: 'A' | 'B', teamId: string, version: any) => {
-			const existingDrafts = $scratchpad[teamId] || [];
-			let draft = existingDrafts.find(d => d.name === 'Match Default' || d.name === 'Autosave');
-			
-			if (!draft) {
-				const id = scratchpad.addScratchpad(teamId, 'Match Default', version?.source_code || STARTER_CODE);
-				activeDraftIds[team] = id;
-				teamCodes[team] = version?.source_code || STARTER_CODE;
-			} else {
-				activeDraftIds[team] = draft.id;
-				teamCodes[team] = draft.code;
-			}
-		};
 
 		setupInitialDraft('A', teamIds.A, homeV);
 		setupInitialDraft('B', teamIds.B, awayV);
@@ -177,9 +194,21 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		playSpeed = baseTickRate;
 
 		// @ts-ignore
-		const initialState = createInitialState(Number(match.public_seed), match.seasons?.protocol_version || match.leagues.protocol_version, activeConfig, {
-			A: match.home_team,
-			B: match.away_team
+		customSeed = Number(match.public_seed);
+		const computedOpponentSlot = awayTeam?.id === teamId ? 'A' : 'B';
+		selectedOpponentId = teamIds[computedOpponentSlot];
+		
+		// Ensure opponent versions are loaded before setting selectedOpponentVersionId so the select dropdown doesn't clear it
+		if (selectedOpponentId) {
+			await loadOpponentVersions(selectedOpponentId);
+		}
+		
+		selectedOpponentVersionId = computedOpponentSlot === 'A' ? matchHomeVersionId : matchAwayVersionId;
+
+		// @ts-ignore
+		const initialState = createInitialState(customSeed, match.seasons?.protocol_version || match.leagues.protocol_version, activeConfig, {
+			A: homeTeam,
+			B: awayTeam
 		});
 
 		const rootTimeline: Timeline = {
@@ -247,6 +276,88 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		selectedReplayId = target.value;
 		if (selectedReplayId) {
 			loadMatchReplay(selectedReplayId);
+		}
+	}
+
+	async function loadOpponentVersions(oppTeamId: string) {
+		const { data, error } = await supabase
+			.from('team_code_versions')
+			.select('id, version_number, source_code, compiled_code, name')
+			.eq('team_id', oppTeamId)
+			.order('version_number', { ascending: false });
+		
+		if (!error && data) {
+			versionsOpponent = data;
+			if (data.length > 0 && !selectedOpponentVersionId) {
+				selectedOpponentVersionId = data[0].id;
+			}
+		}
+	}
+
+	function handleOpponentChange() {
+		if (selectedOpponentId) {
+			selectedOpponentVersionId = null;
+			loadOpponentVersions(selectedOpponentId);
+		}
+	}
+
+	async function runCustomScenario() {
+		if (!selectedOpponentId || !selectedOpponentVersionId) return;
+		
+		stopPlayback();
+		isSimulating = true;
+		
+		const oppTeam = allTeams.find(t => t.id === selectedOpponentId);
+		const oppV = versionsOpponent.find(v => v.id === selectedOpponentVersionId);
+		const homeV = teamVersions[userTeamSlot]?.find(v => v.id === activeDraftIds[userTeamSlot]) 
+			|| teamVersions[userTeamSlot]?.[0];
+			
+		// Fallback to activeConfig if set, else empty
+		const configToUse = activeConfig || {};
+		const versionToUse = currentProtocol?.id || 'v1';
+
+		// Create mock match data so the rest of the Film Room behaves normally
+		loadedMatch = {
+			home_team_id: teamId,
+			away_team_id: oppTeam?.id,
+			home_team: { id: teamId, name: 'Home', color: '#3b82f6', ...loadedMatch?.home_team },
+			away_team: { id: oppTeam?.id, name: oppTeam?.name, color: oppTeam?.color }
+		};
+
+		// @ts-ignore
+		const initialState = createInitialState(customSeed, versionToUse, configToUse, {
+			A: loadedMatch.home_team,
+			B: loadedMatch.away_team
+		});
+
+		const rootTimeline: Timeline = {
+			id: 'root',
+			name: 'Custom Scenario',
+			states: [initialState],
+			color: '#8b5cf6', // purple for custom
+			parentId: null,
+			blocks: {
+				A: [{ startTick: 0, endTick: null, code: homeV?.source_code || teamCodes.A, compiled: homeV?.compiled_code }],
+				B: [{ startTick: 0, endTick: null, code: oppV?.source_code, compiled: oppV?.compiled_code }]
+			}
+		};
+
+		timelines = [rootTimeline];
+		activeTimelineId = 'root';
+		globalTick = 0;
+
+		const maxTicks = (configToUse?.maxGameTicks || 100) + (configToUse?.overtimeAllowed ? (configToUse?.pointZoneMaxAge || 40) : 0) + 100;
+
+		if (simWorker) {
+			simWorker.postMessage({
+				type: 'SIMULATE_BRANCH',
+				timelineId: 'root',
+				startState: JSON.parse(JSON.stringify(initialState)),
+				alphaBlocks: rootTimeline.blocks.A,
+				bravoBlocks: rootTimeline.blocks.B,
+				maxTicks,
+				config: configToUse ? JSON.parse(JSON.stringify(configToUse)) : undefined
+			});
 		}
 	}
 
@@ -624,8 +735,9 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			// Fetch available replays first
 			const { data: recentMatches } = await supabase
 				.from('matches')
-				.select(`id, home_team:teams!home_team_id (name, color), away_team:teams!away_team_id (name, color)`)
+				.select(`id, home_team_id, away_team_id, home_team:teams!home_team_id (id, name, color), away_team:teams!away_team_id (id, name, color)`)
 				.in('status', ['played', 'simulated', 'simmed'])
+				.or(`home_team_id.eq.${page.params.id},away_team_id.eq.${page.params.id}`)
 				.order('scheduled_time', { ascending: false })
 				.limit(10);
 				
@@ -634,10 +746,30 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				replays = recentMatches;
 			}
 
+			// Fetch all teams for opponent selection
+			const { data: teamsData } = await supabase.from('teams').select('id, name, color').neq('id', teamId);
+			if (teamsData) allTeams = teamsData;
+
 			const matchId = page.url.searchParams.get('match');
+			const seedParam = page.url.searchParams.get('seed');
+			const oppParam = page.url.searchParams.get('opponent');
+			const versionParam = page.url.searchParams.get('version');
+
 			if (matchId) {
 				selectedReplayId = matchId;
 				await loadMatchReplay(matchId);
+			} else if (seedParam && oppParam && versionParam) {
+				customSeed = parseInt(seedParam, 10);
+				selectedOpponentId = oppParam;
+				
+				await loadOpponentVersions(oppParam);
+				selectedOpponentVersionId = versionParam;
+				
+				// Ensure draft codes are set up before running
+				const homeV = teamVersions[userTeamSlot]?.[0];
+				setupInitialDraft(userTeamSlot, teamId, homeV);
+
+				runCustomScenario();
 			} else if (replays.length > 0) {
 				selectedReplayId = replays[0].id;
 				await loadMatchReplay(replays[0].id);
@@ -681,9 +813,11 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 	});
 	let currentProtocol = $derived(primaryState ? getProtocol(primaryState.protocolVersion) : null);
 	let currentMatch = $derived(replays.find(r => r.id === selectedReplayId));
-
 	// Derived values for VersionBrowser
-	let activeTeamData = $derived(activeTab === 'A' ? loadedMatch?.home_team : loadedMatch?.away_team);
+	let activeTeamData = $derived(activeTab === 'A' 
+		? (Array.isArray(loadedMatch?.home_team) ? loadedMatch?.home_team[0] : loadedMatch?.home_team) 
+		: (Array.isArray(loadedMatch?.away_team) ? loadedMatch?.away_team[0] : loadedMatch?.away_team)
+	);
 </script>
 
 {#if isVersionBrowserOpen && activeTab !== 'REF'}
@@ -718,12 +852,12 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			<!-- Tabs -->
 			<div class="flex items-center gap-6">
 				<button 
-					onclick={() => activeTab = 'A'}
-					class="group relative flex flex-col pt-1 transition-all {activeTab === 'A' ? 'text-white' : 'text-white/20 hover:text-white/40'}"
+					onclick={() => activeTab = userTeamSlot}
+					class="group relative flex flex-col pt-1 transition-all {activeTab === userTeamSlot ? 'text-white' : 'text-white/20 hover:text-white/40'}"
 				>
 					<div class="flex items-center gap-2">
-						<span class="text-[10px] font-black uppercase tracking-widest">{loadedMatch?.home_team?.name || 'Home'}</span>
-						{#if activeTab === 'A'}
+						<span class="text-[10px] font-black uppercase tracking-widest">{loadedMatch?.[userTeamSlot === 'A' ? 'home_team' : 'away_team']?.name || 'Home'}</span>
+						{#if activeTab === userTeamSlot}
 							<button 
 								onclick={(e) => { e.stopPropagation(); isVersionBrowserOpen = true; }}
 								class="opacity-40 transition-all hover:opacity-100 hover:text-[var(--color-brand-primary)]"
@@ -733,29 +867,21 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 							</button>
 						{/if}
 					</div>
-					{#if activeTab === 'A'}
-						<div class="absolute -bottom-[15px] left-0 h-0.5 w-full" style="background-color: {loadedMatch?.home_team?.color || '#3b82f6'}"></div>
+					{#if activeTab === userTeamSlot}
+						<div class="absolute -bottom-[15px] left-0 h-0.5 w-full" style="background-color: {loadedMatch?.[userTeamSlot === 'A' ? 'home_team' : 'away_team']?.color || '#3b82f6'}"></div>
 					{/if}
 				</button>
 
 				<button 
-					onclick={() => activeTab = 'B'}
-					class="group relative flex flex-col pt-1 transition-all {activeTab === 'B' ? 'text-white' : 'text-white/20 hover:text-white/40'}"
+					onclick={() => activeTab = opponentTeamSlot}
+					class="group relative flex flex-col pt-1 transition-all {activeTab === opponentTeamSlot ? 'text-white' : 'text-white/20 hover:text-white/40'}"
 				>
 					<div class="flex items-center gap-2">
-						<span class="text-[10px] font-black uppercase tracking-widest">{loadedMatch?.away_team?.name || 'Away'}</span>
-						{#if activeTab === 'B'}
-							<button 
-								onclick={(e) => { e.stopPropagation(); isVersionBrowserOpen = true; }}
-								class="opacity-40 transition-all hover:opacity-100 hover:text-[var(--color-brand-primary)]"
-								aria-label="Open Version Browser"
-							>
-								<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-library"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>
-							</button>
-						{/if}
+						<span class="text-[10px] font-black uppercase tracking-widest">{loadedMatch?.[opponentTeamSlot === 'A' ? 'home_team' : 'away_team']?.name || 'Away'}</span>
+						<svg class="h-3 w-3 opacity-30" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10zm-6-3c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
 					</div>
-					{#if activeTab === 'B'}
-						<div class="absolute -bottom-[15px] left-0 h-0.5 w-full" style="background-color: {loadedMatch?.away_team?.color || '#f43f5e'}"></div>
+					{#if activeTab === opponentTeamSlot}
+						<div class="absolute -bottom-[15px] left-0 h-0.5 w-full" style="background-color: {loadedMatch?.[opponentTeamSlot === 'A' ? 'home_team' : 'away_team']?.color || '#f43f5e'}"></div>
 					{/if}
 				</button>
 
@@ -831,7 +957,7 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				<div class="flex-1 w-full bg-[#1e1e1e] relative min-h-0 overflow-hidden rounded-xl border border-white/5 shadow-inner">
 					{#if browser && Editor}
 						{#key activeTab}
-							<Editor code={currentLogicCode} onCodeChange={handleCodeChange} />
+							<Editor code={currentLogicCode} readOnly={activeTab === opponentTeamSlot} onCodeChange={handleCodeChange} />
 						{/key}
 					{/if}
 				</div>
@@ -917,47 +1043,81 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	<!-- Analysis Sidebar (Right) -->
 	<aside class="flex w-80 flex-col border-l border-white/5 bg-black/20 p-6 backdrop-blur-3xl lg:p-8">
-		<div class="mb-10 relative">
-			<label class="mb-3 block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
-				Match Library
+		<div class="mb-10 flex flex-col gap-4 relative">
+			<label class="block text-[10px] font-black tracking-[0.2em] text-white/30 uppercase">
+				Scenario Configuration
 			</label>
-			<button 
-				onclick={() => isLibraryOpen = !isLibraryOpen}
-				class="w-full flex items-center justify-between rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-black text-[var(--color-brand-secondary)] outline-none hover:bg-black/60 transition-all group"
-			>
-				<span>
-					{#if selectedReplayId}
-						{@const selected = replays.find(r => r.id === selectedReplayId)}
-						{selected ? `${selected.home_team.name} vs ${selected.away_team.name}` : 'Select a match'}
-					{:else}
-						Select a match
-					{/if}
-				</span>
-				<svg class="h-4 w-4 transition-transform duration-300 {isLibraryOpen ? 'rotate-180' : ''} text-white/20 group-hover:text-[var(--color-brand-primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-			</button>
+			
+			<div class="space-y-3">
+				<div>
+					<label class="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]">Target Opponent</label>
+					<select 
+						bind:value={selectedOpponentId}
+						onchange={handleOpponentChange}
+						class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50 transition-all cursor-pointer"
+					>
+						<option value={null}>Select opponent...</option>
+						{#each allTeams as team}
+							<option value={team.id}>{team.name}</option>
+						{/each}
+					</select>
+				</div>
 
-			{#if isLibraryOpen}
-				<div 
-					class="absolute top-full left-0 right-0 z-50 mt-2 rounded-2xl border border-white/10 bg-black/80 backdrop-blur-3xl shadow-2xl overflow-hidden p-1 max-h-60 overflow-y-auto no-scrollbar"
-					transition:fade={{ duration: 150 }}
-				>
-					{#each replays as replay}
-						<button 
-							onclick={() => {
-								selectedReplayId = replay.id;
-								loadMatchReplay(replay.id);
-								isLibraryOpen = false;
-							}}
-							class="w-full px-4 py-3 text-left text-[11px] font-bold transition-all rounded-xl {selectedReplayId === replay.id ? 'text-[var(--color-brand-primary)] bg-[var(--color-brand-primary)]/10' : 'text-white/40 hover:text-white hover:bg-white/5'}"
-						>
-							<div class="flex items-center justify-between">
-								<span>{replay.home_team.name} vs {replay.away_team.name}</span>
-								{#if selectedReplayId === replay.id}
-									<span class="h-1.5 w-1.5 rounded-full bg-[var(--color-brand-primary)] shadow-[0_0_8px_rgba(5,150,105,1)]"></span>
-								{/if}
-							</div>
-						</button>
-					{/each}
+				<div>
+					<label class="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]">Opponent Version</label>
+					<select 
+						bind:value={selectedOpponentVersionId}
+						disabled={!selectedOpponentId}
+						class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50 transition-all cursor-pointer disabled:opacity-50"
+					>
+						{#if versionsOpponent.length === 0}
+							<option value={null}>{selectedOpponentId ? 'Loading...' : 'Select team first'}</option>
+						{/if}
+						{#each versionsOpponent as v}
+							<option value={v.id}>V{v.version_number} {v.name ? `- ${v.name}` : ''}</option>
+						{/each}
+						{#if selectedOpponentId && $scratchpad[selectedOpponentId]}
+							<optgroup label="Local Drafts">
+								{#each $scratchpad[selectedOpponentId] as draft}
+									<option value={draft.id}>Draft: {draft.name}</option>
+								{/each}
+							</optgroup>
+						{/if}
+					</select>
+				</div>
+
+				<div class="flex items-end gap-3">
+					<div class="flex-1">
+						<label class="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-[var(--color-brand-primary)]">Match Seed</label>
+						<input 
+							type="number" 
+							bind:value={customSeed}
+							class="w-full rounded-xl border border-white/10 bg-black/40 px-4 py-3 text-xs font-mono font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50 transition-all"
+						/>
+					</div>
+					<button 
+						onclick={runCustomScenario}
+						disabled={!selectedOpponentId || !selectedOpponentVersionId || isSimulating}
+						class="rounded-xl bg-[var(--color-brand-primary)] px-4 py-3 text-xs font-black uppercase tracking-widest text-[var(--color-background-dark)] hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100 flex-shrink-0"
+					>
+						Load
+					</button>
+				</div>
+			</div>
+
+			{#if replays.length > 0}
+				<div class="mt-4 pt-4 border-t border-white/5">
+					<label class="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-white/30">Quick Load Official Match</label>
+					<select 
+						bind:value={selectedReplayId}
+						onchange={handleSelection}
+						class="w-full rounded-xl border border-white/10 bg-black/20 px-4 py-2.5 text-[10px] font-bold text-white/60 outline-none focus:border-white/20 transition-all cursor-pointer"
+					>
+						<option value={null}>Select recent match...</option>
+						{#each replays as replay}
+							<option value={replay.id}>{replay.home_team.name} vs {replay.away_team.name}</option>
+						{/each}
+					</select>
 				</div>
 			{/if}
 		</div>
