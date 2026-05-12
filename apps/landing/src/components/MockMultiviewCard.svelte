@@ -279,7 +279,7 @@
 					</div>
 				</div>
 			{:else}
-				<ReplayGrid {state} playSpeed={750} showControlMap={true} />
+				<ReplayGrid primaryState={state} playSpeed={750} showControlMap={true} />
 			{/if}
 		</div>
 	</div>

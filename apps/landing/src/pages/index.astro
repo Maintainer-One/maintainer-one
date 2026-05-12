@@ -5,8 +5,14 @@ import BrandLogo from '$lib/components/BrandLogo.svelte';
 import MultiViewShowcase from '../components/MultiViewShowcase.svelte';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || Deno.env.get("PUBLIC_SUPABASE_URL");
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || Deno.env.get("PUBLIC_SUPABASE_ANON_KEY");
+
+if (!supabaseUrl) {
+	console.error("Supabase environment variables are missing!");
+	console.log("import.meta.env:", import.meta.env);
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const { data: teams } = await supabase

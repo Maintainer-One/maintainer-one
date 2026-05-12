@@ -30,8 +30,6 @@ vite.config.ts.timestamp-*
 
 # Supabase
 .supabase/
-supabase/migrations/
-supabase/functions/
 supabase/.temp/
 
 # Deno
