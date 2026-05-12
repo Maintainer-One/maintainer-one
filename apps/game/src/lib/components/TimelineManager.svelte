@@ -12,6 +12,7 @@
 		onStepBackward,
 		onRequestSimulation,
 		onSave,
+		onLoad,
 		onPublish
 	} : {
 		timelines: Timeline[];
@@ -22,9 +23,12 @@
 		onTogglePlay: () => void;
 		onStepForward: () => void;
 		onStepBackward: () => void;
+		onRequestSimulation: () => void;
 		onSave: (timelineId: string) => void;
 		onLoad: (timelineId: string) => void;
+		onPublish?: () => void;
 	} = $props();
+
 
 	// Find the maximum tick length across all timelines to scale the UI
 	let maxTicks = $derived(Math.max(100, ...timelines.map(t => t.states.length - 1)));
