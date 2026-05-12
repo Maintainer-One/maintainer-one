@@ -14,8 +14,11 @@
 		onLoadVersion, 
 		onSelectDraft, 
 		onDeleteDraft,
+		onPublish,
+		isMaintainer = false,
 		onClose 
 	} = $props();
+
 
 	let activeSection = $state<'history' | 'drafts'>('history');
 </script>
@@ -173,6 +176,19 @@
 					<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-circle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
 					NEW DRAFT
 				</button>
+
+				{#if isMaintainer}
+					<button 
+						onclick={() => {
+							onPublish();
+							onClose();
+						}}
+						class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[var(--color-brand-primary)] text-black font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_15px_rgba(5,150,105,0.4)]"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-cloud"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4-4-4 4"/></svg>
+						Publish to League
+					</button>
+				{/if}
 			</div>
 		</footer>
 	</div>

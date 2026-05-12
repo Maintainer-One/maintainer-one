@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase';
 	import { fade, slide } from 'svelte/transition';
+	import { modal } from '$lib/stores/modal';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
+
 
 	let leagues: any[] = $state([]);
 	let isLoading = $state(true);
@@ -16,6 +21,11 @@
 	let editingLeagueId = $state<string | null>(null);
 	let editLeagueName = $state('');
 
+	let projectMaintainers: any[] = $state([]);
+	let leagueMaintainers: Record<string, any[]> = $state({});
+	let newProjectMaintainer = $state('');
+	let newLeagueMaintainer: Record<string, string> = $state({});
+
 	async function loadLeagues() {
 		const { data, error } = await supabase
 			.from('leagues')
@@ -24,8 +34,62 @@
 		
 		if (!error && data) {
 			leagues = data;
+			leagues.forEach(l => newLeagueMaintainer[l.id] = '');
 		}
+
+		await loadRoles();
 		isLoading = false;
+	}
+
+	async function loadRoles() {
+		const { data, error } = await supabase
+			.from('user_roles')
+			.select('id, role, league_id, team_id, user:profiles(username, avatar_url)');
+		
+		if (!error && data) {
+			projectMaintainers = data.filter(r => r.role === 'project_maintainer');
+			
+			const l_maintainers: Record<string, any[]> = {};
+			leagues.forEach(l => l_maintainers[l.id] = []);
+			
+			data.filter(r => r.role === 'league_maintainer' && r.league_id).forEach(r => {
+				if (!l_maintainers[r.league_id]) l_maintainers[r.league_id] = [];
+				l_maintainers[r.league_id].push(r);
+			});
+			leagueMaintainers = l_maintainers;
+		}
+	}
+
+	async function grantRole(username: string, role: string, leagueId: string | null = null, teamId: string | null = null) {
+		if (!username) return;
+		const { error } = await supabase.rpc('grant_role', {
+			target_username: username,
+			granted_role: role,
+			target_league_id: leagueId,
+			target_team_id: teamId
+		});
+		
+		if (!error) {
+			newProjectMaintainer = '';
+			if (leagueId) newLeagueMaintainer[leagueId] = '';
+			await loadRoles();
+		} else {
+			modal.alert('Error', error.message);
+		}
+	}
+
+	async function revokeRole(roleId: string) {
+		modal.confirm('Revoke Role', 'Are you sure you want to revoke this role?', async () => {
+			const { error } = await supabase.rpc('revoke_role', {
+				role_to_revoke_id: roleId
+			});
+			
+			if (!error) {
+				await loadRoles();
+			} else {
+				modal.alert('Error', error.message);
+			}
+		});
 	}
 
 	async function createLeague() {
@@ -47,7 +111,7 @@
 			await loadLeagues();
 		} else if (error) {
 			console.error(error);
-			alert('Error creating league: ' + error.message);
+			modal.alert('Error', error.message);
 		}
 	}
 
@@ -76,7 +140,7 @@
 			}
 			editingLeagueId = null;
 		} else {
-			alert('Error updating league: ' + error.message);
+			modal.alert('Error', error.message);
 		}
 	}
 
@@ -165,6 +229,47 @@
 		{/if}
 
 		<div class="space-y-4">
+			<h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-2 mb-4">Project Maintainers</h2>
+			
+			{#if isLoading}
+				<div class="flex h-16 items-center justify-center">
+					<div class="h-6 w-6 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+				</div>
+			{:else}
+				<div class="p-6 rounded-2xl bg-black/40 border border-white/5 backdrop-blur-xl shadow-xl space-y-6">
+					<div class="flex items-center gap-4">
+						<input 
+							type="text" 
+							bind:value={newProjectMaintainer} 
+							placeholder="GitHub Username"
+							class="flex-1 bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm font-bold text-white outline-none focus:border-emerald-500/50 transition-colors"
+							onkeydown={(e) => e.key === 'Enter' && grantRole(newProjectMaintainer, 'project_maintainer')}
+						/>
+						<button 
+							onclick={() => grantRole(newProjectMaintainer, 'project_maintainer')}
+							disabled={!newProjectMaintainer}
+							class="rounded-xl bg-white/10 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white hover:bg-emerald-500 hover:text-black transition-all disabled:opacity-50"
+						>
+							Add Maintainer
+						</button>
+					</div>
+
+					<div class="flex flex-wrap gap-4">
+						{#each projectMaintainers as maintainer}
+							<div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full pr-4 p-1">
+								<img src={maintainer.user.avatar_url || 'https://github.com/identicons/default.png'} alt={maintainer.user.username} class="w-8 h-8 rounded-full bg-black" />
+								<span class="text-sm font-bold text-white">{maintainer.user.username}</span>
+								<button onclick={() => revokeRole(maintainer.id)} class="text-white/40 hover:text-red-400 ml-2">
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+								</button>
+							</div>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<div class="space-y-4">
 			<h2 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 ml-2 mb-4">Active Leagues</h2>
 			
 			{#if isLoading}
@@ -215,9 +320,48 @@
 								</a>
 							</div>
 							
-							<div class="text-[9px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
-								<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-								No Maintainers Assigned
+							<div class="mt-6 border-t border-white/5 pt-4 space-y-4">
+								<div class="text-[9px] font-black uppercase tracking-widest text-white/20 flex items-center justify-between">
+									<span>League Maintainers</span>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									{#if leagueMaintainers[league.id]?.length === 0}
+										<div class="text-[9px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+											<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+											No Maintainers Assigned
+										</div>
+									{:else}
+										<div class="flex flex-wrap gap-2">
+											{#each leagueMaintainers[league.id] as maintainer}
+												<div class="flex items-center gap-2 bg-black/40 border border-white/5 rounded-full pr-3 p-1">
+													<img src={maintainer.user.avatar_url || 'https://github.com/identicons/default.png'} alt={maintainer.user.username} class="w-5 h-5 rounded-full bg-black" />
+													<span class="text-xs font-bold text-white/80">{maintainer.user.username}</span>
+													<button onclick={() => revokeRole(maintainer.id)} class="text-white/40 hover:text-red-400 ml-1">
+														<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+													</button>
+												</div>
+											{/each}
+										</div>
+									{/if}
+								</div>
+
+								<div class="flex items-center gap-2 pt-2">
+									<input 
+										type="text" 
+										bind:value={newLeagueMaintainer[league.id]} 
+										placeholder="Username"
+										class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white outline-none focus:border-emerald-500/50 transition-colors"
+										onkeydown={(e) => e.key === 'Enter' && grantRole(newLeagueMaintainer[league.id], 'league_maintainer', league.id)}
+									/>
+									<button 
+										onclick={() => grantRole(newLeagueMaintainer[league.id], 'league_maintainer', league.id)}
+										disabled={!newLeagueMaintainer[league.id]}
+										class="rounded-lg bg-white/5 px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50"
+									>
+										Add
+									</button>
+								</div>
 							</div>
 						</div>
 					{/each}

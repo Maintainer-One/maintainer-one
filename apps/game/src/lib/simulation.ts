@@ -45,8 +45,8 @@ export async function runSimulation(match: any): Promise<GameState[]> {
 		worker.postMessage({
 			type: 'SIMULATE_BRANCH',
 			startState: JSON.parse(JSON.stringify(initialState)),
-			alphaCompiled: homeV.compiled_code,
-			bravoCompiled: awayV.compiled_code,
+			alphaBlocks: [{ startTick: 0, endTick: null, compiled: homeV.compiled_code }],
+			bravoBlocks: [{ startTick: 0, endTick: null, compiled: awayV.compiled_code }],
 			maxTicks,
 			config: config ? JSON.parse(JSON.stringify(config)) : undefined
 		});

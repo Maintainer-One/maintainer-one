@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
-	import { supabase } from '$lib/supabase';
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
 	import { onMount } from 'svelte';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 
 	let match: any = $state(null);
 	let stats: any = $state(null);
@@ -92,8 +95,8 @@
 			<div class="absolute inset-0 pointer-events-none opacity-20" style="background: linear-gradient(90deg, {match.home_team.color} 0%, transparent 50%, {match.away_team.color} 100%);"></div>
 			
 			<div class="flex flex-col items-center z-10">
-				<div class="flex h-20 w-20 items-center justify-center rounded-2xl font-black text-3xl shadow-lg mb-4 border-2" style="background-color: {match.home_team.color}22; border-color: {match.home_team.color}88; color: {match.home_team.color}">
-					{match.home_team.name.charAt(0)}
+				<div class="flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg mb-4 border-2 overflow-hidden bg-black/40" style="border-color: {match.home_team.color}88;">
+					<TeamIcon teamName={match.home_team.name} color={match.home_team.color} size="size-12" />
 				</div>
 				<h2 class="text-xl font-bold text-white">{match.home_team.name}</h2>
 			</div>
@@ -105,8 +108,8 @@
 			</div>
 
 			<div class="flex flex-col items-center z-10">
-				<div class="flex h-20 w-20 items-center justify-center rounded-2xl font-black text-3xl shadow-lg mb-4 border-2" style="background-color: {match.away_team.color}22; border-color: {match.away_team.color}88; color: {match.away_team.color}">
-					{match.away_team.name.charAt(0)}
+				<div class="flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg mb-4 border-2 overflow-hidden bg-black/40" style="border-color: {match.away_team.color}88;">
+					<TeamIcon teamName={match.away_team.name} color={match.away_team.color} size="size-12" />
 				</div>
 				<h2 class="text-xl font-bold text-white">{match.away_team.name}</h2>
 			</div>

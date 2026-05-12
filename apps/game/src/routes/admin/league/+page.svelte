@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase';
 	import { fade, slide } from 'svelte/transition';
+	import { modal } from '$lib/stores/modal';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
+
 
 	type Season = { 
 		id: string, 
@@ -37,6 +42,10 @@
 	let isCreatingPlayer = $state(false);
 	let newPlayerName = $state('');
 	let newPlayerUnitIndex = $state('');
+	
+	let teamMaintainers = $state<any[]>([]);
+	let newTeamMaintainer = $state('');
+
 	
 
 	let isGeneratingSchedule = $state(false);
@@ -104,6 +113,49 @@
 		if (!error && data) {
 			leagueTeams = data;
 		}
+
+		await loadTeamMaintainers();
+	}
+
+	async function loadTeamMaintainers() {
+		if (!selectedLeagueId) return;
+		const { data, error } = await supabase
+			.from('user_roles')
+			.select('id, role, team_id, user:profiles(username, avatar_url)')
+			.eq('league_id', selectedLeagueId)
+			.eq('role', 'team_maintainer');
+		
+		if (!error && data) {
+			teamMaintainers = data;
+		}
+	}
+
+	async function grantTeamRole(username: string) {
+		if (!selectedTeamId || !username) return;
+		const { error } = await supabase.rpc('grant_role', {
+			target_username: username,
+			granted_role: 'team_maintainer',
+			target_league_id: selectedLeagueId,
+			target_team_id: selectedTeamId
+		});
+		
+		if (!error) {
+			newTeamMaintainer = '';
+			await loadTeamMaintainers();
+		} else {
+			modal.alert('Error', error.message);
+		}
+	}
+
+	async function revokeRole(roleId: string) {
+		modal.confirm('Revoke Role', 'Are you sure you want to remove this maintainer?', async () => {
+			const { error } = await supabase.rpc('revoke_role', { role_to_revoke_id: roleId });
+			if (!error) {
+				await loadTeamMaintainers();
+			} else {
+				modal.alert('Error', error.message);
+			}
+		});
 	}
 
 	async function loadSeasons() {
@@ -341,7 +393,6 @@
 		);
 	}
 
-	import { modal } from '$lib/stores/modal';
 
 	async function generateRoundRobin() {
 		if (!selectedSeasonId) return;
@@ -931,6 +982,48 @@
 						>
 							+ Add Player
 						</button>
+					</div>
+
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+						<!-- Team Maintainers Section -->
+						<div class="p-6 rounded-2xl bg-black/40 border border-white/10">
+							<h3 class="text-[9px] font-black uppercase tracking-widest text-white/40 mb-4">Team Maintainers</h3>
+							<div class="flex flex-col gap-3">
+								<div class="flex items-center gap-2">
+									<input 
+										type="text" 
+										bind:value={newTeamMaintainer} 
+										placeholder="Add GitHub Username..."
+										class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50 transition-colors"
+										onkeydown={(e) => e.key === 'Enter' && grantTeamRole(newTeamMaintainer)}
+									/>
+									<button 
+										onclick={() => grantTeamRole(newTeamMaintainer)}
+										disabled={!newTeamMaintainer}
+										class="rounded-lg bg-[var(--color-brand-primary)]/10 px-4 py-2 text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-all disabled:opacity-50"
+									>
+										Add
+									</button>
+								</div>
+								
+								<div class="space-y-2 mt-2">
+									{#each teamMaintainers.filter(m => m.team_id === selectedTeamId) as maintainer}
+										<div class="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+											<div class="flex items-center gap-3">
+												<img src={maintainer.user.avatar_url || 'https://github.com/identicons/default.png'} alt={maintainer.user.username} class="w-6 h-6 rounded-full bg-black" />
+												<span class="text-xs font-bold text-white/90">{maintainer.user.username}</span>
+											</div>
+											<button onclick={() => revokeRole(maintainer.id)} class="text-white/30 hover:text-red-400 p-1">
+												<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+											</button>
+										</div>
+									{/each}
+									{#if teamMaintainers.filter(m => m.team_id === selectedTeamId).length === 0}
+										<div class="text-[9px] font-bold text-white/30 uppercase tracking-widest py-2">No Maintainers Assigned</div>
+									{/if}
+								</div>
+							</div>
+						</div>
 					</div>
 
 					{#if isCreatingPlayer}

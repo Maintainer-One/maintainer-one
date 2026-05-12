@@ -3,9 +3,16 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
-	import { supabase, getActiveSeason } from '$lib/supabase';
+	import { getActiveSeason } from '$lib/supabase';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
 	import { fade, fly } from 'svelte/transition';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
+	import { modal } from '$lib/stores/modal';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
+
 
 	let teamId = $derived(page.params.id);
 	let teamData = $state<any>(null);
@@ -16,6 +23,9 @@
 
 	let editingVersionId = $state<string | null>(null);
 	let editingName = $state('');
+
+	let teamMaintainers = $state<any[]>([]);
+	let newTeamMaintainer = $state('');
 
 	let dataLoaded = false;
 	$effect(() => {
@@ -70,7 +80,52 @@
 			upcomingMatches = mData || [];
 		}
 
+		await loadTeamMaintainers();
 		isLoading = false;
+	}
+
+	async function loadTeamMaintainers() {
+		const { data, error } = await supabase
+			.from('user_roles')
+			.select('id, role, team_id, user:profiles(username, avatar_url)')
+			.eq('team_id', teamId)
+			.eq('role', 'team_maintainer');
+		
+		if (!error && data) {
+			teamMaintainers = data;
+		}
+	}
+
+	async function grantTeamRole(username: string) {
+		if (!username) return;
+		isSaving = true;
+		const { error } = await supabase.rpc('grant_role', {
+			target_username: username,
+			granted_role: 'team_maintainer',
+			target_league_id: teamData.league_id,
+			target_team_id: teamId
+		});
+		
+		if (!error) {
+			newTeamMaintainer = '';
+			await loadTeamMaintainers();
+		} else {
+			modal.alert('Error', error.message);
+		}
+		isSaving = false;
+	}
+
+	async function revokeRole(roleId: string) {
+		modal.confirm('Remove Maintainer', 'Are you sure you want to remove this maintainer?', async () => {
+			isSaving = true;
+			const { error } = await supabase.rpc('revoke_role', { role_to_revoke_id: roleId });
+			if (!error) {
+				await loadTeamMaintainers();
+			} else {
+				modal.alert('Error', error.message);
+			}
+			isSaving = false;
+		});
 	}
 
 	async function updateActiveVersion(versionId: string) {
@@ -142,8 +197,8 @@
 		<header class="relative border-b border-white/5 bg-black/40 p-8 lg:p-12">
 			<div class="container mx-auto flex flex-col md:flex-row md:items-center justify-between gap-8">
 				<div class="flex items-center gap-6" in:fly={{ x: -20, duration: 800 }}>
-					<div class="flex h-20 w-20 items-center justify-center rounded-2xl border-2 shadow-2xl text-3xl font-black" style="background-color: {teamData.color}22; border-color: {teamData.color}44; color: {teamData.color}">
-						{teamData.name.charAt(0)}
+					<div class="flex h-20 w-20 items-center justify-center rounded-2xl border-2 shadow-2xl overflow-hidden bg-black/40" style="border-color: {teamData.color}44;">
+						<TeamIcon teamName={teamData.name} color={teamData.color} size="size-12" class="drop-shadow-[0_0_15px_{teamData.color}44]" />
 					</div>
 					<div class="flex flex-col gap-1">
 						<div class="flex items-center gap-3">
@@ -272,6 +327,45 @@
 					<p class="text-[10px] leading-relaxed font-bold text-white/40 uppercase tracking-widest">
 						Match overrides take priority over the global active logic. Use them to deploy specialized strategy against specific opponents without affecting your default behavior.
 					</p>
+				</section>
+				
+				<!-- Maintainers Box -->
+				<section class="rounded-2xl border border-white/5 bg-black/20 p-8 space-y-4 shadow-xl">
+					<h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Team Maintainers</h3>
+					
+					<div class="flex items-center gap-2">
+						<input 
+							type="text" 
+							bind:value={newTeamMaintainer} 
+							placeholder="GitHub Username"
+							class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white outline-none focus:border-[var(--color-brand-primary)]/50 transition-colors"
+							onkeydown={(e) => e.key === 'Enter' && grantTeamRole(newTeamMaintainer)}
+						/>
+						<button 
+							onclick={() => grantTeamRole(newTeamMaintainer)}
+							disabled={!newTeamMaintainer || isSaving}
+							class="rounded-lg bg-[var(--color-brand-primary)]/10 px-4 py-2 text-[9px] font-black uppercase tracking-widest text-[var(--color-brand-primary)] hover:bg-[var(--color-brand-primary)]/20 transition-all disabled:opacity-50"
+						>
+							Add
+						</button>
+					</div>
+					
+					<div class="space-y-2 mt-4">
+						{#each teamMaintainers as maintainer}
+							<div class="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/5">
+								<div class="flex items-center gap-3">
+									<img src={maintainer.user.avatar_url || 'https://github.com/identicons/default.png'} alt={maintainer.user.username} class="w-8 h-8 rounded-full bg-black" />
+									<span class="text-sm font-bold text-white/90">{maintainer.user.username}</span>
+								</div>
+								<button onclick={() => revokeRole(maintainer.id)} class="text-white/30 hover:text-red-400 p-2" disabled={isSaving}>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+								</button>
+							</div>
+						{/each}
+						{#if teamMaintainers.length === 0}
+							<div class="text-[9px] font-bold text-white/30 uppercase tracking-widest py-2">No Maintainers Found</div>
+						{/if}
+					</div>
 				</section>
 			</div>
 		</main>

@@ -3,8 +3,11 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { onMount, onDestroy, untrack } from 'svelte';
-	import { supabase } from '$lib/supabase';
 	import { createInitialState } from '$packages/engine/core';
+
+	let { data } = $props();
+	let { supabase, session } = $derived(data);
+
 	import { getProtocol } from '$packages/protocols/registry';
 	import type { GameState } from '$packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
@@ -14,6 +17,8 @@
 	import { scratchpad } from '$lib/stores/scratchpad';
 	import VersionBrowser from '$lib/components/VersionBrowser.svelte';
 	import TimelineManager from '$lib/components/TimelineManager.svelte';
+	import { modal } from '$lib/stores/modal';
+
 
 	import type { CodeBlock, Timeline } from '$lib/types/film-room';
 
@@ -67,6 +72,11 @@
 	let versionsOpponent = $state<{ id: string, version_number: number, source_code: string, compiled_code: string, name?: string }[]>([]);
 	let selectedOpponentVersionId = $state<string | null>(null);
 	let customSeed = $state<number>(Math.floor(Math.random() * 1000000));
+
+	// Permissions
+	let userRole = $state<string | null>(null);
+	let isMaintainer = $derived(userRole === 'team_maintainer' || userRole === 'project_maintainer');
+
 
 	// Custom Modal State
 	let isPublishModalOpen = $state(false);
@@ -461,19 +471,21 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 
 	let currentLogicCode = $derived(activeTab === 'REF' ? '' : teamCodes[activeTab as 'A' | 'B']);
 
-	import { modal } from '$lib/stores/modal';
-
 	async function executePublish() {
 		if (activeTab === 'REF') return;
-		
-		const matchId = page.url.searchParams.get('match');
-		if (!matchId) {
-			modal.alert('Action Required', 'You must be viewing a specific match to publish logic for a team.');
+		if (!isMaintainer) {
+			modal.alert('Permission Denied', 'Only Team Maintainers can publish new code versions to the league.');
+			return;
+		}
+
+		if (!selectedReplayId) {
+			modal.alert('Context Required', 'Please select a match replay to confirm team context for publication.');
 			return;
 		}
 
 		isPublishModalOpen = false;
 		isSimulating = true;
+
 		
 		try {
 			// 1. Get the team ID from the match
@@ -483,13 +495,15 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 					home_team_id,
 					away_team_id
 				`)
-				.eq('id', matchId)
+				.eq('id', selectedReplayId)
 				.single();
 
 			if (matchError || !match) throw new Error('Could not find match team data');
 
-			const teamId = activeTab === 'A' ? match.home_team_id : match.away_team_id;
-			const code = teamCodes[activeTab];
+			const validTab = activeTab as 'A' | 'B';
+			const teamId = validTab === 'A' ? match.home_team_id : match.away_team_id;
+			const code = teamCodes[validTab];
+
 
 			// 2. Transpile
 			const cleanedCode = code
@@ -562,10 +576,11 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 				.eq('team_id', teamId)
 				.order('version_number', { ascending: false });
 			if (allVersions) {
-				teamVersions[activeTab] = allVersions;
+				teamVersions[validTab] = allVersions;
 				// After publishing, we stay on the current draft, but it's now synced with the latest version.
 				// Or should we clear the draft? Let's just keep it as is.
 			}
+
 
 			modal.alert('Success', `Team ${activeTab === 'A' ? 'Alpha' : 'Bravo'} logic updated to version ${nextVersion}.`);
 		} catch (err: any) {
@@ -750,6 +765,29 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 			const { data: teamsData } = await supabase.from('teams').select('id, name, color').neq('id', teamId);
 			if (teamsData) allTeams = teamsData;
 
+			// Fetch user role for this team
+			if (session?.user) {
+				const { data: roleData } = await supabase
+					.from('user_roles')
+					.select('role')
+					.eq('user_id', session.user.id)
+					.eq('team_id', teamId)
+					.maybeSingle();
+				
+				if (roleData) userRole = roleData.role;
+				else {
+					// Check for project maintainer
+					const { data: pRole } = await supabase
+						.from('user_roles')
+						.select('role')
+						.eq('user_id', session.user.id)
+						.eq('role', 'project_maintainer')
+						.maybeSingle();
+					if (pRole) userRole = 'project_maintainer';
+				}
+			}
+
+
 			const matchId = page.url.searchParams.get('match');
 			const seedParam = page.url.searchParams.get('seed');
 			const oppParam = page.url.searchParams.get('opponent');
@@ -833,8 +871,11 @@ export const teamLogic = (sense: SensedState): PlayerAction[] => {
 		onLoadVersion={(v: any) => { loadVersionIntoDraft(activeTab as 'A'|'B', v); isVersionBrowserOpen = false; }}
 		onSelectDraft={(id: string) => { selectDraft(activeTab as 'A'|'B', id); isVersionBrowserOpen = false; }}
 		onDeleteDraft={(id: string) => scratchpad.deleteScratchpad(teamIds[activeTab as 'A'|'B'], id)}
+		onPublish={() => isPublishModalOpen = true}
+		isMaintainer={isMaintainer}
 		onClose={() => isVersionBrowserOpen = false}
 	/>
+
 {/if}
 
 <div 

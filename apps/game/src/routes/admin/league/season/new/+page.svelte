@@ -2,7 +2,10 @@
 	import { base } from '$app/paths';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
 	import { modal } from '$lib/stores/modal';
 
 	let selectedLeagueId = $state<string | null>(null);

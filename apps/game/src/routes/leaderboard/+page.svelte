@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { getProtocol } from '$packages/protocols/registry';
 	import BrandLoading from '$lib/components/BrandLoading.svelte';
+	import TeamIcon from '$lib/components/TeamIcon.svelte';
 
 	let teams: any[] = $state([]);
 	let playerAwards: any[] = $state([]);
@@ -255,8 +256,8 @@
 								</td>
 								<td class="p-4">
 									<div class="flex items-center gap-3">
-										<div class="h-8 w-8 rounded flex items-center justify-center font-bold text-xs" style="background-color: {team.color}22; border: 1px solid {team.color}66; color: {team.color}">
-											{team.name.charAt(0)}
+										<div class="h-8 w-8 rounded flex items-center justify-center overflow-hidden bg-black/40" style="border: 1px solid {team.color}44;">
+											<TeamIcon teamName={team.name} color={team.color} size="size-5" />
 										</div>
 										<a href="{base}/team/{team.id}" class="font-bold text-white group-hover:text-[var(--color-brand-primary)] transition-colors">{team.name}</a>
 									</div>

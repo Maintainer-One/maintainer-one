@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
 	import { fade, fly } from 'svelte/transition';
 
 	type Season = { id: string, name: string, season_number: number, status: string };

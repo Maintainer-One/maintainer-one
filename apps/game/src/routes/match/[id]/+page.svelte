@@ -3,7 +3,10 @@
 	import { browser } from '$app/environment';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { supabase } from '$lib/supabase';
+
+	let { data } = $props();
+	let { supabase } = $derived(data);
+
 	import { createInitialState } from '$packages/engine/core';
 	import type { GameState } from '$packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
