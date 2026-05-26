@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { getActiveSeason } from '$lib/supabase';
+	import { modal } from '$lib/stores/modal';
 
 	let { data } = $props();
 	let { supabase } = $derived(data);

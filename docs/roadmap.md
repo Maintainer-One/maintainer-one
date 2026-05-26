@@ -52,7 +52,6 @@ _The goal is to refine the "vibe" and performance of the platform before locking
 ### Phase 5: League & Team Operations
 
 _The goal is to build out the UI tooling necessary for League Administration, Team Practice, and Fan Viewing, establishing the core gameplay loop before locking it behind auth._
-o
 
 - [x] **League Administration**: A `/admin/league` dashboard for creating seasons, generating schedules, and managing simulation triggers.
 - [x] **Team Dashboard**: A `/team` dashboard for teams to manage their code versions (including naming versions) and assign specific override versions for upcoming matchups.

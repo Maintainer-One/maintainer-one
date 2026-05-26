@@ -8,7 +8,7 @@
 	let { supabase } = $derived(data);
 
 	import { createInitialState } from '$packages/engine/core';
-	import type { GameState } from '$packages/engine/types';
+	import type { GameState, TeamID } from '$packages/engine/types';
 	import ReplayGrid from '$lib/components/ReplayGrid.svelte';
 	import SimWorker from '$lib/workers/sim.worker?worker';
 	import { fade, fly } from 'svelte/transition';

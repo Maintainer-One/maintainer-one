@@ -10,7 +10,6 @@
 		onTogglePlay,
 		onStepForward,
 		onStepBackward,
-		onRequestSimulation,
 		onSave,
 		onLoad,
 		onPublish
@@ -23,7 +22,6 @@
 		onTogglePlay: () => void;
 		onStepForward: () => void;
 		onStepBackward: () => void;
-		onRequestSimulation: () => void;
 		onSave: (timelineId: string) => void;
 		onLoad: (timelineId: string) => void;
 		onPublish?: () => void;

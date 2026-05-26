@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { base } from '$app/paths';
 	import TeamIcon from '$lib/components/TeamIcon.svelte';
+	import BrandLogo from '$lib/components/BrandLogo.svelte';
 	import { spring } from 'svelte/motion';
 
 	let { season, winner, playerAwards, teams } = $props<{
