@@ -19,23 +19,43 @@ _Note: The platform is open-source. Anyone can spin up their own server to act a
 - **Continuous Integration**: Automated CI via GitHub Actions ensures no push breaks the engine or protocol determinism.
 - **TDD Requirement**: All future protocol changes and engine features _must_ be accompanied by relevant test cases to maintain the project's long-term health.
 
-## Current Status
+## Completed Milestones
 
-**Foundational Architecture Established:**
+These phases describe the foundation already in place. They are kept here for
+project memory and context, while incomplete work lives in the upcoming phases
+below.
 
-- **Simulation Engine**: Core deterministic Deno simulation engine (`packages/engine`).
-- **Phase 1 (DX Focus)**: Hybrid IDE architecture (Monaco/CodeMirror), browser-side simulation, and advanced playback controls.
-- **Phase 2 (League Dashboard)**: Foundational UI for "The Big Board", team identity, and live event ticking.
-- **Phase 3 (Test Season)**: Full season simulation infrastructure complete.
-  - **Protocol Versioning Engine**: Decoupled engine from rule-sets with a registry pattern.
-  - **Automated Season Runner**: `Deno.cron` ready runner for scheduled matches.
-  - **Code-Locked Determinism**: Database-backed version control for team logic ensuring perfect replays.
-  - **Test Bootstrap**: 6 varied team logic variations (Azure, Beige, Cobalt, etc.) seeded with a full round-robin schedule.
-- **Phase 4 (Test Dashboard)**: Live Command Center and deterministic match viewer complete.
-  - **Live Standings & Feed**: Real-time integration with Supabase matches and teams.
-  - **Diverse Identity**: Implementation of the Amber, Beige, Crimson, Denim, Emerald, Fuchsia (ABCDEF) color palette.
-  - **Replay Determinism**: Browser-side re-simulation using database seeds and code versions.
-  - **Publishing Workflow**: Integrated scratchpad with versioned database persistence.
+### Phase 1: DX Foundation
+
+- [x] **Hybrid IDE Architecture**: Monaco/CodeMirror-style editing for team
+  logic development.
+- [x] **Browser-Side Simulation**: Local simulation loop for rapid feedback.
+- [x] **Advanced Playback Controls**: Replay controls for inspecting match
+  outcomes and iterating on logic.
+
+### Phase 2: League Dashboard
+
+- [x] **The Big Board**: Foundational dashboard surfaces for league state.
+- [x] **Team Identity**: Team branding, logos, colors, and broadcast-style
+  presentation.
+- [x] **Live Event Ticking**: UI foundation for following league activity as it
+  unfolds.
+
+### Phase 3: Test Season Infrastructure
+
+- [x] **Simulation Engine**: Core deterministic Deno simulation engine (`packages/engine`).
+- [x] **Protocol Versioning Engine**: Decoupled engine from rule-sets with a registry pattern.
+- [x] **Automated Season Runner**: `Deno.cron` ready runner for scheduled matches.
+- [x] **Code-Locked Determinism**: Database-backed version control for team logic ensuring perfect replays.
+- [x] **Test Bootstrap**: 6 varied team logic variations seeded with a full round-robin schedule.
+
+### Phase 4: Test Dashboard
+
+- [x] **Live Command Center**: Dashboard surface for following the active league.
+- [x] **Live Standings & Feed**: Real-time integration with Supabase matches and teams.
+- [x] **Diverse Identity**: Implementation of the Amber, Beige, Crimson, Denim, Emerald, Fuchsia (ABCDEF) color palette.
+- [x] **Replay Determinism**: Browser-side re-simulation using database seeds and code versions.
+- [x] **Publishing Workflow**: Integrated scratchpad with versioned database persistence.
 
 ### Phase 4.5: UX Polish & Performance
 
@@ -44,10 +64,6 @@ _The goal is to refine the "vibe" and performance of the platform before locking
 - [x] **Establish the Deep Polish Punchlist**: Compile and prioritize the specific UI/UX tweaks, micro-animations, and performance optimizations required for a production-ready feel.
 - [x] **Protocol V1 Stabilization**: Resolved critical "ghost match" bugs (empty configs and bot API mismatches) and balanced point zone lifespans for better gameplay.
 - [x] **Dynamic Match Library**: Replaced static JSON replays with a live database-backed Match Library in the Film Room.
-
----
-
-## Upcoming Phases
 
 ### Phase 5: League & Team Operations
 
@@ -70,14 +86,16 @@ _The goal is to seamlessly integrate the community and establish the formal RBAC
 - [x] **"Around the League" Hub**: A dedicated dashboard space to curate and aggregate community content.
   - Initially powered by user submissions.
 
+---
+
+## Active and Upcoming Phases
 
 ### Phase 7: Pre-Alpha Polish & Deployment
 
 _The goal is to finalize all critical paths, squash lingering bugs, and successfully deploy the alpha version of the game._
 
 - [x] **Landing Page Overhaul**: Clean up the main landing page (`apps/landing`) and align its aesthetic and messaging with the project's vision.
-- [ ] **Documentation Site**: Implement a static documentation section within the landing site to host the game manual, API references, and protocol details.
-- [ ] **Dev Blog**: Set up a blog system on the landing site to post updates, patch notes, and stream recaps.
+- [ ] **Documentation Site**: Implement the alpha-critical docs: game manual, quickstart, and V1 protocol reference.
 - [ ] **Robust Match Scheduling**: Overhaul the scheduling logic to support the "Saturday Broadcast Format":
   - **Game Days**: Schedule full round-robin series specifically on Saturdays.
   - **Round-Based Staggering**: Either run all matches in a round simultaneously (to highlight Multiview) or stagger them by ~5 minutes.
@@ -86,14 +104,47 @@ _The goal is to finalize all critical paths, squash lingering bugs, and successf
 - [ ] **Developer Experience Polish**: Iron out bugs in the team logic editor and ensure writing, saving, and testing team scripts is a smooth and pleasant experience for contributors.
 - [ ] **Deployment Preparation**: Set up production hosting, configure environment variables, and ensure the build process is stable.
 - [ ] **UI/UX Final Polish**: Review layouts across device sizes and ensure all visual components match the design system.
-- [ ] **Mobile Experience Polish**: Optimize the dashboard, match views, and logic editor for touch interactions and small viewports.
 - [ ] **Security & Data Audit**: Verify RLS policies, session handling, and database integrity for a live environment.
 - [ ] **Alpha Access Control**: Implement a whitelist or "Alpha Key" system to restrict signups and official deployments, while keeping the dashboard public for viewing and scratchpad experimentation.
-- [ ] **Authentic Voice Pass**: Review and rewrite all site copy, documentation, and blog placeholders to ensure they sound like a human creator rather than a marketing team or an AI.
-- [ ] **Streamer Prep & Practice**: Design OBS-friendly UI overlays and run low-stakes "Summer Dev Streams" to practice the broadcast flow before the official September launch.
 - [x] **5D Multi-Timeline Film Room UI**: Overhaul the Film Room playback controls to support simultaneous exploration of multiple "what-if" timelines. Include vertically stacked scrubbers, visibility checkboxes (ghosting) for parallel logic comparison, and synchronized playback across branches.
 
-### Phase 8: The Protocol RFC Process & Reputation
+**Stretch Goals**
+
+- [ ] **Dev Blog**: Set up a blog system on the landing site to post updates, patch notes, and stream recaps.
+- [ ] **Mobile Experience Polish**: Optimize dashboards and match viewing for small screens. Treat the team logic editor as desktop-first for alpha unless a clear mobile workflow emerges.
+- [ ] **Authentic Voice Pass**: Review and rewrite all site copy, documentation, and blog placeholders to ensure they sound like a human creator rather than a marketing team or an AI.
+- [ ] **Streamer Prep & Practice**: Design OBS-friendly UI overlays and run low-stakes "Summer Dev Streams" to practice the broadcast flow before the official September launch.
+- [ ] **Alpha World Memory Seed**: Add the minimum season and match history surfaces needed for the first alpha league to feel persistent rather than demo-only.
+
+### Phase 8: Post-Alpha Stabilization & V1 Stewardship
+
+_The goal is to run the V1 alpha long enough to prove the core loop, harden the platform, and let the first official league feel stable before expanding the protocol surface area._
+
+- [ ] **Alpha Season Operations**: Run V1 seasons on a predictable cadence and use them to validate scheduling, match locking, replay determinism, and standings integrity.
+- [ ] **V1 Rules Finalization**: Treat V1 as the onboarding/literacy protocol and avoid expanding the sport until its current mechanics are clear, stable, and well documented.
+- [ ] **Replay & Audit Hardening**: Ensure every official V1 match can be replayed from locked inputs: protocol version, protocol config, seed, and team code versions.
+- [ ] **Security & Permissions Pass**: Finish the practical alpha security work: RLS policies, auth/session behavior, admin boundaries, and safe public/private data exposure.
+- [ ] **Team Logic DX Polish**: Improve the code editing, saving, testing, and versioning loop. Explore support for multiple files or cleaner local organization before deeper GitHub/in-house version-control work.
+- [ ] **Operational Runbooks**: Document how to create seasons, seed teams, recover from failed simulations, deploy the app, and verify official results.
+- [ ] **World Memory Pass**: Strengthen the spectator/solo-sim layer with season history, team pages, player histories, match artifacts, and "what happened since last time" style surfaces.
+- [ ] **Lightweight Community Process**: Use Discord, GitHub issues, and informal discussion for feedback until there are enough active participants to justify formal governance.
+
+### Phase 9: Capture the Zone Protocol Expansion
+
+_The goal is to evolve the V1 sport gradually through the Capture the Zone era, introducing each major team-logic surface at a base level before any one surface becomes too complex._
+
+- [ ] **Protocol Roadmap Review**: Use `docs/protocol-roadmap.md` as the working design map for protocol sequencing, open questions, and future phase candidates.
+- [ ] **V2 Formation & Commitment**: Explore a closest-players scoring multiplier where zone value depends on how many friendly bots are closer than the opponent.
+- [ ] **V3 Bot Variability & Upgrade Draft**: Introduce bot traits/components and the first automated draft-like phase, likely starting with upgrade components before full chassis drafts.
+- [ ] **Immutable Team State Snapshots**: Before mutable rosters/components affect official events, add immutable team-state snapshots so official replays lock both team logic and team condition.
+- [ ] **General Event/Phase Model**: Begin moving beyond match-only terminology. Drafts, matches, recovery phases, trade windows, scouting phases, and prep phases should all be modeled as replayable official events that consume input snapshots and produce output snapshots.
+- [ ] **V4 Wear & Basic Recovery**: Introduce wear as a reliability tax and add a small automated recovery phase where teams allocate limited repair resources.
+- [ ] **V5 Roster Depth & Chassis Draft**: Expand teams beyond active match bots and introduce automated roster selection, backups, rotations, and fuller chassis acquisition.
+- [ ] **V6 Automated Trading**: Add trade windows where team logic proposes, evaluates, counters, and accepts trades without manual maintainer approval.
+- [ ] **V7 Scouting & Imperfect Information**: Add scouting phases and uncertain reports so draft, trade, and prep logic can reason about incomplete information.
+- [ ] **Phase Artifact Standard**: For every new official event type, define the artifacts needed for replay, analysis, branching, auditing, and world memory.
+
+### Phase 10: The Protocol RFC Process & Reputation
 
 _The goal is to formalize how the game evolves and how trust is built._
 
