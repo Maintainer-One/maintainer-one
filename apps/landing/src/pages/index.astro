@@ -4,22 +4,14 @@ import Countdown from '../components/Countdown.svelte';
 import BrandLogo from '$lib/components/BrandLogo.svelte';
 import MultiViewShowcase from '../components/MultiViewShowcase.svelte';
 import FoundingEraRoadmap from '../components/FoundingEraRoadmap.svelte';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || Deno.env.get("PUBLIC_SUPABASE_URL");
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || Deno.env.get("PUBLIC_SUPABASE_ANON_KEY");
-
-if (!supabaseUrl) {
-	console.error("Supabase environment variables are missing!");
-	console.log("import.meta.env:", import.meta.env);
-}
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const { data: teams } = await supabase
-	.from('teams')
-	.select('id, name, color, logo_icon_url')
-	.order('name', { ascending: true });
+const teams = [
+	{ name: 'Amber Seekers',   color: '#ffb000', logo_icon_url: '/logos/amber_seekers.svg' },
+	{ name: 'Beige Blockers',  color: '#f5f5dc', logo_icon_url: '/logos/beige_blockers.svg' },
+	{ name: 'Crimson Strikers',color: '#ef4444', logo_icon_url: '/logos/crimson_strikers.svg' },
+	{ name: 'Denim Drifters',  color: '#3b82f6', logo_icon_url: '/logos/denim_drifters.svg' },
+	{ name: 'Emerald Pausers', color: '#10b981', logo_icon_url: '/logos/emerald_pausers.svg' },
+	{ name: 'Fuchsia Soloists',color: '#d946ef', logo_icon_url: '/logos/fuchsia_soloists.svg' },
+];
 ---
 
 <html lang="en" class="dark">
