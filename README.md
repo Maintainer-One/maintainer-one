@@ -12,36 +12,24 @@ on-field player logic to front-office analytics and trades.
 
 ## 🌟 The Vision
 
-### 1. The "Protocol" System
+Maintainer One is not just a game; it is **gamified open-source governance combined with a procedurally generated narrative engine.**
 
-The game is governed by the **Protocol**—an evolving set of rules that define
-the field, the scoring, and the physical constraints.
+It is designed to be a collaborative, community-driven experience where players can engage at whatever level of technical depth they desire. 
 
-- **Protocol V1 (Starting Point)**: A 3v3 capture-the-zone match on a 10x10
-  discrete grid.
-- **Evolution**: As the league grows, the Protocol evolves to include more
-  players, specialized roles, advanced physics, and "Front Office" mechanics
-  like drafts and trading.
+### 1. Tiered Community Participation
+You don't need to write code to participate. The ecosystem supports a hierarchy of roles:
+- **Fans**: Root for teams, participate in predictions, draft fantasy leagues, and vote on community RFCs (Request for Comments).
+- **Contributors**: Propose new rules, events, or submit PRs to improve a specific team's public logic.
+- **Maintainers**: Official stewards of Teams or Manufacturers who make final decisions on logic integration.
+- **Authorities**: The governing bodies that oversee League rules, Protocol evolutions, and the health of the ecosystem.
 
-### 2. The Film Room
+### 2. Emergent Storytelling via Event RFCs
+Instead of a static, authored story, Maintainer One features an automated **Lore and Event System**. Anyone in the community can propose an event idea (triggers, flavor text, in-world consequences) via an RFC. Once approved by the community, these events are injected into the simulation engine. The story then emerges dynamically during matches, surprising even the creators.
 
-Analyze your performance like a pro coach. Every match is deterministic and
-serialized, allowing you to:
+### 3. Open Logic & The Protocol
+Maintainer One embraces the "Open Source" nature of sports strategy. Team logic is public, encouraging a collaborative ecosystem where strategies are shared, analyzed, and countered. The rules of the sport itself—**The Protocol**—evolve organically over time through community voting and RFCs.
 
-- **Pause & Inspect**: Deep dive into any tick of a game.
-- **Branch Strategy**: Tweak your code at any point in a replay and instantly
-  simulate the "What If" branch to see how your changes would have altered the
-  outcome.
-
-### 3. Open Logic
-
-Maintainer One embraces the "Open Source" nature of sports strategy. Team logic
-is public knowledge, encouraging a collaborative yet hyper-competitive ecosystem
-where every strategy can be analyzed, countered, and evolved by the community.
-
-### 4. Thematic Identity
-
-Every team is a brand. Maintainer One features a fully themeable UI that adapts to team colors and context, providing a unique "The Dashboard" experience for every maintainer and high-stakes matchup.
+For a full breakdown of the project's philosophy and community structure, see [**The Vision Document**](docs/VISION.md).
 
 ---
 
@@ -113,6 +101,7 @@ Maintainer One is built with a modern, high-performance web stack:
 
 ## 📖 Documentation Map
 
+- [**The Vision**](docs/VISION.md): The philosophy, community tiers, and emergent storytelling engine.
 - [**Agent Guidelines**](docs/AGENT.md): How to develop for this repo (AI &
   Human).
 - [**Architecture**](docs/ARCHITECTURE.md): Deep dive into the Engine, State,
