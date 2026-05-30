@@ -9,13 +9,64 @@ Nothing here should be treated as locked until it graduates through the future
 Protocol RFC process. The goal is to preserve promising design threads early so
 they can be tested, refined, split, merged, or discarded with intent.
 
+---
+
+## Design Principles
+
+### The Three-Tier Variation Model
+
+Protocol variation is controlled at three distinct levels:
+
+- **Protocol Version**: Structural changes to what is possible. Changes on the
+  scale of years via the RFC process.
+- **Config**: Tunable parameters within a protocol (grid size, bot count, zone
+  lifespan, etc.). Set per season or special event. Can drift mid-season via
+  narrative event consequences. Always stored on the match record for replay
+  determinism.
+- **Seed**: Per-match randomness. Generated at simulation time and locked
+  alongside code versions and config.
+
+The config tier is a first-class design tool. Leagues can run dramatically
+different feeling games on the same protocol version through config alone.
+Protocol version changes are reserved for structural rule changes that config
+cannot express.
+
+### Subsystem Versioning
+
+Each protocol version bundles a set of independently versioned subsystems. The
+match system advances when match mechanics need structural change. All other
+subsystems (draft, recovery, trade, scouting, lore) advance on their own
+cadence.
+
+The sequencing principle: **no subsystem should advance beyond V1 until all
+planned subsystems have reached V1**. This keeps the complexity of each system
+roughly balanced across the league and ensures the lore system — which is most
+powerful when all other systems are active and the state is rich — arrives last.
+
+Example subsystem bundle progression:
+
+| Protocol | Match | Draft | Recovery | Trade | Scouting | Lore | Manufacturers |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| V1 | V1 | — | — | — | — | — | — |
+| V2 | V2 | — | — | — | — | — | — |
+| V3 | V2 | V1 | — | — | — | — | — |
+| V4 | V2 | V1 | V1 | — | — | — | — |
+| V5 | V2 | V1 | V1 | — | — | — | — |
+| V6 | V2 | V2 | V1 | V1 | — | — | — |
+| V7 | V2 | V2 | V2 | V1 | V1 | — | — |
+| V8 | V2 | V2 | V2 | V1 | V1 | — | — |
+| V9 | V2 | V2 | V2 | V2 | V1 | — | — |
+| V10 | V2 | V2 | V2 | V2 | V2 | V1 | — |
+| V11 | V2 | V2 | V2 | V2 | V2 | V1 | V1 |
+
+_Note: This table is illustrative. Actual sequencing will be determined as each
+protocol version is designed._
+
+---
+
 ## At-a-Glance Phase Ladder
 
-This section is the short map. The detailed version notes below can change, but
-the broad goal is to introduce each major team-logic domain at a base level
-before any one domain becomes too complex.
-
-| Domain | First candidate | Base-level question | Example team-logic entrypoint |
+| Domain | First candidate | Base-level question | Example logic entrypoint |
 | --- | --- | --- | --- |
 | Match play | V1 | How should bots move, avoid collisions, and capture zones? | `play(context)` |
 | Formation/commitment | V2 | How many bots should commit to a scoring opportunity? | `play(context)` |
@@ -29,6 +80,10 @@ before any one domain becomes too complex.
 | Game prep | TBD | What should the team optimize before a specific matchup? | `prepare(context)` |
 | Staff/systems | TBD | Which organizational systems should be acquired or deployed? | `manageStaff(context)` |
 | Deployment/versioning | TBD | Which logic version should run in each upcoming phase? | `deploy(context)` |
+| **Lore & Narrative** | **V10** | **What storylines does the community author, and how do they shape the world?** | _(league-level, not team-logic)_ |
+| **Manufacturers** | **V11** | **Which component IP is worth producing? How should rental offers be evaluated?** | `bid(context)` / `evaluate(context)` / `catalog(context)` |
+
+---
 
 ## Major Team-Logic Surfaces
 
@@ -52,6 +107,8 @@ introduce carefully.
 - **Deployment logic**: Choosing which team-code versions or strategic packages
   run in specific phases.
 
+---
+
 ## Protocol Design Principles
 
 - **One new lesson at a time**: Each protocol should introduce a new kind of
@@ -66,7 +123,7 @@ introduce carefully.
   worth replaying, inspecting, branching, testing, and explaining.
 - **Immutable official inputs**: Official phase replays need to lock every input
   that can affect the result: protocol version, protocol config, seed, team code
-  versions, and team state snapshots.
+  versions, team state snapshots, and active event state.
 - **Artifacts create memory**: Every phase should produce durable artifacts that
   make the world feel alive: match events, scouting reports, draft decisions,
   recovery logs, trade offers, roster changes, and post-phase diagnostics.
@@ -76,13 +133,25 @@ introduce carefully.
   compelling gameplay.
 - **Protocol versions are a learning ladder**: Lower versions should remain
   useful as onboarding points, private league formats, and historical eras.
+- **Config before protocol bump**: Before advancing the protocol version,
+  consider whether the desired variation can be expressed through config changes
+  alone. Reserve protocol version changes for structural rule changes config
+  cannot express.
 
-## Era 1: Capture the Zone
+---
 
-The first protocol era centers on spatial control, zone capture, deterministic
-replays, and progressively richer team-building decisions. The goal is to keep
-the core sport legible while slowly expanding from match tactics into automated
-organization management.
+## Era 1: The Founding Era
+
+The first protocol era begins as a scrappy open-source experiment and ends when
+the league crosses into mainstream legitimacy — represented mechanically by
+robotics manufacturers taking an explicit interest and entering the ecosystem.
+The arc is: learn the board → build the organization → author the world → watch
+the world change around you.
+
+The Founding Era is what this period becomes in retrospect once there is a
+second era to compare it to. Early participants are founding members of
+something that will eventually outgrow its origins. The garage is where it
+started. The Founding Era is what that period means in history.
 
 ### V1: Spatial Literacy
 
@@ -107,7 +176,7 @@ problems.
 
 ### V2: Commitment and Formation
 
-**Status**: Candidate.
+**Status**: Candidate. Intended as the stable match floor for an extended period.
 
 **Core lesson**: Balance local superiority against global coverage.
 
@@ -126,8 +195,17 @@ problems.
 
 **Design note**
 
-V2 should likely remain roster-symmetric so the scoring/formation problem can be
-learned cleanly.
+V2 is the intended stable floor for match mechanics across an extended protocol
+era while all other subsystems are introduced and reach V1. It must be evaluated
+not just as a standalone match system but as a legible backdrop against which
+draft decisions, wear patterns, roster choices, trade consequences, and narrative
+events will layer over many protocol versions. Team identity expressed through
+characteristic formation tendencies (swarming vs spreading) should persist and
+remain readable as surrounding complexity grows.
+
+Config parameters (grid size, bot count, zone lifespan, zone spawn rate) allow
+meaningful variation across seasons and leagues without requiring a V3 match
+system.
 
 ### V3: Bot Variability and Upgrade Draft
 
@@ -251,10 +329,106 @@ trade(context) -> TradeAction[]
 - The league gains more artifacts: reports, confidence intervals, missed reads,
   and post-hoc scouting grades.
 
+### V10: Lore System V1
+
+**Status**: Long-term candidate.
+
+**Core lesson**: The community authors the world's story, and the world
+responds.
+
+**Sequencing rationale**
+
+The lore system arrives after all team-facing subsystems have reached V1. It is
+most powerful at this point because:
+
+- Narrative consequences can touch the richest possible team state — bots,
+  traits, wear, draft picks, trade records, scouting reports, config.
+- The community has grown through every system introduction and understands the
+  state deeply enough to write mechanically interesting submissions.
+- The artifact history accumulated across all prior protocols gives the lore
+  system real events to interpret and respond to.
+
+The lore system arriving before manufacturers is also a deliberate narrative
+choice. The community needs narrative tools to *dramatize* the transition that
+manufacturers represent. The arrival of the first manufacturer can itself be a
+lore event — a Disruption type firing when the league crosses a visibility
+threshold, announcing that a corporation has taken interest. The community
+watches the Founding Era end in real time rather than having it simply happen
+mechanically.
+
+For full design details see `docs/lore-system.md`.
+
+### V11: Manufacturer System V1 — End of the Founding Era
+
+**Status**: Long-term candidate. The capstone of Era 1.
+
+**Core lesson**: The supply chain is a game. Who builds the equipment matters
+as much as who deploys it.
+
+**Narrative significance**
+
+The manufacturer system's arrival is not just a new mechanic — it is the moment
+the Founding Era ends. The league started as a scrappy open-source experiment
+run by hobbyists in warehouses. By V11 it has grown large enough that robotics
+corporations take explicit interest. The uniform prototype chassis of V1 are
+retired. Real manufacturers enter the ecosystem with their own logic, their own
+competitive ambitions, and their own history to accumulate.
+
+This transition is earned rather than arbitrary because the lore system is
+already in place to frame it. The first manufacturer entering the draft pool is
+a world event the community has been building toward, not a patch note.
+
+**Sequencing rationale**
+
+By V11 the conditions are right for manufacturers to land with full weight:
+
+- Teams have variable rosters with real bot-to-bot differentiation, giving
+  manufacturers meaningful design space.
+- Wear and recovery mean bots have individual histories, making the rental
+  relationship feel personal rather than abstract.
+- Trading means teams already reason in terms of asset valuation — they are
+  ready to think about rental pricing and free agency timing.
+- Scouting means teams already reason under uncertainty — they can evaluate
+  manufacturer reputation and catalog quality using the same thinking.
+- The component IP pipeline has accepted community submissions since V3,
+  meaning manufacturers inherit a rich catalog backlog rather than starting
+  from an empty market.
+- The lore system is in place to dramatize the transition and give the community
+  narrative authorship over how the Founding Era ends.
+
+**Primary concepts**
+
+- Manufacturers as first-class entities with maintainers, contributors,
+  reputation tag sets, and catalog histories.
+- Component IP auctions: community-submitted designs are bid on by
+  manufacturers; winning bid becomes production cost.
+- Draft contracts: bots enter the league on rookie deals at controlled prices
+  for a fixed term.
+- Free agency: expired contracts trigger team offer submissions; manufacturers
+  evaluate offers against retirement calculus.
+- Single-manufacturer compatibility: chassis and components from the same
+  manufacturer only, reflecting integrated design and training.
+- Component aging: tag intensity degrades over time, preventing manufacturers
+  from resting on successful designs.
+- Manufacturers championship: distinct titles (Prestige, Market, Longevity,
+  Depth) running alongside the team championship. Winning is its own reward —
+  no mechanical bonuses to avoid rich-get-richer compounding.
+
+**Manufacturer logic entry points**
+
+```ts
+bid(context: ComponentIpAuctionContext) -> BidAction
+evaluate(context: FreeAgencyContext) -> AcceptAction | RetireAction
+catalog(context: CatalogContext) -> CatalogAction[]
+```
+
+For full design details see `docs/world-entities.md`.
+
+---
+
 ## Future Era Candidates
 
-These are broader directions that may become separate eras or alternate official
-formats.
+_(Unchanged from prior version — see below for full list.)_
 
 ### Front Office Systems
 
@@ -276,138 +450,44 @@ Teams may eventually choose what data to collect during matches and other
 phases. Better telemetry can improve post-match analysis, scouting, and future
 simulation, but may cost compute, bandwidth, phase actions, or system slots.
 
-Design pressure:
-
-- Teams should not be able to measure everything for free.
-- Instrumentation choices should create artifacts that contributors can inspect.
-- The best teams may win by building better feedback loops, not only better
-  match logic.
-
 ### Training and Game Prep
 
 Prep phases can give teams a limited opportunity to tune for a specific matchup
 or improve a specific part of their system before a match.
-
-Possible prep decisions:
-
-- Prioritize coordination, reliability, zone timing, or collision avoidance.
-- Spend limited prep resources on a single matchup or preserve them for later.
-- Deploy matchup-specific strategy packages.
 
 ### Strategy Packages and Deployment
 
 Teams may maintain multiple tactical packages or logic versions and write
 deployment logic that chooses which package runs in a given phase or matchup.
 
-Design pressure:
-
-- Teams should be rewarded for robust adaptation rather than one brittle global
-  strategy.
-- Deployment choices should be auditable so official outcomes can be replayed
-  from the exact code and strategy package that ran.
-
 ### Facilities and Infrastructure
 
 Teams may eventually have limited facility or infrastructure slots that improve
 specific phases.
 
-Possible facilities:
-
-- Simulator clusters.
-- Repair bays.
-- Scouting arrays.
-- Analytics labs.
-- Training rigs.
-- Research workbenches.
-
-Facilities can create long-term identity and specialization without requiring a
-full economy too early.
-
 ### Component Compatibility
 
-Components should eventually interact rather than simply add isolated stats. A
-fast actuator might increase wear unless paired with a stabilizer. A sensor
-suite might improve scouting but increase compute load.
-
-Design pressure:
-
-- Teams should build coherent systems rather than collect obvious best parts.
-- Compatibility should make copied logic less portable between rosters.
-- Component interactions should remain explainable through phase artifacts.
+Components should eventually interact rather than simply add isolated stats.
 
 ### Environment and Conditions
 
 Later protocols may introduce match or phase conditions that reward resilient
-logic.
-
-Possible conditions:
-
-- Sensor noise.
-- Grid instability.
-- Heat or energy pressure.
-- Signal delay.
-- Zone volatility.
-
-These should be treated as protocol constraints, not random flavor. They are
-useful when they create meaningful preparation, deployment, or roster decisions.
+logic (sensor noise, grid instability, zone volatility, etc.).
 
 ### Information Markets
 
 If scouting and imperfect information become important, teams may eventually
 trade, buy, sell, or publish information artifacts.
 
-Design pressure:
-
-- Information should have provenance and confidence.
-- Teams should reason about what a report is worth.
-- Public, private, misleading, or stale information can create strategy without
-  requiring hidden code in every league format.
-
 ### Phase-Based League Simulation
 
 Long-term seasons may be composed of scheduled phases with different tick
 cadences, allowed actions, and team-logic entrypoints.
 
-Example season shape:
-
-```text
-Preseason
-  Scout Phase
-  Draft Phase
-  Training Phase
-Round 1
-  Prep Phase
-  Match Phase
-  Recovery Phase
-  Trade Phase
-Round 2
-  Prep Phase
-  Match Phase
-  Recovery Phase
-  Trade Phase
-Postseason
-  Prep Phase
-  Match Phase
-Offseason
-  Upgrade Phase
-  Staff Phase
-```
-
 ### Maintainer AI
 
 AI-enabled formats should be treated as distinct formats rather than silently
 mixed into human-authored logic leagues.
-
-Possible boundaries:
-
-- AI-assisted coding behind the scenes.
-- AI-generated submitted logic owned and reviewed by maintainers.
-- AI agents used during non-match phases.
-- Runtime AI agents making decisions under token, latency, cost, or memory
-  budgets.
-
-Maintainer One can preserve human-authored deterministic logic while a separate
-Maintainer AI format explores runtime agents and human-plus-AI orchestration.
 
 ### Private Logic and Compute Budgets
 
@@ -415,13 +495,7 @@ Early protocols should favor public code and unlimited local simulation. Later
 top-league formats may introduce private team logic and official simulation
 budgets once the stakes justify the operational burden.
 
-The wind-tunnel analogy:
-
-- Public and historical logic can be simulated freely.
-- Current private opponent logic, hidden seeds, or privileged scouting contexts
-  may require official simulation windows.
-- Compute limits create strategic choices about which matchups, prospects, or
-  branches to evaluate.
+---
 
 ## Open Questions
 
@@ -440,3 +514,6 @@ The wind-tunnel analogy:
   economy too early?
 - What should be the first staff/system type introduced, and which phase should
   it affect?
+- What is the minimum viable event type taxonomy for Lore V1?
+- What config parameters should be eligible for narrative consequence
+  manipulation, and which should be locked?

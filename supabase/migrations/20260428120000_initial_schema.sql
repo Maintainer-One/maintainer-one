@@ -56,6 +56,7 @@ CREATE TABLE matches (
   status TEXT NOT NULL, -- 'scheduled', 'simmed', 'played'
   home_score INTEGER,
   away_score INTEGER,
+  public_seed BIGINT,
   home_code_version_id UUID REFERENCES team_code_versions(id),
   away_code_version_id UUID REFERENCES team_code_versions(id),
   winner_id UUID REFERENCES teams(id),

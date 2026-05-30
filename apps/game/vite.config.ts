@@ -4,5 +4,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({ 
 	plugins: [tailwindcss(), sveltekit()],
-	envDir: '../../'
+	envDir: '../../',
+	server: {
+		port: 5180,
+		strictPort: true
+	}
 });

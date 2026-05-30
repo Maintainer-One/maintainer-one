@@ -69,7 +69,8 @@ async function simulateLockedMatches() {
             const awayLogic = loadLogicFromString(awayCode);
 
             // 3. Run Simulation
-            const seed = match.match_secrets?.secret_seed;
+            const secretObj = Array.isArray(match.match_secrets) ? match.match_secrets[0] : match.match_secrets;
+            const seed = secretObj?.secret_seed;
             if (seed === undefined || seed === null) {
                 console.error(`❌ Skipping match ${match.id}: No secret seed found in match_secrets.`);
                 continue;
@@ -136,7 +137,8 @@ async function broadcastPlayedMatches() {
 
     if (!matches || matches.length === 0) return;
     for (const match of matches) {
-        const seed = match.match_secrets?.secret_seed;
+        const secretObj = Array.isArray(match.match_secrets) ? match.match_secrets[0] : match.match_secrets;
+        const seed = secretObj?.secret_seed;
         if (seed === undefined || seed === null) {
             console.error(`⚠️ Cannot broadcast match ${match.id}: Secret seed not found.`);
             continue;

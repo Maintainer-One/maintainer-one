@@ -1,0 +1,1 @@
+ALTER TABLE seasons ADD COLUMN game_density INTEGER DEFAULT 1;
