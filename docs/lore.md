@@ -1,9 +1,9 @@
 # Maintainer One: Game Lore
 
-## Introduction: The Garage Era
+## Introduction: The Founding Era
 
 Maintainer One is still in its infancy, an era early participants call the
-**Garage Era**.
+**Founding Era**.
 
 The League was not born in a stadium or a television studio. It began as a
 shared open-source experiment among software maintainers, robotics builders,
@@ -94,7 +94,7 @@ outperform hostile logic under deterministic rules.
 The first official season begins with six founding teams: **Amber, Beige,
 Crimson, Denim, Emerald, and Fuchsia**.
 
-In the Garage Era, these teams are closer to test-bed franchises than corporate
+In the Founding Era, these teams are closer to test-bed franchises than corporate
 giants. Their identities are simple, but that simplicity is part of the point.
 They are blank slates waiting to accumulate history: bitter losses, strange
 strategies, beloved bots, bad drafts, unlikely recoveries, and maintainers who
@@ -126,7 +126,7 @@ inspectable, and capable of producing artifacts the world remembers.
 
 ## Future Systems
 
-The bots will not stay uniform forever. Later protocols may introduce new
+The bots will not stay uniform forever. Later protocols will introduce new
 components, chassis families, reliability traits, wear, sensors, mobility
 systems, and compatibility tradeoffs.
 
@@ -139,9 +139,15 @@ The mature version of a team is not just `players + code`. It is bots,
 components, staff systems, telemetry, history, constraints, and the maintained
 logic that decides how all of it should act.
 
+The Founding Era ends when the league outgrows its origins. As the protocols
+mature and the community grows, the league will eventually become popular enough
+that robotics manufacturers take notice. When they arrive — pouring real money
+in and developing advanced hardware specifically for the league — the uniform
+prototype chassis of the early era are retired and something larger begins.
+
 ## Public Code and Closed Garages
 
-In the Garage Era, public logic is a feature. It lets anyone learn, test
+In the Founding Era, public logic is a feature. It lets anyone learn, test
 locally, replay matches, and contribute. Open code creates a shared strategic
 commons where teams can study each other and still diverge as protocols add
 personnel, components, and context.
@@ -151,5 +157,5 @@ matter, later formats may develop closed garages: private team logic, official
 simulation budgets, and stricter audit requirements. That future is not needed
 for the early sport, but the world leaves room for it.
 
-For now, it is still the Garage Era: your team, your logic, the official seed,
+For now, it is still the Founding Era: your team, your logic, the official seed,
 and a small world beginning to remember what happened.

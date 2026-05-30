@@ -54,10 +54,8 @@ Example subsystem bundle progression:
 | V5 | V2 | V1 | V1 | — | — | — | — |
 | V6 | V2 | V2 | V1 | V1 | — | — | — |
 | V7 | V2 | V2 | V2 | V1 | V1 | — | — |
-| V8 | V2 | V2 | V2 | V1 | V1 | — | — |
-| V9 | V2 | V2 | V2 | V2 | V1 | — | — |
-| V10 | V2 | V2 | V2 | V2 | V2 | V1 | — |
-| V11 | V2 | V2 | V2 | V2 | V2 | V1 | V1 |
+| V8 | V2 | V2 | V2 | V2 | V2 | V1 | — |
+| V9 | V2 | V2 | V2 | V2 | V2 | V1 | V1 |
 
 _Note: This table is illustrative. Actual sequencing will be determined as each
 protocol version is designed._
@@ -80,8 +78,8 @@ protocol version is designed._
 | Game prep | TBD | What should the team optimize before a specific matchup? | `prepare(context)` |
 | Staff/systems | TBD | Which organizational systems should be acquired or deployed? | `manageStaff(context)` |
 | Deployment/versioning | TBD | Which logic version should run in each upcoming phase? | `deploy(context)` |
-| **Lore & Narrative** | **V10** | **What storylines does the community author, and how do they shape the world?** | _(league-level, not team-logic)_ |
-| **Manufacturers** | **V11** | **Which component IP is worth producing? How should rental offers be evaluated?** | `bid(context)` / `evaluate(context)` / `catalog(context)` |
+| **Lore & Narrative** | **V8** | **What storylines does the community author, and how do they shape the world?** | _(league-level, not team-logic)_ |
+| **Manufacturers** | **V9** | **Which component IP is worth producing? How should rental offers be evaluated?** | `bid(context)` / `evaluate(context)` / `catalog(context)` |
 
 ---
 
@@ -143,8 +141,9 @@ introduce carefully.
 ## Era 1: The Founding Era
 
 The first protocol era begins as a scrappy open-source experiment and ends when
-the league crosses into mainstream legitimacy — represented mechanically by
-robotics manufacturers taking an explicit interest and entering the ecosystem.
+the league grows popular enough that robotics manufacturers take notice and start
+pouring money in — developing advanced hardware specifically for the league and
+bringing the era of the uniform prototype chassis to a close.
 The arc is: learn the board → build the organization → author the world → watch
 the world change around you.
 
@@ -329,7 +328,7 @@ trade(context) -> TradeAction[]
 - The league gains more artifacts: reports, confidence intervals, missed reads,
   and post-hoc scouting grades.
 
-### V10: Lore System V1
+### V8: Lore System V1
 
 **Status**: Long-term candidate.
 
@@ -358,29 +357,30 @@ mechanically.
 
 For full design details see `docs/lore-system.md`.
 
-### V11: Manufacturer System V1 — End of the Founding Era
+### V9: Manufacturer System V1 — End of the Founding Era
 
 **Status**: Long-term candidate. The capstone of Era 1.
 
-**Core lesson**: The supply chain is a game. Who builds the equipment matters
-as much as who deploys it.
+**Core lesson**: The league has grown too big to ignore. Now the money arrives.
 
 **Narrative significance**
 
-The manufacturer system's arrival is not just a new mechanic — it is the moment
-the Founding Era ends. The league started as a scrappy open-source experiment
-run by hobbyists in warehouses. By V11 it has grown large enough that robotics
-corporations take explicit interest. The uniform prototype chassis of V1 are
-retired. Real manufacturers enter the ecosystem with their own logic, their own
-competitive ambitions, and their own history to accumulate.
+The Founding Era's arc is one of rising popularity. The league began as a
+scrappy open-source experiment run by hobbyists in warehouses. By V9 it has
+grown large enough that robotics manufacturers have taken notice — and started
+pouring money in, developing advanced hardware specifically for the league. The
+uniform prototype chassis of V1 are retired. Real manufacturers enter the
+ecosystem with their own logic, their own competitive ambitions, and their own
+history to accumulate.
 
 This transition is earned rather than arbitrary because the lore system is
 already in place to frame it. The first manufacturer entering the draft pool is
-a world event the community has been building toward, not a patch note.
+a world event the community has been building toward, not a patch note. The
+scrappy open-source experiment has become an industry.
 
 **Sequencing rationale**
 
-By V11 the conditions are right for manufacturers to land with full weight:
+By V9 the conditions are right for manufacturers to land with full weight:
 
 - Teams have variable rosters with real bot-to-bot differentiation, giving
   manufacturers meaningful design space.
