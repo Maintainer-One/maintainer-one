@@ -47,19 +47,22 @@ deeper levels of access.
   Maintainer One on the latest version, Maintainer Two on an earlier version).
 
 - **Team Maintainer**: A highly exclusive role within official leagues.
-  Responsible for a team's roster logic, making deployment decisions, and
-  managing team identity. Team Maintainers do not manually control bots or
-  approve decisions in the moment — they build the automated systems that make
-  those decisions.
+  Teams are scarce, shared resources rather than individually owned entities.
+  Multiple Maintainers collaborate to be responsible for a team's roster logic,
+  making deployment decisions, and managing team identity. Team Maintainers do
+  not manually control bots or approve decisions in the moment — they build the
+  automated systems that make those decisions.
 
 - **Contributor**: An engaged community member who produces artifacts.
-  Contributors analyze matches, write articles, propose logic updates to Team
-  Maintainers, and submit event ideas to the lore pipeline.
+  Contributors analyze matches, write articles, and propose logic updates. Crucially,
+  technical know-how is not required—contributors also submit ideas for protocol
+  changes, bot parts, and events to the lore pipeline.
 
 - **Fan**: The broadest tier and the majority of the eventual audience. Fans
-  watch games, root for teams, vote on lore events, and participate in
-  prediction mechanics. A Fan has a named place in the world and a real
-  relationship with the league without being expected to produce artifacts.
+  watch games, root for teams and individual bots, discuss and vote on contributor
+  ideas, and participate in prediction mechanics (including fantasy leagues). A Fan
+  has a named place in the world and a real relationship with the league without
+  being expected to produce artifacts.
 
 ### Protocol Structure
 

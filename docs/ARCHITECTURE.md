@@ -124,14 +124,16 @@ League Authority
 └── Manages schedule, season config, league-level event pipeline
 
 Team Maintainer
+├── Co-manages a scarce, shared team resource with other maintainers
 └── Responsible for team logic, identity, and deployment decisions
 
 Contributor
-├── Watches, analyzes, proposes logic, submits event ideas
-└── Produces artifacts the league remembers
+├── Analyzes matches, proposes logic updates, and creates articles
+└── Submits non-technical ideas for protocols, bot parts, and events
 
 Fan
-└── Watches games, roots for teams, votes on lore events, makes predictions
+├── Watches games and roots for teams and favorite individual bots
+└── Votes on ideas, discusses changes, and participates in fantasy leagues
 ```
 
 ### Protocol Ownership
